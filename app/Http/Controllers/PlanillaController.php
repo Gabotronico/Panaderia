@@ -15,11 +15,7 @@ class PlanillaController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware(function ($request, $next) {
-            if (!Auth::user()->esAdministrador()) abort(403);
-            return $next($request);
-        });
+        $this->middleware(['auth', 'admin']);
     }
 
     public function index()
@@ -90,11 +86,13 @@ class PlanillaController extends Controller
                     'total_neto'            => $detalle['total_neto'],
                 ]);
 
-                // Marcar adelantos pendientes como descontados en esta planilla
-                Adelanto::where('empleado_id', $empleado->id)
-                    ->whereNull('planilla_id')
-                    ->whereBetween('fecha', [$request->periodo_inicio, $request->periodo_fin])
-                    ->update(['planilla_id' => $planilla->id]);
+                // Solo se liquidan los adelantos que alcanzó a cubrir el sueldo.
+                // Los que no entraron quedan pendientes para la siguiente planilla,
+                // de modo que la deuda nunca se pierde.
+                if ($detalle['adelantos_liquidados']) {
+                    Adelanto::whereIn('id', $detalle['adelantos_liquidados'])
+                        ->update(['planilla_id' => $planilla->id]);
+                }
 
                 $totalGeneral += $detalle['total_neto'];
             }
@@ -141,68 +139,73 @@ class PlanillaController extends Controller
         return redirect()->route('planillas.show', $planilla)->with('success', 'Planilla marcada como pagada.');
     }
 
-    // Cuenta días laborables (lunes–sábado) en el período
-    private function diasLaborables(\Carbon\Carbon $inicio, \Carbon\Carbon $fin): int
-    {
-        $count   = 0;
-        $current = $inicio->copy();
-        while ($current->lte($fin)) {
-            if ($current->dayOfWeek !== 0) { // 0 = domingo
-                $count++;
-            }
-            $current->addDay();
-        }
-        return $count;
-    }
-
     private function calcularDetalle(Empleado $empleado, Planilla $planilla): array
     {
-        // Solo se cuentan asistencias de lunes a sábado (DAYOFWEEK: 1=dom, 7=sáb)
+        // Solo se cuentan asistencias de lunes a sábado — el domingo no se trabaja
         $asistencias = $empleado->asistencias()
-            ->whereBetween('fecha', [$planilla->periodo_inicio, $planilla->periodo_fin])
-            ->whereRaw('DAYOFWEEK(fecha) != 1')
+            ->enPeriodo($planilla->periodo_inicio, $planilla->periodo_fin)
+            ->laborables()
             ->get();
 
-        $diasPresente  = $asistencias->where('estado', 'presente')->count();
-        $diasTardanza  = $asistencias->where('estado', 'tardanza')->count();
-        $diasAusente   = $asistencias->where('estado', 'ausente')->count();
-        $diasMedio     = $asistencias->where('estado', 'medio_dia')->count();
+        $diasPresente    = $asistencias->where('estado', 'presente')->count();
+        $diasTardanza    = $asistencias->where('estado', 'tardanza')->count();
+        $diasAusente     = $asistencias->where('estado', 'ausente')->count();
+        $diasMedio       = $asistencias->where('estado', 'medio_dia')->count();
         $minutosTardanza = $asistencias->where('estado', 'tardanza')->sum('minutos_tardanza');
-        $horasExtra    = $asistencias->sum('horas_extra');
+        $horasExtra      = $asistencias->sum('horas_extra');
 
         // Días efectivos = presentes + tardanzas + medios×0.5
         $diasEfectivos = $diasPresente + $diasTardanza + ($diasMedio * 0.5);
 
-        // Valor día según tipo de pago del empleado (no del período)
-        // Mensual → salario ÷ 26 días laborables/mes
-        // Semanal → salario ÷ 6 días laborables/semana
-        $divisor    = $empleado->tipo_pago === 'mensual' ? 26 : 6;
-        $valorDia   = (float) $empleado->salario_base / $divisor;
-        $tarifaHora = $valorDia / 8;
+        // El valor por día sale del tipo de pago del empleado, no de la duración
+        // del período. Ver config/nomina.php y App\Models\Empleado.
+        $valorDia   = $empleado->valor_dia;
+        $tarifaHora = $empleado->tarifa_hora;
 
         $salarioBruto       = round($valorDia * $diasEfectivos, 2);
         $descuentoTardanzas = round(($minutosTardanza / 60) * $tarifaHora, 2);
         $montoHorasExtra    = round($horasExtra * $tarifaHora * (float) $empleado->factor_hora_extra, 2);
 
-        // Adelantos pendientes en el período
-        $adelantos = (float) Adelanto::where('empleado_id', $empleado->id)
+        // Lo que el empleado tiene disponible antes de descontar adelantos
+        $disponible = round($salarioBruto + $montoHorasExtra - $descuentoTardanzas, 2);
+
+        // Adelantos pendientes del período, del más antiguo al más reciente
+        $pendientes = Adelanto::where('empleado_id', $empleado->id)
             ->whereNull('planilla_id')
             ->whereBetween('fecha', [$planilla->periodo_inicio, $planilla->periodo_fin])
-            ->sum('monto');
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
 
-        $totalNeto = max(0, $salarioBruto + $montoHorasExtra - $descuentoTardanzas - $adelantos);
+        // Se descuentan de a uno mientras el sueldo alcance. El que no entra
+        // queda pendiente para la próxima planilla en lugar de desaparecer.
+        $descontado  = 0.0;
+        $liquidados  = [];
+
+        foreach ($pendientes as $adelanto) {
+            $monto = (float) $adelanto->monto;
+            if (round($descontado + $monto, 2) <= $disponible) {
+                $descontado  = round($descontado + $monto, 2);
+                $liquidados[] = $adelanto->id;
+            }
+        }
+
+        $saldoArrastrado = round((float) $pendientes->sum('monto') - $descontado, 2);
+        $totalNeto       = round($disponible - $descontado, 2);
 
         return [
-            'dias_trabajados'   => $diasPresente + $diasTardanza,
-            'dias_ausentes'     => $diasAusente,
-            'dias_tardanza'     => $diasTardanza,
-            'dias_medio'        => $diasMedio,
-            'horas_extra'       => $horasExtra,
-            'monto_horas_extra' => $montoHorasExtra,
-            'adelantos'         => $adelantos,
-            'salario_bruto'     => $salarioBruto,
-            'descuento_tardanzas' => $descuentoTardanzas,
-            'total_neto'        => $totalNeto,
+            'dias_trabajados'      => $diasPresente + $diasTardanza,
+            'dias_ausentes'        => $diasAusente,
+            'dias_tardanza'        => $diasTardanza,
+            'dias_medio'           => $diasMedio,
+            'horas_extra'          => $horasExtra,
+            'monto_horas_extra'    => $montoHorasExtra,
+            'adelantos'            => $descontado,
+            'adelantos_liquidados' => $liquidados,
+            'saldo_arrastrado'     => $saldoArrastrado,
+            'salario_bruto'        => $salarioBruto,
+            'descuento_tardanzas'  => $descuentoTardanzas,
+            'total_neto'           => $totalNeto,
         ];
     }
 }

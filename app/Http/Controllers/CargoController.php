@@ -10,11 +10,7 @@ class CargoController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware(function ($request, $next) {
-            if (!Auth::user()->esAdministrador()) abort(403);
-            return $next($request);
-        });
+        $this->middleware(['auth', 'admin']);
     }
 
     public function index()

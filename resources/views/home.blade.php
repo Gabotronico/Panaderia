@@ -106,6 +106,158 @@
     @endif
 </div>
 
+{{-- ── PANEL DE OPERACIÓN (solo administrador) ──────────────── --}}
+@if($operacion)
+<div class="row g-3 mb-4">
+
+    {{-- Resultado del mes --}}
+    <div class="col-lg-4">
+        <a href="{{ route('finanzas.index') }}" class="card h-100 text-decoration-none"
+           style="margin-bottom:0;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-chart-pie me-2"></i>Resultado del mes</span>
+                <i class="fas fa-arrow-right text-muted" style="font-size:.75rem;"></i>
+            </div>
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+                @php $u = $operacion['utilidad_mes']; @endphp
+                <div class="fw-bold mb-1"
+                     style="font-size:1.75rem; line-height:1; color: {{ $u >= 0 ? '#16a34a' : '#dc2626' }};">
+                    {{ $u < 0 ? '−' : '' }}Bs {{ number_format(abs($u), 2) }}
+                </div>
+                <div class="text-muted" style="font-size:.8rem;">
+                    {{ $u >= 0 ? 'de ganancia' : 'de pérdida' }} en
+                    {{ \Carbon\Carbon::now()->locale('es')->isoFormat('MMMM') }}
+                </div>
+                <hr class="my-3">
+                <div class="d-flex justify-content-between" style="font-size:.78rem;">
+                    <span class="text-muted">Ventas</span>
+                    <span class="text-success fw-semibold">Bs {{ number_format($ventasMes, 2) }}</span>
+                </div>
+                <div class="d-flex justify-content-between" style="font-size:.78rem;">
+                    <span class="text-muted">Insumos + sueldos + gastos</span>
+                    <span class="text-danger fw-semibold">
+                        Bs {{ number_format($ventasMes - $u, 2) }}
+                    </span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    {{-- Personal hoy --}}
+    <div class="col-lg-4">
+        <div class="card h-100" style="margin-bottom:0;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-users me-2"></i>Personal hoy</span>
+                <a href="{{ route('empleados.index') }}" class="text-muted" style="font-size:.75rem;">Ver todos</a>
+            </div>
+            <div class="card-body">
+                @if($operacion['es_domingo'])
+                    <div class="text-center py-3">
+                        <div class="mb-2" style="font-size:1.6rem;">🛌</div>
+                        <div class="fw-semibold">Hoy es domingo</div>
+                        <div class="text-muted" style="font-size:.8rem;">Día no laborable</div>
+                    </div>
+                @elseif(!$operacion['asistencia_tomada'])
+                    <div class="text-center py-2">
+                        <div class="text-warning mb-2"><i class="fas fa-clipboard-list fa-2x"></i></div>
+                        <div class="fw-semibold mb-1">Falta tomar asistencia</div>
+                        <div class="text-muted mb-3" style="font-size:.8rem;">
+                            {{ $operacion['empleados_activos'] }} empleado(s) sin registrar hoy
+                        </div>
+                        <a href="{{ route('asistencias.registrar') }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-clipboard-check me-1"></i>Tomar asistencia
+                        </a>
+                    </div>
+                @else
+                    <div class="row text-center g-2 mb-3">
+                        <div class="col-4">
+                            <div class="fw-bold text-success" style="font-size:1.5rem;">
+                                {{ $operacion['presentes_hoy'] }}
+                            </div>
+                            <div class="text-muted" style="font-size:.72rem;">presentes</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold {{ $operacion['ausentes_hoy'] > 0 ? 'text-danger' : 'text-muted' }}"
+                                 style="font-size:1.5rem;">
+                                {{ $operacion['ausentes_hoy'] }}
+                            </div>
+                            <div class="text-muted" style="font-size:.72rem;">ausentes</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-bold text-muted" style="font-size:1.5rem;">
+                                {{ $operacion['empleados_activos'] }}
+                            </div>
+                            <div class="text-muted" style="font-size:.72rem;">en planilla</div>
+                        </div>
+                    </div>
+                    <a href="{{ route('asistencias.index') }}" class="btn btn-light border btn-sm w-100">
+                        Ver detalle del día
+                    </a>
+                @endif
+
+                @if($operacion['adelantos_pend'] > 0)
+                    <div class="alert alert-warning py-2 mt-3 mb-0" style="font-size:.78rem;">
+                        <i class="fas fa-hand-holding-dollar me-1"></i>
+                        Bs {{ number_format($operacion['adelantos_pend'], 2) }} en adelantos
+                        por descontar en la próxima planilla.
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- Pendientes de pago --}}
+    <div class="col-lg-4">
+        <div class="card h-100" style="margin-bottom:0;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-receipt me-2"></i>Por pagar este mes</span>
+                <a href="{{ route('gastos-pagos.index') }}" class="text-muted" style="font-size:.75rem;">Ver gastos</a>
+            </div>
+            <div class="card-body">
+                @if($operacion['gastos_pendientes'] === 0)
+                    <div class="text-center py-3">
+                        <div class="text-success mb-2"><i class="fas fa-circle-check fa-2x"></i></div>
+                        <div class="fw-semibold">Todo al día</div>
+                        <div class="text-muted" style="font-size:.8rem;">
+                            No hay gastos pendientes este mes
+                        </div>
+                    </div>
+                @else
+                    <div class="text-center mb-3">
+                        <div class="fw-bold {{ $operacion['gastos_vencidos'] > 0 ? 'text-danger' : 'text-warning' }}"
+                             style="font-size:1.75rem; line-height:1;">
+                            Bs {{ number_format($operacion['monto_por_pagar'], 2) }}
+                        </div>
+                        <div class="text-muted" style="font-size:.8rem;">
+                            {{ $operacion['gastos_pendientes'] }} gasto(s) sin pagar
+                        </div>
+                    </div>
+
+                    @if($operacion['gastos_vencidos'] > 0)
+                        <div class="alert alert-danger py-2 mb-2" style="font-size:.78rem;">
+                            <i class="fas fa-triangle-exclamation me-1"></i>
+                            <strong>{{ $operacion['gastos_vencidos'] }}</strong> ya pasaron su fecha de vencimiento.
+                        </div>
+                    @endif
+
+                    <a href="{{ route('gastos-pagos.index') }}" class="btn btn-light border btn-sm w-100">
+                        Registrar pagos
+                    </a>
+                @endif
+
+                @if($operacion['planillas_borrador'] > 0)
+                    <div class="alert alert-info py-2 mt-2 mb-0" style="font-size:.78rem;">
+                        <i class="fas fa-file-pen me-1"></i>
+                        {{ $operacion['planillas_borrador'] }} planilla(s) en borrador sin cerrar.
+                        <a href="{{ route('planillas.index') }}">Revisar</a>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- ── GRÁFICAS ROW 1 ───────────────────────────────────────── --}}
 <div class="row g-3 mb-4">
     {{-- Gráfica de ventas --}}

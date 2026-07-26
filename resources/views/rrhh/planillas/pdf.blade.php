@@ -205,7 +205,9 @@ body { font-family: DejaVu Sans, sans-serif; font-size:9.5px; color:#1e293b; bac
         if ($cur->dayOfWeek !== 0) $diasLab++;
         $cur->addDay();
     }
-    $divisor = $planilla->tipo === 'mensual' ? 26 : 6;
+    $divisor = $planilla->tipo === 'mensual'
+        ? config('nomina.dias_mes')
+        : config('nomina.dias_semana');
 @endphp
 
 {{-- ══ ENCABEZADO ══ --}}
@@ -295,7 +297,7 @@ body { font-family: DejaVu Sans, sans-serif; font-size:9.5px; color:#1e293b; bac
     <tbody>
         @foreach($planilla->detalles as $det)
         @php
-            $valorDia = (float)$det->empleado->salario_base / $divisor;
+            $valorDia = $det->empleado->valor_dia;
             $diasEf   = $det->dias_trabajados + ($det->dias_medio * 0.5);
         @endphp
         <tr>

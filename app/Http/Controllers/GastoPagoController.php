@@ -12,11 +12,7 @@ class GastoPagoController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware(function ($request, $next) {
-            if (!Auth::user()->esAdministrador()) abort(403);
-            return $next($request);
-        });
+        $this->middleware(['auth', 'admin']);
     }
 
     public function anual(Request $request)
@@ -156,6 +152,32 @@ class GastoPagoController extends Controller
 
         return redirect()->route('gastos-pagos.index', compact('year', 'month'))
             ->with('success', "«{$gastoPago->gastoFijo->nombre}» marcado como pagado.");
+    }
+
+    /** Ajusta el monto esperado de un gasto ya generado (ej. llegó la factura de luz). */
+    public function ajustar(Request $request, GastoPago $gastoPago)
+    {
+        if ($gastoPago->estado === 'pagado') {
+            return redirect()->back()->with('error', 'No se puede ajustar un gasto ya pagado. Anula el pago primero.');
+        }
+
+        $request->validate([
+            'monto_estimado'    => 'required|numeric|min:0.01',
+            'fecha_vencimiento' => 'required|date',
+        ]);
+
+        $hoy = now()->toDateString();
+
+        $gastoPago->update([
+            'monto_estimado'    => $request->monto_estimado,
+            'fecha_vencimiento' => $request->fecha_vencimiento,
+            'estado'            => $request->fecha_vencimiento < $hoy ? 'vencido' : 'pendiente',
+        ]);
+
+        [$year, $month] = explode('-', $gastoPago->periodo);
+
+        return redirect()->route('gastos-pagos.index', compact('year', 'month'))
+            ->with('success', "Monto de «{$gastoPago->gastoFijo->nombre}» actualizado.");
     }
 
     public function destroy(GastoPago $gastoPago)

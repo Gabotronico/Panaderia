@@ -162,6 +162,46 @@ class HomeController extends Controller
                 ->get();
         }
 
+        // ── Panel de operación diaria (solo administrador) ──────────────
+        $operacion = null;
+
+        if ($user->esAdministrador()) {
+            $hoy     = Carbon::today();
+            $periodo = $hoy->format('Y-m');
+
+            $empleadosActivos = \App\Models\Empleado::activos()->count();
+            $asistenciasHoy   = \App\Models\Asistencia::whereDate('fecha', $hoy)->get();
+
+            $gastosDelMes = \App\Models\GastoPago::where('periodo', $periodo)->get();
+
+            // Utilidad del mes en curso: ventas − insumos − sueldos − gastos pagados
+            $planillasMes = (float) \App\Models\Planilla::whereBetween('periodo_fin', [
+                    $hoy->copy()->startOfMonth(), $hoy->copy()->endOfMonth(),
+                ])->sum('total_general');
+
+            $operacion = [
+                'empleados_activos'  => $empleadosActivos,
+                'asistencia_tomada'  => $asistenciasHoy->isNotEmpty(),
+                'presentes_hoy'      => $asistenciasHoy->whereIn('estado', ['presente', 'tardanza'])->count(),
+                'ausentes_hoy'       => $asistenciasHoy->where('estado', 'ausente')->count(),
+                'es_domingo'         => $hoy->dayOfWeek === Carbon::SUNDAY,
+
+                'gastos_vencidos'    => $gastosDelMes->where('estado', 'vencido')->count(),
+                'gastos_pendientes'  => $gastosDelMes->whereIn('estado', ['pendiente', 'vencido'])->count(),
+                'monto_por_pagar'    => (float) $gastosDelMes->whereIn('estado', ['pendiente', 'vencido'])->sum('monto_estimado'),
+                'gastos_pagados'     => (float) $gastosDelMes->where('estado', 'pagado')->sum('monto_real'),
+
+                'planillas_borrador' => \App\Models\Planilla::where('estado', 'borrador')->count(),
+                'adelantos_pend'     => (float) \App\Models\Adelanto::whereNull('planilla_id')->sum('monto'),
+
+                'utilidad_mes'       => round(
+                    $ventasMes - $totalGastoMes - $planillasMes
+                    - (float) $gastosDelMes->where('estado', 'pagado')->sum('monto_real'),
+                    2
+                ),
+            ];
+        }
+
         return view('home', compact(
             'ventasHoy',
             'ventasMes',
@@ -176,7 +216,8 @@ class HomeController extends Controller
             'fechasCompras',
             'totalGastoMes',
             'ultimasCompras',
-            'isCajero'
+            'isCajero',
+            'operacion'
         ));
     }
 }

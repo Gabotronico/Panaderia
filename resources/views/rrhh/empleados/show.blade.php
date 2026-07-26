@@ -225,10 +225,33 @@
                 @csrf
                 <div class="modal-body">
                     <p class="mb-3">Empleado: <strong>{{ $empleado->nombre_completo }}</strong></p>
+
+                    @php $capacidad = $empleado->capacidad_adelanto; @endphp
+
+                    <div class="alert {{ $capacidad > 0 ? 'alert-info' : 'alert-warning' }} py-2 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Máximo disponible</span>
+                            <strong>Bs {{ number_format($capacidad, 2) }}</strong>
+                        </div>
+                        <div class="mt-1" style="font-size:.76rem; opacity:.85;">
+                            Sueldo del ciclo Bs {{ number_format($empleado->salario_base, 2) }}
+                            @if($totalAdelantosPendientes > 0)
+                                − Bs {{ number_format($totalAdelantosPendientes, 2) }} ya adelantados
+                            @endif
+                        </div>
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-6">
                             <label class="form-label fw-bold">Monto (Bs) <span class="text-danger">*</span></label>
-                            <input type="number" name="monto" class="form-control" min="0.01" step="0.01" required>
+                            <input type="number" name="monto" class="form-control"
+                                   min="0.01" step="0.01" max="{{ $capacidad }}"
+                                   {{ $capacidad <= 0 ? 'disabled' : '' }} required>
+                            @if($capacidad <= 0)
+                                <div class="form-text text-danger">
+                                    Ya tiene adelantado todo su sueldo del ciclo.
+                                </div>
+                            @endif
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-bold">Fecha <span class="text-danger">*</span></label>
@@ -242,7 +265,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-warning">
+                    <button type="submit" class="btn btn-warning" {{ $capacidad <= 0 ? 'disabled' : '' }}>
                         <i class="fas fa-save me-2"></i>Registrar Adelanto
                     </button>
                 </div>

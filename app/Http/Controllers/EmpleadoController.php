@@ -12,11 +12,7 @@ class EmpleadoController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth');
-        $this->middleware(function ($request, $next) {
-            if (!Auth::user()->esAdministrador()) abort(403);
-            return $next($request);
-        });
+        $this->middleware(['auth', 'admin']);
     }
 
     public function index(Request $request)
@@ -37,7 +33,17 @@ class EmpleadoController extends Controller
 
         $cargos = Cargo::orderBy('nombre')->get();
 
-        return view('rrhh.empleados.index', compact('empleados', 'cargos', 'buscar', 'cargo'));
+        // Resumen del personal — se calcula sobre todos, no sobre la página filtrada
+        $activos = Empleado::activos()->get();
+        $resumen = [
+            'total'         => $activos->count(),
+            'mensuales'     => $activos->where('tipo_pago', 'mensual')->count(),
+            'semanales'     => $activos->where('tipo_pago', 'semanal')->count(),
+            'costo_mensual' => $activos->sum(fn($e) => $e->valor_mes),
+            'adelantos'     => Adelanto::whereNull('planilla_id')->sum('monto'),
+        ];
+
+        return view('rrhh.empleados.index', compact('empleados', 'cargos', 'buscar', 'cargo', 'resumen'));
     }
 
     public function create()
@@ -135,6 +141,22 @@ class EmpleadoController extends Controller
             'fecha'       => 'required|date',
             'descripcion' => 'nullable|string|max:255',
         ]);
+
+        // Un adelanto que supere el sueldo del ciclo no se podría descontar
+        // completo en la planilla y arrastraría deuda indefinidamente.
+        $capacidad = $empleado->capacidad_adelanto;
+
+        if ((float) $request->monto > $capacidad) {
+            $pendiente = $empleado->adelantos_pendientes;
+
+            return redirect()->route('empleados.show', $empleado)->with('error',
+                "El adelanto de Bs " . number_format((float) $request->monto, 2) .
+                " supera lo que {$empleado->nombre} puede recibir. " .
+                "Su sueldo del ciclo es Bs " . number_format((float) $empleado->salario_base, 2) .
+                ($pendiente > 0 ? " y ya tiene Bs " . number_format($pendiente, 2) . " en adelantos sin descontar" : "") .
+                ", así que el máximo disponible es Bs " . number_format($capacidad, 2) . "."
+            );
+        }
 
         Adelanto::create([
             'empleado_id' => $empleado->id,

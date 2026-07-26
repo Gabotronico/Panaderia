@@ -522,6 +522,116 @@
             color: var(--text-heading);
             margin: 0;
         }
+
+        /* ── COMPONENTE: x-page-header ───────────────────────── */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 22px;
+        }
+        .page-header-text { min-width: 0; }
+        .page-header-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .page-header-title i {
+            color: var(--primary);
+            font-size: 1rem;
+        }
+        .page-header-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin: 4px 0 0;
+        }
+        .page-header-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        /* ── COMPONENTE: x-stat-card ─────────────────────────── */
+        .stat-card-link {
+            text-decoration: none;
+            display: block;
+        }
+        .stat-card-link:hover { text-decoration: none; }
+        .stat-card .min-w-0 { min-width: 0; }
+
+        /* ── COMPONENTE: x-empty-state ───────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 44px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state-icon {
+            width: 62px; height: 62px;
+            margin: 0 auto 14px;
+            border-radius: 16px;
+            background: #f1f5f9;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            color: #94a3b8;
+        }
+        .empty-state-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-heading);
+        }
+        .empty-state-message {
+            font-size: 0.83rem;
+            margin-top: 4px;
+            max-width: 420px;
+            margin-inline: auto;
+        }
+
+        /* ── UTILIDADES DE MÓDULO ────────────────────────────── */
+        .filter-bar {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--card-radius);
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        /* Tabla con la primera columna fija (usada en resumen anual) */
+        .table-sticky-first td:first-child,
+        .table-sticky-first th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            background: white;
+        }
+        .table-sticky-first thead th:first-child {
+            z-index: 2;
+            background: #f8fafc;
+        }
+
+        /* ── RESPONSIVE ──────────────────────────────────────── */
+        @media (max-width: 991.98px) {
+            .content-wrapper { padding: 18px 16px; }
+            .page-header-title { font-size: 1.05rem; }
+            .stat-card .card-body { padding: 16px; }
+            .stat-card-value { font-size: 1.45rem; }
+        }
     </style>
 
     @stack('styles')
@@ -549,6 +659,15 @@
                     <span>Dashboard</span>
                 </a>
             </li>
+
+            @role('Administrador')
+            <li>
+                <a href="{{ route('finanzas.index') }}" class="{{ request()->routeIs('finanzas.*') ? 'active' : '' }}">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Resumen Financiero</span>
+                </a>
+            </li>
+            @endrole
 
             @can('ver-categorias')
             <li>

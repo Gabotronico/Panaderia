@@ -15,6 +15,7 @@ use App\Http\Controllers\AsistenciaController;
 use App\Http\Controllers\PlanillaController;
 use App\Http\Controllers\GastoFijoController;
 use App\Http\Controllers\GastoPagoController;
+use App\Http\Controllers\FinanzaController;
 use Illuminate\Support\Facades\Route;
 
 // Ruta pública
@@ -72,6 +73,9 @@ Route::middleware('auth')->group(function () {
     Route::get('planillas/{planilla}/pdf',     [PlanillaController::class, 'descargarPdf'])->name('planillas.pdf');
     Route::resource('planillas', PlanillaController::class)->only(['index', 'create', 'store', 'show']);
 
+    // Resumen financiero consolidado
+    Route::get('finanzas', [FinanzaController::class, 'index'])->name('finanzas.index');
+
     // Rutas de Gastos Fijos
     Route::resource('gastos-fijos', GastoFijoController::class)->except(['show']);
     Route::get('gastos-pagos',                         [GastoPagoController::class, 'index'])->name('gastos-pagos.index');
@@ -79,6 +83,7 @@ Route::middleware('auth')->group(function () {
     Route::post('gastos-pagos/generar',                [GastoPagoController::class, 'generar'])->name('gastos-pagos.generar');
     Route::patch('gastos-pagos/{gastoPago}/pagar',     [GastoPagoController::class, 'pagar'])->name('gastos-pagos.pagar');
     Route::patch('gastos-pagos/{gastoPago}/anular',    [GastoPagoController::class, 'anularPago'])->name('gastos-pagos.anular');
+    Route::patch('gastos-pagos/{gastoPago}/ajustar',   [GastoPagoController::class, 'ajustar'])->name('gastos-pagos.ajustar');
     Route::delete('gastos-pagos/{gastoPago}',          [GastoPagoController::class, 'destroy'])->name('gastos-pagos.destroy');
     Route::delete('gastos-pagos-mes',                  [GastoPagoController::class, 'borrarMes'])->name('gastos-pagos.borrar-mes');
 

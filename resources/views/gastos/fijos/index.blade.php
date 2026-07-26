@@ -2,21 +2,17 @@
 @section('page-title', 'Gastos Fijos')
 @section('content')
 
-<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <h4><i class="fas fa-file-invoice-dollar me-2"></i>Gastos Fijos</h4>
-    <div class="d-flex gap-2">
-        <a href="{{ route('gastos-pagos.index') }}" class="btn btn-outline-primary">
-            <i class="fas fa-calendar-alt me-1"></i>Control de Pagos
-        </a>
-        <a href="{{ route('gastos-fijos.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-1"></i>Nuevo Gasto
-        </a>
-    </div>
-</div>
+<x-page-header title="Gastos Fijos" icon="file-invoice-dollar"
+               subtitle="Plantillas de gastos recurrentes: alquiler, servicios, impuestos">
+    <a href="{{ route('gastos-pagos.index') }}" class="btn btn-light border">
+        <i class="fas fa-calendar-alt me-1"></i>Control de Pagos
+    </a>
+    <a href="{{ route('gastos-fijos.create') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Nuevo Gasto
+    </a>
+</x-page-header>
 
-@if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
+<x-alerts />
 
 @php
     $categorias = ['alquiler'=>'danger','servicios'=>'primary','mantenimiento'=>'warning','impuestos'=>'dark','otro'=>'secondary'];
@@ -83,9 +79,14 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-4">
-                            No hay gastos fijos registrados.
-                            <a href="{{ route('gastos-fijos.create') }}">Agregar el primero</a>
+                        <td colspan="8" class="p-0">
+                            <x-empty-state icon="file-invoice"
+                                           title="Aún no registras gastos fijos"
+                                           message="Da de alta tus gastos recurrentes una sola vez (alquiler, luz, agua) y luego genera los pagos de cada mes con un clic.">
+                                <a href="{{ route('gastos-fijos.create') }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-plus me-1"></i>Registrar el primero
+                                </a>
+                            </x-empty-state>
                         </td>
                     </tr>
                     @endforelse

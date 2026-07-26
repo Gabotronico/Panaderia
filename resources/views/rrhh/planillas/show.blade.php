@@ -156,6 +156,13 @@
                         </td>
                         <td class="text-end text-warning">
                             {{ $det->adelantos_descontados > 0 ? '−Bs ' . number_format($det->adelantos_descontados, 2) : '—' }}
+                            @php $arrastre = $det->empleado->adelantos_pendientes; @endphp
+                            @if($arrastre > 0)
+                                <br><small class="badge bg-danger" style="font-size:.62rem;"
+                                           title="No alcanzó el sueldo para descontarlo. Se descuenta en la próxima planilla.">
+                                    debe Bs {{ number_format($arrastre, 2) }}
+                                </small>
+                            @endif
                         </td>
                         <td class="text-end fw-bold text-success fs-6">
                             Bs {{ number_format($det->total_neto, 2) }}
