@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RoleSeeder extends Seeder
 {
@@ -18,43 +17,43 @@ class RoleSeeder extends Seeder
         $permisos = [
             // Dashboard
             'ver-dashboard',
-            
+
             // Usuarios
             'ver-usuarios',
             'crear-usuarios',
             'editar-usuarios',
             'eliminar-usuarios',
-            
+
             // Categorías
             'ver-categorias',
             'crear-categorias',
             'editar-categorias',
             'eliminar-categorias',
-            
+
             // Productos
             'ver-productos',
             'crear-productos',
             'editar-productos',
             'eliminar-productos',
-            
+
             // Insumos
             'ver-insumos',
             'crear-insumos',
             'editar-insumos',
             'eliminar-insumos',
-            
+
             // Ventas
             'ver-ventas',
             'crear-ventas',
             'editar-ventas',
             'eliminar-ventas',
-            
+
             // Cortes de Caja
             'ver-cortes',
             'crear-cortes',
             'editar-cortes',
             'eliminar-cortes',
-            
+
             // Recetas
             'ver-recetas',
             'crear-recetas',
@@ -94,6 +93,6 @@ class RoleSeeder extends Seeder
             'ver-almacenes',
         ]);
 
-        $this->command->info('Roles y permisos creados correctamente');
+        $this->command?->info('Roles y permisos creados correctamente');
     }
 }

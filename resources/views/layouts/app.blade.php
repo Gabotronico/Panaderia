@@ -6,17 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Panadería Luna') }}</title>
 
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    @vite('resources/js/app.js')
 
     <style>
         :root {
@@ -645,7 +635,7 @@
                 <i class="fas fa-bread-slice"></i>
             </div>
             <div>
-                <div class="sidebar-brand-name">Panadería Luna</div>
+                <div class="sidebar-brand-name">{{ config('app.name') }}</div>
                 <div class="sidebar-brand-sub">Panel de Gestión</div>
             </div>
         </div>
@@ -796,6 +786,18 @@
         </ul>
         @endrole
 
+        @role('Administrador')
+        <div class="sidebar-label">Sistema</div>
+        <ul class="sidebar-nav">
+            <li>
+                <a href="{{ route('system.backups.index') }}" class="{{ request()->routeIs('system.backups.*') ? 'active' : '' }}">
+                    <i class="fas fa-database"></i>
+                    <span>Respaldos</span>
+                </a>
+            </li>
+        </ul>
+        @endrole
+
         <div class="sidebar-footer">
             <div class="sidebar-user">
                 <div class="sidebar-avatar">
@@ -868,9 +870,6 @@
             @yield('content')
         </div>
     </div>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     @stack('scripts')
 </body>

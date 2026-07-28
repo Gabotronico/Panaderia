@@ -5,7 +5,7 @@
                 <div class="auth-card">
                     <div class="auth-header">
                         <i class="fas fa-bread-slice fa-3x mb-3"></i>
-                        <h3>Panadería Luna</h3>
+                        <h3>{{ config('app.name') }}</h3>
                         <p class="mb-0">Iniciar Sesión</p>
                     </div>
                     
@@ -14,6 +14,12 @@
                         @if (session('status'))
                             <div class="alert alert-success mb-4">
                                 {{ session('status') }}
+                            </div>
+                        @endif
+
+                        @if (session('error'))
+                            <div class="alert alert-warning mb-4" role="alert">
+                                <i class="fas fa-rotate me-2"></i>{{ session('error') }}
                             </div>
                         @endif
 

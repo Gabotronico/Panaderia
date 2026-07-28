@@ -47,6 +47,11 @@ class CategoriaSeeder extends Seeder
             ],
         ];
 
-        DB::table('categorias')->insert($categorias);
+        foreach ($categorias as $categoria) {
+            DB::table('categorias')->updateOrInsert(
+                ['nombre' => $categoria['nombre']],
+                $categoria
+            );
+        }
     }
 }

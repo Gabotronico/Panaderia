@@ -13,7 +13,7 @@ class Asistencia extends Model
     ];
 
     protected $casts = [
-        'fecha'       => 'date',
+        'fecha' => 'date',
         'horas_extra' => 'decimal:2',
     ];
 
@@ -21,21 +21,21 @@ class Asistencia extends Model
     public const ESTADOS_TRABAJADOS = ['presente', 'tardanza', 'medio_dia'];
 
     public const ETIQUETAS = [
-        'presente'  => 'Presente',
-        'ausente'   => 'Ausente',
-        'tardanza'  => 'Tardanza',
+        'presente' => 'Presente',
+        'ausente' => 'Ausente',
+        'tardanza' => 'Tardanza',
         'medio_dia' => 'Medio día',
-        'feriado'   => 'Feriado',
-        'licencia'  => 'Licencia',
+        'feriado' => 'Feriado',
+        'licencia' => 'Licencia',
     ];
 
     public const COLORES = [
-        'presente'  => 'success',
-        'ausente'   => 'danger',
-        'tardanza'  => 'warning',
+        'presente' => 'success',
+        'ausente' => 'danger',
+        'tardanza' => 'warning',
         'medio_dia' => 'info',
-        'feriado'   => 'secondary',
-        'licencia'  => 'primary',
+        'feriado' => 'secondary',
+        'licencia' => 'primary',
     ];
 
     public function empleado()
@@ -64,12 +64,12 @@ class Asistencia extends Model
      */
     public function getHorasTrabajadasAttribute(): ?float
     {
-        if (!$this->hora_entrada || !$this->hora_salida) {
+        if (! $this->hora_entrada || ! $this->hora_salida) {
             return null;
         }
 
         $entrada = Carbon::parse($this->hora_entrada);
-        $salida  = Carbon::parse($this->hora_salida);
+        $salida = Carbon::parse($this->hora_salida);
 
         // Turno que cruza medianoche (ej. panadería: entra 22:00, sale 06:00)
         if ($salida->lessThan($entrada)) {
@@ -96,7 +96,12 @@ class Asistencia extends Model
     /** Solo días laborables (excluye domingos). */
     public function scopeLaborables($query)
     {
-        return $query->whereRaw('DAYOFWEEK(fecha) != 1');
+        return match ($query->getConnection()->getDriverName()) {
+            'sqlite' => $query->whereRaw("strftime('%w', fecha) != '0'"),
+            'pgsql' => $query->whereRaw('EXTRACT(DOW FROM fecha) != 0'),
+            'sqlsrv' => $query->whereRaw("DATENAME(WEEKDAY, fecha) != 'Sunday'"),
+            default => $query->whereRaw('DAYOFWEEK(fecha) != 1'),
+        };
     }
 
     public function scopeEnPeriodo($query, $inicio, $fin)

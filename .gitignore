@@ -15,6 +15,9 @@
 /.zed
 /auth.json
 /node_modules
+/dist
+/.composer-cache
+/database/*.sqlite
 /public/build
 /public/hot
 /public/storage
