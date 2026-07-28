@@ -110,10 +110,12 @@ class GenerarDocumentacion extends Command
     private function nuevaSeccion(): void
     {
         $this->seccion = $this->doc->addSection([
-            'marginTop'    => Converter::cmToTwip(2.2),
-            'marginBottom' => Converter::cmToTwip(2.0),
-            'marginLeft'   => Converter::cmToTwip(2.5),
-            'marginRight'  => Converter::cmToTwip(2.2),
+            'pageSizeW'    => (int) round(Converter::cmToTwip(21.0)),
+            'pageSizeH'    => (int) round(Converter::cmToTwip(29.7)),
+            'marginTop'    => (int) round(Converter::cmToTwip(2.2)),
+            'marginBottom' => (int) round(Converter::cmToTwip(2.0)),
+            'marginLeft'   => (int) round(Converter::cmToTwip(2.5)),
+            'marginRight'  => (int) round(Converter::cmToTwip(2.2)),
         ]);
 
         $enc = $this->seccion->addHeader();
@@ -161,7 +163,7 @@ class GenerarDocumentacion extends Command
     private function captura(string $queMostrar, string $donde): void
     {
         $t = $this->seccion->addTable('captura');
-        $t->addRow(Converter::cmToTwip(3.4));
+        $t->addRow((int) round(Converter::cmToTwip(3.4)));
         $c = $t->addCell(null, ['valign' => 'center']);
         $c->addText('[ ESPACIO PARA CAPTURA DE PANTALLA ]',
             ['bold' => true, 'size' => 10, 'color' => '7A8AA5'],
@@ -217,7 +219,9 @@ class GenerarDocumentacion extends Command
     private function portada(): void
     {
         $s = $this->doc->addSection([
-            'marginTop' => Converter::cmToTwip(6.0),
+            'pageSizeW' => (int) round(Converter::cmToTwip(21.0)),
+            'pageSizeH' => (int) round(Converter::cmToTwip(29.7)),
+            'marginTop' => (int) round(Converter::cmToTwip(6.0)),
         ]);
 
         $s->addText('SISTEMA DE GESTIÓN',
@@ -235,10 +239,10 @@ class GenerarDocumentacion extends Command
         $t = $s->addTable(['width' => 55 * 50, 'unit' => TblWidth::PERCENT,
                            'alignment' => Jc::CENTER]);
         $datos = [
-            ['Versión del documento', '1.0'],
+            ['Versión del documento', '1.1'],
             ['Fecha de emisión', now()->locale('es')->isoFormat('D [de] MMMM [de] YYYY')],
-            ['Plataforma', 'Laravel ' . app()->version() . ' · PHP ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION],
-            ['Base de datos', 'MySQL / MariaDB'],
+            ['Plataforma', 'NativePHP Desktop · Laravel ' . app()->version() . ' · PHP ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION],
+            ['Base de datos', 'SQLite'],
         ];
         foreach ($datos as $d) {
             $t->addRow();
@@ -275,12 +279,14 @@ class GenerarDocumentacion extends Command
         $this->seccion->addTitle('1. Introducción', 1);
 
         $this->seccion->addTitle('1.1 Qué es el sistema', 2);
-        $this->p('El Sistema de Gestión de Panadería Luna es una aplicación web que administra ' .
+        $this->p('El Sistema de Gestión de Panadería Luna es una aplicación de escritorio que administra ' .
             'la operación completa del negocio: desde la compra de insumos y la producción con ' .
             'recetas, hasta la venta al público, el pago del personal y el control de los gastos ' .
             'fijos del local.');
-        $this->p('Todo funciona desde el navegador. No hace falta instalar nada en las computadoras ' .
-            'que lo usan: basta con que estén en la misma red que el servidor donde corre el sistema.');
+        $this->p('La aplicación se instala en una sola PC y abre en su propia ventana. Incluye el entorno ' .
+            'necesario para ejecutar Laravel y guarda los datos localmente con SQLite; no requiere ' .
+            'XAMPP, MySQL, Composer ni un navegador. La conexión a Internet solo es necesaria para ' .
+            'descargar el instalador o una actualización, no para el uso diario.');
 
         $this->seccion->addTitle('1.2 Qué problemas resuelve', 2);
         $this->vinieta('Saber cuánto stock hay, tanto en bodega como en cada punto de venta.');
@@ -312,10 +318,10 @@ class GenerarDocumentacion extends Command
         $this->tabla(
             ['Componente', 'Tecnología', 'Función'],
             [
-                ['Lenguaje',        'PHP ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, 'Lógica del servidor'],
+                ['Lenguaje',        'PHP ' . PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION, 'Lógica del negocio'],
                 ['Framework',       'Laravel ' . app()->version(),   'Estructura de la aplicación'],
-                ['Base de datos',   'MySQL / MariaDB',               'Almacenamiento de la información'],
-                ['Servidor local',  'XAMPP',                         'Apache + MySQL en el equipo'],
+                ['Base de datos',   'SQLite',                        'Almacenamiento local en un solo archivo'],
+                ['Escritorio',      'NativePHP + Electron',          'Ventana, runtime e instalador de Windows'],
                 ['Interfaz',        'Bootstrap 5',                   'Diseño de las pantallas'],
                 ['Permisos',        'Spatie Laravel Permission',     'Roles y accesos por usuario'],
                 ['Reportes PDF',    'DomPDF',                        'Generación de planillas imprimibles'],
@@ -335,71 +341,53 @@ class GenerarDocumentacion extends Command
 
         $this->seccion->addTitle('2.1 Requisitos previos', 2);
         $this->tabla(
-            ['Requisito', 'Versión mínima', 'Dónde conseguirlo'],
+            ['Requisito', 'Recomendación', 'Observación'],
             [
-                ['XAMPP',    'Con PHP 8.2 o superior', 'apachefriends.org'],
-                ['Composer', '2.x',                    'getcomposer.org'],
-                ['Node.js',  '18 o superior',          'nodejs.org'],
-                ['Git',      'Cualquiera reciente',    'git-scm.com'],
+                ['Sistema operativo', 'Windows 10 u 11 de 64 bits', 'Con actualizaciones de seguridad'],
+                ['Espacio libre',      '1 GB o más',                  'Aplicación, datos, imágenes y respaldos'],
+                ['Permisos de Windows','Usuario que pueda instalar', 'Solo se necesitan durante la instalación'],
+                ['Internet',           'Para descargar el instalador','El funcionamiento diario es local'],
             ],
             [2600, 3000, 3400]
         );
 
         $this->seccion->addTitle('2.2 Pasos de instalación', 2);
-        $this->p('Ejecutá estos comandos en orden desde la carpeta del proyecto:');
-
-        $this->codigo([
-            '# 1. Descargar el proyecto',
-            'git clone https://github.com/Gabotronico/Panaderia.git',
-            'cd Panaderia',
-            '',
-            '# 2. Instalar las dependencias',
-            'composer install',
-            'npm install && npm run build',
-            '',
-            '# 3. Preparar la configuración',
-            'copy .env.example .env',
-            'php artisan key:generate',
-            '',
-            '# 4. Crear las tablas y los datos iniciales',
-            'php artisan migrate --seed',
-            '',
-            '# 5. Habilitar las imágenes de productos',
-            'php artisan storage:link',
-            '',
-            '# 6. Levantar el sistema',
-            'php artisan serve',
+        $this->pasos([
+            'Cerrá Panadería Escritorio si hay una versión anterior abierta.',
+            'Ejecutá el archivo «Panadería Escritorio-x.y.z-setup.exe».',
+            'Seguí el asistente de Windows hasta completar la instalación.',
+            'Abrí «Panadería Escritorio» desde el menú Inicio o su acceso directo.',
+            'En el primer inicio, completá el nombre del negocio y creá el usuario administrador.',
+            'Ingresá con ese usuario y verificá que aparezca el panel principal.',
         ]);
 
-        $this->nota('Paso que se olvida con frecuencia',
-            'El comando «php artisan storage:link» crea el enlace que permite que las imágenes ' .
-            'de los productos se vean en el navegador. Si lo omitís, las fotos se suben ' .
-            'correctamente pero aparecen rotas en pantalla. Hay que ejecutarlo una sola vez ' .
-            'por cada instalación nueva.', self::ROJO);
+        $this->nota('Actualizar sin perder los datos',
+            'Para actualizar, cerrá la aplicación y ejecutá el instalador nuevo sobre la versión ' .
+            'existente. No desinstales ni borres la carpeta de datos de AppData. Antes de actualizar, ' .
+            'creá un respaldo desde «Sistema → Respaldos».', self::AZUL2);
 
-        $this->seccion->addTitle('2.3 Configuración de la base de datos', 2);
-        $this->p('Antes de ejecutar las migraciones, abrí el archivo «.env» y verificá que estos ' .
-            'valores coincidan con tu instalación de MySQL:');
+        $this->seccion->addTitle('2.3 Base de datos local', 2);
+        $this->p('La aplicación utiliza SQLite y configura la base automáticamente. No hay que crear ' .
+            'una base, instalar un servicio ni editar archivos de configuración. La información se ' .
+            'guarda dentro del perfil de Windows del usuario que ejecuta la aplicación.');
 
         $this->codigo([
-            'DB_CONNECTION=mysql',
-            'DB_HOST=127.0.0.1',
-            'DB_PORT=3306',
-            'DB_DATABASE=panaderia_luna',
-            'DB_USERNAME=root',
-            'DB_PASSWORD=',
+            'Motor: SQLite',
+            'Archivo principal: database.sqlite',
+            'Ubicación: carpeta de datos local de Panadería Escritorio',
+            'Servicio externo: no requiere MySQL ni XAMPP',
         ]);
 
-        $this->nota('Sobre el archivo .env',
-            'Este archivo contiene contraseñas y claves, por eso está excluido del repositorio ' .
-            'de GitHub. Cada instalación tiene el suyo propio y nunca debe subirse ni compartirse.');
+        $this->nota('No editar el archivo manualmente',
+            'No abras ni reemplaces «database.sqlite» mientras la aplicación esté funcionando. ' .
+            'Para copiar o restaurar información usá siempre la pantalla «Sistema → Respaldos».');
 
         $this->seccion->addTitle('2.4 Acceso al sistema', 2);
-        $this->p('Con el servidor levantado, ingresá desde el navegador a la dirección '
-            . 'http://127.0.0.1:8000 y vas a ver la pantalla de inicio de sesión.');
+        $this->p('Abrí Panadería Escritorio desde Windows. En el primer inicio aparecerá el asistente ' .
+            'de configuración; en los siguientes inicios verás directamente la pantalla de acceso.');
 
         $this->captura('Pantalla de inicio de sesión del sistema',
-            'http://127.0.0.1:8000/login');
+            'Aplicación Panadería Escritorio → Inicio de sesión');
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -435,15 +423,15 @@ class GenerarDocumentacion extends Command
         $this->nota('Cómo se aplica esta separación',
             'El cajero ve el panel principal pero con la información acotada a sus propias ventas, ' .
             'y las secciones administrativas directamente no aparecen en su menú. Además, si ' .
-            'intentara entrar escribiendo la dirección a mano, el sistema se lo impide.');
+            'intentara abrir una sección sin permiso, el sistema se lo impide.');
 
         $this->seccion->addTitle('3.2 Vista del administrador', 2);
         $this->captura('Panel principal completo, con las tarjetas de resumen y los paneles de operación diaria',
-            'http://127.0.0.1:8000/home');
+            'Aplicación Panadería Escritorio → Inicio (sesión de administrador)');
 
         $this->seccion->addTitle('3.3 Vista del cajero', 2);
         $this->captura('Panel principal del cajero, sin las secciones administrativas en el menú lateral',
-            'http://127.0.0.1:8000/home (con sesión de cajero)');
+            'Aplicación Panadería Escritorio → Inicio (sesión de cajero)');
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -604,40 +592,41 @@ class GenerarDocumentacion extends Command
         $this->nuevaSeccion();
         $this->seccion->addTitle('5. Base de datos', 1);
 
-        $this->p('La información se guarda en una base MySQL llamada «panaderia_luna». Las tablas ' .
-            'están agrupadas por módulo y se relacionan entre sí mediante claves foráneas, que ' .
-            'garantizan que no queden registros huérfanos.');
+        $this->p('La información se guarda localmente en «database.sqlite», dentro de la carpeta de ' .
+            'datos de Panadería Escritorio del usuario de Windows. SQLite no necesita un servidor ' .
+            'ni credenciales. Las tablas están agrupadas por módulo y se relacionan mediante claves ' .
+            'foráneas, que garantizan que no queden registros huérfanos.');
 
         $this->seccion->addTitle('5.1 Mapa de relaciones', 2);
         $this->p('El siguiente esquema muestra cómo se conectan las tablas principales:');
 
         $this->codigo([
             'CATÁLOGO Y STOCK',
-            '  categorias ──< productos ──< almacen_producto >── almacenes',
-            '  insumos ──< receta_insumo >── recetas',
-            '  insumos ──< compras_insumo        (entradas de materia prima)',
-            '  insumos ──< mermas_insumos        (pérdidas de materia prima)',
+            '  categorias ──1:N── productos ──N:M── almacenes (mediante almacen_producto)',
+            '  insumos ──N:M── recetas (mediante receta_insumo)',
+            '  insumos ──1:N── compras_insumo     (entradas de materia prima)',
+            '  insumos ──1:N── mermas_insumos     (pérdidas de materia prima)',
             '',
             'VENTAS',
-            '  users ──< ventas ──< detalle_ventas >── productos',
-            '  users ──< cortes_caja',
-            '  almacenes ──< ventas',
+            '  users ──1:N── ventas ──1:N── detalle_ventas ──N:1── productos',
+            '  users ──1:N── cortes_caja',
+            '  almacenes ──1:N── ventas',
             '',
             'RECURSOS HUMANOS',
-            '  cargos ──< empleados ──< asistencias',
-            '  empleados ──< adelantos >── planillas',
-            '  planillas ──< planilla_empleado >── empleados',
+            '  cargos ──1:N── empleados ──1:N── asistencias',
+            '  empleados ──1:N── adelantos',
+            '  planillas ──N:M── empleados (mediante planilla_empleado)',
             '',
             'GASTOS',
-            '  gastos_fijos ──< gastos_pagos',
+            '  gastos_fijos ──1:N── gastos_pagos',
             '',
             'SEGURIDAD',
-            '  users ──< model_has_roles >── roles ──< role_has_permissions >── permissions',
+            '  users ──N:M── roles ──N:M── permissions (mediante tablas de permisos)',
         ]);
 
         $this->nota('Cómo leer el esquema',
-            'El símbolo «──<» indica una relación de uno a muchos: una categoría tiene muchos ' .
-            'productos. El símbolo «>──<» entre dos tablas indica una relación de muchos a muchos ' .
+            'La marca «1:N» indica una relación de uno a muchos: una categoría tiene muchos ' .
+            'productos. La marca «N:M» entre dos tablas indica una relación de muchos a muchos ' .
             'resuelta con una tabla intermedia: un producto puede estar en varios almacenes y un ' .
             'almacén tiene varios productos.');
 
@@ -977,7 +966,7 @@ class GenerarDocumentacion extends Command
             'El cajero abre su caja declarando el monto inicial en efectivo.',
         ]);
         $this->captura('Panel principal mostrando el aviso de asistencia pendiente',
-            'http://127.0.0.1:8000/home');
+            'Aplicación Panadería Escritorio → Inicio');
 
         $this->seccion->addTitle('Durante el día', 3);
         $this->pasos([
@@ -1110,25 +1099,29 @@ class GenerarDocumentacion extends Command
         $this->seccion->addTitle('8.1 Respaldo de la información', 2);
         $this->p('La base de datos contiene toda la operación del negocio. Conviene respaldarla ' .
             'con regularidad, sobre todo antes de actualizar el sistema.');
-        $this->codigo([
-            '# Crear una copia de seguridad',
-            'C:\\xampp\\mysql\\bin\\mysqldump -u root panaderia_luna > respaldo.sql',
-            '',
-            '# Restaurar desde una copia',
-            'C:\\xampp\\mysql\\bin\\mysql -u root panaderia_luna < respaldo.sql',
+        $this->pasos([
+            'Ingresá con un usuario administrador.',
+            'Abrí «Sistema → Respaldos».',
+            'Pulsá «Descargar respaldo ahora» y guardá el archivo ZIP en una memoria USB o en la nube.',
+            'Para restaurar, seleccioná el ZIP en la misma pantalla, marcá la confirmación y pulsá «Restaurar respaldo».',
+            'Después de restaurar, iniciá sesión nuevamente y comprobá los datos.',
         ]);
-        $this->nota('Qué más conviene respaldar',
-            'Además de la base, guardá la carpeta «storage/app/public», que contiene las fotos ' .
-            'de los productos, y el archivo «.env» con la configuración de esa instalación.');
+        $this->nota('Qué contiene el respaldo',
+            'El ZIP incluye la base SQLite y las imágenes de productos. Guardá al menos una copia ' .
+            'fuera de esta PC. Antes de restaurar, el sistema conserva una copia de seguridad de ' .
+            'la base actual.');
 
         $this->seccion->addTitle('8.2 Actualizar el sistema', 2);
-        $this->codigo([
-            'git pull',
-            'composer install',
-            'php artisan migrate',
-            'php artisan config:clear',
-            'php artisan view:clear',
+        $this->pasos([
+            'Creá un respaldo desde «Sistema → Respaldos».',
+            'Cerrá completamente Panadería Escritorio.',
+            'Ejecutá el instalador de la versión nueva sobre la instalación existente.',
+            'Abrí la aplicación; las actualizaciones de la base se aplican automáticamente.',
+            'Verificá que tus usuarios, ventas, inventario e imágenes sigan disponibles.',
         ]);
+        $this->nota('La carpeta AppData conserva la información',
+            'No es necesario borrar AppData para actualizar. Eliminala únicamente cuando quieras ' .
+            'reiniciar la aplicación desde cero y aceptes perder todos los datos locales.', self::ROJO);
 
         $this->seccion->addTitle('8.3 Problemas frecuentes', 2);
 
@@ -1137,18 +1130,23 @@ class GenerarDocumentacion extends Command
             [
                 [
                     'Las fotos de los productos no se ven',
-                    'Falta el enlace de almacenamiento',
-                    'Ejecutar «php artisan storage:link»',
+                    'La imagen fue movida, dañada o faltaba en un respaldo restaurado',
+                    'Restaurar un respaldo completo que incluya las imágenes',
                 ],
                 [
-                    'Error de conexión a la base de datos',
-                    'MySQL apagado en XAMPP',
-                    'Abrir XAMPP e iniciar el servicio MySQL',
+                    'La aplicación no puede abrir la base de datos',
+                    'El archivo SQLite está bloqueado, dañado o sin permisos',
+                    'Cerrar y abrir la aplicación; si continúa, restaurar el último respaldo válido',
                 ],
                 [
-                    'Los cambios en pantalla no aparecen',
-                    'Vistas en caché',
-                    'Ejecutar «php artisan view:clear»',
+                    'Una página queda cargando o la sesión vence',
+                    'La sesión local se reinició o una operación tardó más de lo esperado',
+                    'Esperar unos segundos; si continúa, cerrar y volver a abrir la aplicación',
+                ],
+                [
+                    'Después de actualizar aparece la versión anterior',
+                    'La aplicación estaba abierta durante la instalación',
+                    'Cerrar completamente la aplicación y ejecutar otra vez el instalador nuevo',
                 ],
                 [
                     'Una planilla muestra montos incorrectos',
