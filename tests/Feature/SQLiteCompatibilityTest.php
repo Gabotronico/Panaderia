@@ -32,6 +32,7 @@ class SQLiteCompatibilityTest extends TestCase
             'empleado_id',
             'total_neto',
         ]));
+        $this->assertTrue(Schema::hasColumn('cortes_caja', 'cerrado_por'));
     }
 
     public function test_query_heavy_pages_render_with_sqlite(): void
@@ -53,6 +54,7 @@ class SQLiteCompatibilityTest extends TestCase
             route('gastos-pagos.index', ['year' => 2026, 'month' => 7]),
             route('gastos-pagos.anual', ['year' => 2026]),
             route('planillas.index'),
+            route('usuarios.index'),
             route('reportes.index'),
             route('reportes.ventas', $period),
             route('reportes.productos-mas-vendidos', $period),

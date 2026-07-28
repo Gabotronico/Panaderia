@@ -41,6 +41,25 @@
                             <p class="mb-0">{{ $corte->hora_cierre }}</p>
                         </div>
                         @endif
+
+                        @if($corte->cerradoPor)
+                        <div class="mb-3">
+                            <strong>Cerrado por:</strong>
+                            <p class="mb-0">
+                                {{ $corte->cerradoPor->name }}
+                                @if($corte->cerrado_por_tercero)
+                                    <span class="badge bg-warning text-dark ms-1">
+                                        <i class="fas fa-user-shield me-1"></i>Cerrado por administración
+                                    </span>
+                                @endif
+                            </p>
+                            @if($corte->cerrado_por_tercero)
+                                <small class="text-muted">
+                                    El arqueo no lo hizo el cajero del turno.
+                                </small>
+                            @endif
+                        </div>
+                        @endif
                     </div>
                     
                     <div class="col-md-6">
@@ -51,9 +70,16 @@
                         
                         <div class="mb-3">
                             <strong>Total de Ventas:</strong>
-                            <p class="mb-0 text-success fs-5">Bs{{ number_format($totalVentas, 2) }}</p>
+                            @if($puedeVerEsperado)
+                                <p class="mb-0 text-success fs-5">Bs{{ number_format($totalVentas, 2) }}</p>
+                            @else
+                                <p class="mb-0 text-muted">
+                                    <i class="fas fa-eye-slash me-1"></i>
+                                    Se muestra al cerrar la caja
+                                </p>
+                            @endif
                         </div>
-                        
+
                         @if($corte->estado == 'cerrado')
                         <div class="mb-3">
                             <strong>Efectivo Contado:</strong>
@@ -136,7 +162,13 @@
                         <tfoot class="table-light">
                             <tr>
                                 <th colspan="2" class="text-end">Total:</th>
-                                <th>Bs{{ number_format($totalVentas, 2) }}</th>
+                                <th>
+                                    @if($puedeVerEsperado)
+                                        Bs{{ number_format($totalVentas, 2) }}
+                                    @else
+                                        <span class="text-muted fw-normal">—</span>
+                                    @endif
+                                </th>
                                 <th colspan="2"></th>
                             </tr>
                         </tfoot>

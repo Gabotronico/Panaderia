@@ -149,11 +149,20 @@
                                         @endcan
                                         
                                         @can('editar-cortes')
-                                        @if($corte->estado == 'abierto' && $corte->user_id == Auth::id())
-                                        <a href="{{ route('cortes.edit', $corte->id) }}" 
-                                           class="btn btn-warning btn-sm" 
-                                           title="Cerrar Caja">
+                                        @php
+                                            $esPropio  = $corte->user_id == Auth::id();
+                                            $esAdmin   = Auth::user()->esAdministrador();
+                                            $puedeCerrar = $corte->estado == 'abierto' && ($esPropio || $esAdmin);
+                                        @endphp
+                                        @if($puedeCerrar)
+                                        <a href="{{ route('cortes.edit', $corte->id) }}"
+                                           class="btn btn-warning btn-sm"
+                                           title="{{ $esPropio ? 'Cerrar Caja' : 'Cerrar la caja de ' . $corte->user->name }}"
+                                           @unless($esPropio)
+                                               onclick="return confirm('Vas a cerrar la caja de {{ $corte->user->name }}. Quedará registrado que el cierre lo hiciste vos. ¿Continuar?')"
+                                           @endunless>
                                             <i class="fas fa-lock"></i>
+                                            @unless($esPropio)<i class="fas fa-user-shield ms-1" style="font-size:.65rem;"></i>@endunless
                                         </a>
                                         @endif
                                         @endcan
@@ -194,68 +203,6 @@
     </div>
 </div>
 
-<!-- Leyenda de Colores -->
-<div class="row mt-3">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body">
-                <h6 class="mb-3"><i class="fas fa-calculator me-2"></i>Cómo se calcula la diferencia</h6>
-                <div class="alert alert-secondary mb-3 py-2">
-                    <strong>Fórmula:</strong> Diferencia = Efectivo Contado − (Monto Inicial + Total Ventas)
-                </div>
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="p-3 rounded" style="background-color: #d1e7dd;">
-                            <div class="d-flex align-items-center mb-2">
-                                <span class="badge bg-success me-2">
-                                    <i class="fas fa-check-circle"></i> Cuadra Perfecto
-                                </span>
-                            </div>
-                            <small class="text-muted">
-                                <strong>Verde:</strong> El efectivo contado coincide exactamente con lo esperado.
-                                El cajero entregó el monto correcto.
-                            </small>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 rounded" style="background-color: #f8d7da;">
-                            <div class="d-flex align-items-center mb-2">
-                                <span class="badge bg-danger me-2">
-                                    <i class="fas fa-exclamation-triangle"></i> Falta BsXX.00
-                                </span>
-                            </div>
-                            <small class="text-muted">
-                                <strong>Rojo:</strong> El efectivo contado es menor a lo esperado.
-                                Hay dinero faltante en la caja.
-                            </small>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 rounded" style="background-color: #fff3cd;">
-                            <div class="d-flex align-items-center mb-2">
-                                <span class="badge bg-warning text-dark me-2">
-                                    <i class="fas fa-arrow-up"></i> Sobra BsXX.00
-                                </span>
-                            </div>
-                            <small class="text-muted">
-                                <strong>Amarillo:</strong> El efectivo contado es mayor a lo esperado.
-                                Hay sobrante en la caja.
-                            </small>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="alert alert-info mt-3 mb-0">
-                    <strong><i class="fas fa-lightbulb me-2"></i>Ejemplo:</strong><br>
-                    Monto Inicial <strong>Bs50</strong> + Ventas del turno <strong>Bs142</strong> = Esperado <strong>Bs192</strong><br>
-                    • Cajero entrega <strong>Bs192</strong> → 🟢 Cuadra Perfecto<br>
-                    • Cajero entrega <strong>Bs150</strong> → 🔴 Falta Bs42.00 (entregó menos de lo esperado)<br>
-                    • Cajero entrega <strong>Bs200</strong> → 🟡 Sobra Bs8.00 (entregó más de lo esperado)
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @push('styles')

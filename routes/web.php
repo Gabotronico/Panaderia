@@ -18,6 +18,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\SetupController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
 
@@ -83,6 +84,11 @@ Route::middleware('auth')->group(function () {
     Route::post('planillas/{planilla}/pagar', [PlanillaController::class, 'pagar'])->name('planillas.pagar');
     Route::get('planillas/{planilla}/pdf', [PlanillaController::class, 'descargarPdf'])->name('planillas.pdf');
     Route::resource('planillas', PlanillaController::class)->only(['index', 'create', 'store', 'show']);
+
+    // Gestión de usuarios del sistema
+    Route::resource('usuarios', UserController::class)
+         ->parameters(['usuarios' => 'usuario'])
+         ->except(['show']);
 
     // Resumen financiero consolidado
     Route::get('finanzas', [FinanzaController::class, 'index'])->name('finanzas.index');

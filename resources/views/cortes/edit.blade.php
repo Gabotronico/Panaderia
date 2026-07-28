@@ -11,10 +11,25 @@
             </div>
             <div class="card-body">
                 <!-- Información del Corte -->
+                @if($corte->user_id !== auth()->id())
+                <div class="alert alert-danger">
+                    <div class="d-flex align-items-start gap-2">
+                        <i class="fas fa-user-shield mt-1"></i>
+                        <div>
+                            <strong>Estás cerrando la caja de {{ $corte->user->name }}.</strong>
+                            <div class="mt-1">
+                                El cierre quedará registrado a tu nombre para que se sepa
+                                quién hizo el arqueo. Contá el efectivo antes de registrar el monto.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @else
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     <strong>Atención:</strong> Está a punto de cerrar la caja. Verifique que todos los montos sean correctos.
                 </div>
+                @endif
                 
                 <div class="row mb-4">
                     <div class="col-md-6">
@@ -34,18 +49,32 @@
                             <div class="card-body">
                                 <h6 class="card-subtitle mb-2 text-muted">Resumen Financiero</h6>
                                 <p class="mb-1"><strong>Monto Inicial:</strong> <span class="text-primary">Bs{{ number_format($corte->monto_inicial, 2) }}</span></p>
-                                <p class="mb-1"><strong>Total Ventas:</strong> <span class="text-success">Bs{{ number_format($totalVentas, 2) }}</span></p>
-                                <hr class="my-2">
-                                <p class="mb-1"><strong>Efectivo Esperado:</strong> <span class="text-info fs-5">Bs{{ number_format($corte->monto_inicial + $totalVentas, 2) }}</span></p>
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle"></i> Debe incluir el monto inicial
-                                </small>
+
+                                @if($puedeVerEsperado)
+                                    <p class="mb-1"><strong>Total Ventas:</strong> <span class="text-success">Bs{{ number_format($totalVentas, 2) }}</span></p>
+                                    <hr class="my-2">
+                                    <p class="mb-1"><strong>Efectivo Esperado:</strong> <span class="text-info fs-5">Bs{{ number_format($corte->monto_inicial + $totalVentas, 2) }}</span></p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle"></i> Debe incluir el monto inicial
+                                    </small>
+                                @else
+                                    <hr class="my-2">
+                                    <p class="mb-1 text-muted">
+                                        <i class="fas fa-eye-slash me-1"></i>
+                                        <strong>Efectivo esperado:</strong> oculto
+                                    </p>
+                                    <small class="text-muted">
+                                        Contá el dinero de la caja y registrá el monto exacto.
+                                        El sistema hará la verificación.
+                                    </small>
+                                @endif
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Alerta Informativa -->
+                @if($puedeVerEsperado)
                 <div class="alert alert-info mb-4">
                     <i class="fas fa-lightbulb me-2"></i>
                     <strong>Importante:</strong> Al cerrar la caja, el efectivo contado debe incluir:
@@ -55,8 +84,23 @@
                         <li><strong>Total esperado:</strong> Bs {{ number_format($corte->monto_inicial + $totalVentas, 2) }}</li>
                     </ul>
                 </div>
+                @else
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Cómo hacer el cierre:</strong> contá todo el efectivo que hay en la caja,
+                    incluyendo el monto inicial con el que abriste el turno
+                    (Bs{{ number_format($corte->monto_inicial, 2) }}), y registrá ese total.
+                    <div class="mt-2 mb-0">
+                        <small>
+                            El conteo se hace a ciegas para que el arqueo sea confiable.
+                            Si hay una diferencia, se revisa junto con la administración.
+                        </small>
+                    </div>
+                </div>
+                @endif
                 
                 <!-- Detalle de Ventas -->
+                @if($puedeVerEsperado)
                 <div class="mb-4">
                     <h6><i class="fas fa-receipt me-2"></i>Ventas Realizadas en este Turno</h6>
                     @if($totalVentas > 0)
@@ -100,7 +144,8 @@
                     </div>
                     @endif
                 </div>
-                
+                @endif
+
                 <hr>
                 
                 <!-- Formulario de Cierre -->
@@ -136,6 +181,7 @@
                             </div>
                         </div>
                         
+                        @if($puedeVerEsperado)
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Diferencia Calculada</label>
@@ -147,6 +193,7 @@
                                 </div>
                             </div>
                         </div>
+                        @endif
                     </div>
                     
                     <!-- Desglose de Billetes y Monedas (Opcional) -->
@@ -252,12 +299,18 @@
 @push('scripts')
 <script>
     const montoInicial = {{ $corte->monto_inicial }};
+
+@unless($puedeVerEsperado)
+    // El cajero cierra la caja a ciegas: ni el total de ventas ni el cálculo
+    // de la diferencia se envían al navegador.
+    function calcularDiferencia() {}
+@else
     const totalVentas = {{ $totalVentas }};
     const efectivoEsperado = montoInicial + totalVentas;
-    
+
     function calcularDiferencia() {
         const totalEfectivo = parseFloat(document.getElementById('total_efectivo').value) || 0;
-        
+
         // Diferencia = Efectivo Contado - Total Ventas (cuánto sobra o falta respecto a las ventas)
         const diferencia = totalEfectivo - totalVentas;
         
@@ -307,19 +360,9 @@
             diferenciaTexto.className = 'text-danger';
         }
         
-        // Log para debugging
-        console.log('═══════════════════════════════════════');
-        console.log('Monto Inicial:', montoInicial.toFixed(2));
-        console.log('Total Ventas:', totalVentas.toFixed(2));
-        console.log('Efectivo Esperado (Inicial + Ventas):', efectivoEsperado.toFixed(2));
-        console.log('───────────────────────────────────────');
-        console.log('Efectivo Contado:', totalEfectivo.toFixed(2));
-        console.log('Diferencia (Contado - Ventas):', diferencia.toFixed(2));
-        console.log('Sobrante Real:', sobranteReal.toFixed(2));
-        console.log('Diferencia con Monto Inicial:', diferenciaMontoInicial.toFixed(2));
-        console.log('═══════════════════════════════════════');
     }
-    
+@endunless
+
     function calcularDesglose() {
         const denominaciones = [
             { valor: 1000, input: 0 },

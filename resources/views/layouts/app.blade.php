@@ -798,6 +798,18 @@
         </ul>
         @endrole
 
+        @can('ver-usuarios')
+        <div class="sidebar-label">Administración</div>
+        <ul class="sidebar-nav">
+            <li>
+                <a href="{{ route('usuarios.index') }}" class="{{ request()->routeIs('usuarios.*') ? 'active' : '' }}">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Usuarios</span>
+                </a>
+            </li>
+        </ul>
+        @endcan
+
         <div class="sidebar-footer">
             <div class="sidebar-user">
                 <div class="sidebar-avatar">

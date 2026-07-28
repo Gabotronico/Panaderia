@@ -22,6 +22,7 @@ class CorteCaja extends Model
         'monto_final',
         'diferencia',
         'estado',
+        'cerrado_por',
         'observaciones',
     ];
 
@@ -38,5 +39,17 @@ class CorteCaja extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /** Usuario que realizó el cierre — puede no ser el dueño del turno. */
+    public function cerradoPor()
+    {
+        return $this->belongsTo(User::class, 'cerrado_por');
+    }
+
+    /** Verdadero si lo cerró alguien distinto al cajero del turno. */
+    public function getCerradoPorTerceroAttribute(): bool
+    {
+        return $this->cerrado_por !== null && $this->cerrado_por !== $this->user_id;
     }
 }
