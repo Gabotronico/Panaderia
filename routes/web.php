@@ -16,6 +16,7 @@ use App\Http\Controllers\PlanillaController;
 use App\Http\Controllers\GastoFijoController;
 use App\Http\Controllers\GastoPagoController;
 use App\Http\Controllers\FinanzaController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Ruta pública
@@ -72,6 +73,11 @@ Route::middleware('auth')->group(function () {
     Route::post('planillas/{planilla}/pagar',  [PlanillaController::class, 'pagar'])->name('planillas.pagar');
     Route::get('planillas/{planilla}/pdf',     [PlanillaController::class, 'descargarPdf'])->name('planillas.pdf');
     Route::resource('planillas', PlanillaController::class)->only(['index', 'create', 'store', 'show']);
+
+    // Gestión de usuarios del sistema
+    Route::resource('usuarios', UserController::class)
+         ->parameters(['usuarios' => 'usuario'])
+         ->except(['show']);
 
     // Resumen financiero consolidado
     Route::get('finanzas', [FinanzaController::class, 'index'])->name('finanzas.index');

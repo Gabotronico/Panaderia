@@ -108,7 +108,14 @@ class CorteCajaController extends Controller
                 ->get();
         }
 
-        return view('cortes.show', compact('corte', 'ventasCorte', 'totalVentas'));
+        // Mientras la caja sigue abierta, el cajero no ve el total de ventas:
+        // ese dato le permitiría deducir cuánto debe entregar al cerrar.
+        // Una vez cerrada, ya no hay nada que proteger y se muestra completo.
+        $puedeVerEsperado = Auth::user()->esAdministrador() || $corte->estado === 'cerrado';
+
+        $corte->load('user', 'cerradoPor');
+
+        return view('cortes.show', compact('corte', 'ventasCorte', 'totalVentas', 'puedeVerEsperado'));
     }
 
     public function edit(CorteCaja $corte)
@@ -118,9 +125,11 @@ class CorteCajaController extends Controller
                 ->with('error', 'No se puede editar un corte cerrado.');
         }
 
-        if ($corte->user_id !== Auth::id()) {
+        // El cajero solo cierra su propia caja; el administrador puede cerrar
+        // la de cualquiera (por ejemplo si el cajero se retiró sin hacerlo).
+        if (!$this->puedeCerrar($corte)) {
             return redirect()->route('cortes.index')
-                ->with('error', 'No tienes permiso para editar este corte.');
+                ->with('error', 'No tienes permiso para cerrar este corte.');
         }
 
         // Calcular total de ventas
@@ -130,7 +139,11 @@ class CorteCajaController extends Controller
             ->where('estado', 'completada')
             ->sum('total');
 
-        return view('cortes.edit', compact('corte', 'totalVentas'));
+        // El cajero cierra la caja a ciegas: no ve cuánto debería haber.
+        // Así el arqueo refleja lo que realmente contó y no un número copiado.
+        $puedeVerEsperado = Auth::user()->esAdministrador();
+
+        return view('cortes.edit', compact('corte', 'totalVentas', 'puedeVerEsperado'));
     }
 
     public function update(Request $request, CorteCaja $corte)
@@ -143,6 +156,11 @@ class CorteCajaController extends Controller
         if ($corte->estado === 'cerrado') {
             return redirect()->route('cortes.index')
                 ->with('error', 'No se puede modificar un corte cerrado.');
+        }
+
+        if (!$this->puedeCerrar($corte)) {
+            return redirect()->route('cortes.index')
+                ->with('error', 'No tienes permiso para cerrar este corte.');
         }
 
         // Calcular total de ventas
@@ -163,14 +181,26 @@ class CorteCajaController extends Controller
             'monto_final' => $montoFinal,
             'diferencia' => $diferencia,
             'estado' => 'cerrado',
+            'cerrado_por' => Auth::id(),
             'observaciones' => $request->observaciones,
         ]);
 
         $corte->load('user.almacen');
         $this->notificarAdministradores(new CierreCajaMail($corte));
 
-        return redirect()->route('cortes.show', $corte->id)
-            ->with('success', 'Corte de caja cerrado exitosamente.');
+        $mensaje = $corte->user_id === Auth::id()
+            ? 'Corte de caja cerrado exitosamente.'
+            : "Cerraste el corte de {$corte->user->name}. Queda registrado que el cierre lo hiciste vos.";
+
+        return redirect()->route('cortes.show', $corte->id)->with('success', $mensaje);
+    }
+
+    /**
+     * Un corte lo puede cerrar su dueño o cualquier administrador.
+     */
+    private function puedeCerrar(CorteCaja $corte): bool
+    {
+        return $corte->user_id === Auth::id() || Auth::user()->esAdministrador();
     }
 
     private function notificarAdministradores(\Illuminate\Mail\Mailable $mail): void
