@@ -16,6 +16,7 @@
 /auth.json
 /node_modules
 /dist
+/nativephp/electron/dist-*
 /.composer-cache
 /database/*.sqlite
 /public/build
