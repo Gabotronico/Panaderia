@@ -57,6 +57,7 @@
                                 <th>Cierre</th>
                                 <th>Monto Inicial</th>
                                 <th>Total Ventas</th>
+                                <th>Efectivo / QR</th>
                                 <th>Monto Final</th>
                                 <th>Diferencia</th>
                                 <th>Estado</th>
@@ -66,12 +67,10 @@
                         <tbody>
                             @forelse($cortes as $corte)
                                 @php
-                                    // diferencia = efectivo contado - (monto inicial + ventas)
-                                    // Se calcula desde los datos originales para corregir registros con fórmula anterior
-                                    $diferenciaReal = ($corte->estado == 'cerrado')
-                                        ? ($corte->monto_final - ($corte->monto_inicial + $corte->total_ventas))
-                                        : 0;
-                                    $esperado = $corte->monto_inicial + $corte->total_ventas;
+                                    // El esperado solo cuenta las ventas en efectivo: el QR no pasa por el cajón.
+                                    $diferenciaReal = $corte->estado == 'cerrado' ? $corte->diferencia_efectivo : 0;
+                                    $diferenciaQr   = $corte->estado == 'cerrado' ? $corte->diferencia_qr_real : 0;
+                                    $esperado = $corte->efectivo_esperado;
 
                                     if ($corte->estado == 'abierto') {
                                         $bgColorDiferencia = '';
@@ -111,6 +110,24 @@
                                     <td>{{ $corte->hora_cierre ?? '-' }}</td>
                                     <td>Bs{{ number_format($corte->monto_inicial, 2) }}</td>
                                     <td>Bs{{ number_format($corte->total_ventas, 2) }}</td>
+                                    <td>
+                                        @if($corte->estado == 'cerrado')
+                                            <div class="small">
+                                                <i class="fas fa-money-bill-wave text-success me-1"></i>Bs{{ number_format($corte->ventas_efectivo, 2) }}
+                                            </div>
+                                            <div class="small">
+                                                <i class="fas fa-qrcode text-primary me-1"></i>Bs{{ number_format($corte->ventas_qr, 2) }}
+                                                @if(abs($diferenciaQr) >= 0.01)
+                                                    <span class="badge bg-{{ $diferenciaQr < 0 ? 'danger' : 'warning' }} ms-1"
+                                                          title="QR verificado: Bs{{ number_format($corte->total_qr, 2) }}">
+                                                        {{ $diferenciaQr < 0 ? '−' : '+' }}Bs{{ number_format(abs($diferenciaQr), 2) }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         @if($corte->estado == 'cerrado')
                                             Bs{{ number_format($corte->monto_final, 2) }}
@@ -167,17 +184,45 @@
                                         @endif
                                         @endcan
                                         
+                                        {{-- Corregir el arqueo de un turno ya cerrado: solo administración. --}}
+                                        @can('editar-cortes-cerrados')
+                                        @if($corte->estado == 'cerrado')
+                                        <a href="{{ route('cortes.cierre.editar', $corte->id) }}"
+                                           class="btn btn-primary btn-sm"
+                                           title="Corregir el cierre de {{ $corte->user->name }}">
+                                            <i class="fas fa-pen-to-square"></i>
+                                        </a>
+                                        @endif
+                                        @endcan
+
                                         @can('eliminar-cortes')
                                         @if($corte->estado == 'abierto')
-                                        <form action="{{ route('cortes.destroy', $corte->id) }}" 
-                                              method="POST" 
+                                        <form action="{{ route('cortes.destroy', $corte->id) }}"
+                                              method="POST"
                                               class="d-inline"
                                               onsubmit="return confirm('¿Está seguro de eliminar este corte?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" 
-                                                    class="btn btn-danger btn-sm" 
+                                            <button type="submit"
+                                                    class="btn btn-danger btn-sm"
                                                     title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        @endif
+                                        @endcan
+
+                                        @can('eliminar-cortes-cerrados')
+                                        @if($corte->estado == 'cerrado')
+                                        <form action="{{ route('cortes.destroy', $corte->id) }}"
+                                              method="POST"
+                                              class="d-inline"
+                                              onsubmit="return confirm('Vas a eliminar el cierre de caja de {{ $corte->user->name }} del {{ $corte->fecha_corte->format('d/m/Y') }}. Esta acción no se puede deshacer. ¿Continuar?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit"
+                                                    class="btn btn-danger btn-sm"
+                                                    title="Eliminar el cierre de {{ $corte->user->name }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -187,7 +232,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="text-center text-muted">No hay cortes de caja registrados</td>
+                                    <td colspan="12" class="text-center text-muted">No hay cortes de caja registrados</td>
                                 </tr>
                             @endforelse
                         </tbody>

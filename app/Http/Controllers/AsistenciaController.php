@@ -27,7 +27,7 @@ class AsistenciaController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $empleados = Empleado::where('activo', true)->orderBy('apellido')->get();
+        $empleados = Empleado::with('cargo')->where('activo', true)->orderBy('apellido')->get();
 
         return view('rrhh.asistencias.index', compact('asistencias', 'empleados', 'fecha', 'empleado_id'));
     }
@@ -36,7 +36,7 @@ class AsistenciaController extends Controller
     {
         $fecha     = $request->input('fecha', now()->toDateString());
         $esDomingo = \Carbon\Carbon::parse($fecha)->dayOfWeek === 0;
-        $empleados = Empleado::where('activo', true)->orderBy('apellido')->get();
+        $empleados = Empleado::with('cargo')->where('activo', true)->orderBy('apellido')->get();
 
         // Pre-cargar TODOS los campos de registros existentes para esa fecha
         // keyBy permite acceder como $registradas[$empleado_id]->hora_entrada etc.
@@ -60,16 +60,22 @@ class AsistenciaController extends Controller
             'asistencias.*.observaciones'    => 'nullable|string|max:200',
         ]);
 
-        DB::transaction(function () use ($request) {
+        // Se cargan de una vez para no consultar el horario empleado por
+        // empleado dentro del bucle.
+        $empleados = Empleado::whereIn('id', array_keys($request->asistencias))->get()->keyBy('id');
+
+        DB::transaction(function () use ($request, $empleados) {
             foreach ($request->asistencias as $empleadoId => $datos) {
+                $marcaje = $this->resolverMarcaje($empleados->get($empleadoId), $datos);
+
                 Asistencia::updateOrCreate(
                     ['empleado_id' => $empleadoId, 'fecha' => $request->fecha],
                     [
-                        'estado'           => $datos['estado'],
+                        'estado'           => $marcaje['estado'],
                         'hora_entrada'     => $datos['hora_entrada'] ?? null,
                         'hora_salida'      => $datos['hora_salida'] ?? null,
-                        'minutos_tardanza' => ($datos['estado'] === 'tardanza') ? (int)($datos['minutos_tardanza'] ?? 0) : 0,
-                        'horas_extra'      => $datos['horas_extra'] ?? 0,
+                        'minutos_tardanza' => $marcaje['minutos_tardanza'],
+                        'horas_extra'      => $marcaje['horas_extra'],
                         'observaciones'    => $datos['observaciones'] ?? null,
                         'user_id'          => Auth::id(),
                     ]
@@ -97,17 +103,66 @@ class AsistenciaController extends Controller
             'observaciones'    => 'nullable|string|max:200',
         ]);
 
+        $marcaje = $this->resolverMarcaje($asistencia->empleado, $request->all());
+
         $asistencia->update([
-            'estado'           => $request->estado,
+            'estado'           => $marcaje['estado'],
             'hora_entrada'     => $request->hora_entrada,
             'hora_salida'      => $request->hora_salida,
-            'minutos_tardanza' => ($request->estado === 'tardanza') ? (int)($request->minutos_tardanza ?? 0) : 0,
-            'horas_extra'      => $request->horas_extra ?? 0,
+            'minutos_tardanza' => $marcaje['minutos_tardanza'],
+            'horas_extra'      => $marcaje['horas_extra'],
             'observaciones'    => $request->observaciones,
             'user_id'          => Auth::id(),
         ]);
 
         return redirect()->route('asistencias.index')
             ->with('success', 'Asistencia actualizada.');
+    }
+
+    /**
+     * Decide estado, tardanza y horas extra de un registro de asistencia.
+     *
+     * Si el empleado tiene horario, los dos números salen de comparar el
+     * marcaje contra ese horario y no se aceptan a mano: el dato que llega
+     * del formulario es solo una vista previa. Sin horario no hay referencia,
+     * así que se respeta lo que cargó el encargado.
+     *
+     * Un atraso detectado sobre un día marcado como "presente" cambia el
+     * estado a "tardanza"; de otro modo el estado diría una cosa y los
+     * minutos otra. Los demás estados (ausente, feriado, licencia…) se
+     * respetan tal cual porque describen situaciones que el horario no ve.
+     *
+     * @param  array<string, mixed>  $datos
+     * @return array{estado: string, minutos_tardanza: int, horas_extra: float}
+     */
+    private function resolverMarcaje(?Empleado $empleado, array $datos): array
+    {
+        $estado = $datos['estado'];
+
+        if (!$empleado?->tiene_horario) {
+            return [
+                'estado'           => $estado,
+                'minutos_tardanza' => $estado === 'tardanza' ? (int) ($datos['minutos_tardanza'] ?? 0) : 0,
+                'horas_extra'      => (float) ($datos['horas_extra'] ?? 0),
+            ];
+        }
+
+        // Solo los días efectivamente trabajados se comparan contra el horario.
+        if (!in_array($estado, Asistencia::ESTADOS_TRABAJADOS, true)) {
+            return ['estado' => $estado, 'minutos_tardanza' => 0, 'horas_extra' => 0.0];
+        }
+
+        $tardanza = $empleado->calcularTardanza($datos['hora_entrada'] ?? null);
+        $extra    = $empleado->calcularHorasExtra($datos['hora_salida'] ?? null);
+
+        if ($tardanza > 0 && $estado === 'presente') {
+            $estado = 'tardanza';
+        }
+
+        return [
+            'estado'           => $estado,
+            'minutos_tardanza' => $tardanza,
+            'horas_extra'      => $extra,
+        ];
     }
 }

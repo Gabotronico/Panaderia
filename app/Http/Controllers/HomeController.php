@@ -58,6 +58,21 @@ class HomeController extends Controller
                 ->sum('total');
         }
 
+        // Desglose por medio de pago. El efectivo es lo que entra al cajón y
+        // se arquea en el cierre; el QR va directo a la cuenta. Verlos juntos
+        // en el dashboard evita tener que abrir cada corte para saber cuánto
+        // de la venta del día es dinero físico.
+        $porPagoHoy = $this->ventasPorTipoPago(
+            fn ($q) => $q->whereDate('created_at', Carbon::today()),
+            $isCajero ? $user->id : null
+        );
+
+        $porPagoMes = $this->ventasPorTipoPago(
+            fn ($q) => $q->whereMonth('created_at', Carbon::now()->month)
+                         ->whereYear('created_at', Carbon::now()->year),
+            $isCajero ? $user->id : null
+        );
+
         // Productos con stock bajo
         $productosStockBajo = Producto::whereColumn('stock', '<=', 'stock_minimo')
             ->where('activo', true)
@@ -217,7 +232,40 @@ class HomeController extends Controller
             'totalGastoMes',
             'ultimasCompras',
             'isCajero',
-            'operacion'
+            'operacion',
+            'porPagoHoy',
+            'porPagoMes'
         ));
+    }
+
+    /**
+     * Suma las ventas completadas del periodo separadas por medio de pago.
+     *
+     * @param  callable  $periodo  Aplica el filtro de fechas sobre la query.
+     * @param  int|null  $userId   Limita a un cajero; null suma toda la panadería.
+     * @return array{efectivo: float, qr: float, total: float}
+     */
+    private function ventasPorTipoPago(callable $periodo, ?int $userId = null): array
+    {
+        $query = Venta::where('estado', 'completada');
+
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+
+        $periodo($query);
+
+        $porTipo = $query->selectRaw('tipo_pago, SUM(total) as monto')
+            ->groupBy('tipo_pago')
+            ->pluck('monto', 'tipo_pago');
+
+        $efectivo = (float) ($porTipo['efectivo'] ?? 0);
+        $qr       = (float) ($porTipo['qr'] ?? 0);
+
+        return [
+            'efectivo' => $efectivo,
+            'qr'       => $qr,
+            'total'    => $efectivo + $qr,
+        ];
     }
 }

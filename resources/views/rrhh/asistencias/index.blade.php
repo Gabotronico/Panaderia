@@ -48,10 +48,11 @@
                         <th>Fecha</th>
                         <th>Empleado</th>
                         <th>Cargo</th>
+                        <th>Horario</th>
                         <th>Estado</th>
                         <th>Entrada</th>
                         <th>Salida</th>
-                        <th class="text-center">Tardanza</th>
+                        <th class="text-center">Atraso</th>
                         <th class="text-center">H. Extra</th>
                         <th>Acciones</th>
                     </tr>
@@ -66,11 +67,33 @@
                         <td>{{ $asis->fecha->format('d/m/Y') }}</td>
                         <td><strong>{{ $asis->empleado->nombre_completo }}</strong></td>
                         <td><span class="badge bg-info">{{ $asis->empleado->cargo->nombre }}</span></td>
+                        <td>
+                            @if($asis->empleado->tiene_horario)
+                                <small class="text-nowrap">{{ $asis->empleado->horario_texto }}</small>
+                            @else
+                                <small class="text-muted">—</small>
+                            @endif
+                        </td>
                         <td><span class="badge bg-{{ $badges[$asis->estado] ?? 'secondary' }}">{{ $labels[$asis->estado] ?? $asis->estado }}</span></td>
                         <td>{{ $asis->hora_entrada ? \Carbon\Carbon::parse($asis->hora_entrada)->format('H:i') : '—' }}</td>
                         <td>{{ $asis->hora_salida ? \Carbon\Carbon::parse($asis->hora_salida)->format('H:i') : '—' }}</td>
-                        <td class="text-center">{{ $asis->minutos_tardanza > 0 ? $asis->minutos_tardanza . ' min' : '—' }}</td>
-                        <td class="text-center">{{ $asis->horas_extra > 0 ? number_format($asis->horas_extra, 1) . ' h' : '—' }}</td>
+                        <td class="text-center">
+                            @if($asis->minutos_tardanza > 0)
+                                <span class="badge bg-warning text-dark">{{ $asis->minutos_tardanza }} min</span>
+                            @elseif($asis->calculado_desde_horario && $asis->hora_entrada)
+                                <span class="badge bg-success">A tiempo</span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
+                        <td class="text-center">
+                            @if($asis->minutos_extra > 0)
+                                <span class="badge bg-primary">{{ $asis->minutos_extra }} min</span>
+                                <br><small class="text-muted">{{ number_format($asis->horas_extra, 2) }} h</small>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </td>
                         <td>
                             <a href="{{ route('asistencias.edit', $asis) }}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i>
@@ -78,7 +101,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="9" class="text-center text-muted py-4">
+                    <tr><td colspan="10" class="text-center text-muted py-4">
                         No hay registros para esta fecha.
                         <a href="{{ route('asistencias.registrar', ['fecha' => $fecha]) }}">Registrar ahora</a>
                     </td></tr>

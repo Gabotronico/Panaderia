@@ -87,21 +87,40 @@ class Asistencia extends Model
         return $horas === null ? null : round($horas - config('nomina.horas_jornada'), 2);
     }
 
+    /** Horas extra expresadas en minutos, que es como se leen en planilla. */
+    public function getMinutosExtraAttribute(): int
+    {
+        return (int) round((float) $this->horas_extra * 60);
+    }
+
+    /** Verdadero si el atraso o las extras salieron del horario del empleado. */
+    public function getCalculadoDesdeHorarioAttribute(): bool
+    {
+        return (bool) $this->empleado?->tiene_horario;
+    }
+
     /** El domingo no se contabiliza para planilla. */
     public function getEsDomingoAttribute(): bool
     {
         return $this->fecha && $this->fecha->dayOfWeek === Carbon::SUNDAY;
     }
 
-    /** Solo días laborables (excluye domingos). */
+    /**
+     * Solo días laborables (excluye domingos).
+     *
+     * La expresión depende del motor: DAYOFWEEK() es de MySQL y en SQLite no
+     * existe, así que la planilla fallaba al generarse tras el cambio de base.
+     */
     public function scopeLaborables($query)
     {
-        return match ($query->getConnection()->getDriverName()) {
-            'sqlite' => $query->whereRaw("strftime('%w', fecha) != '0'"),
-            'pgsql' => $query->whereRaw('EXTRACT(DOW FROM fecha) != 0'),
-            'sqlsrv' => $query->whereRaw("DATENAME(WEEKDAY, fecha) != 'Sunday'"),
-            default => $query->whereRaw('DAYOFWEEK(fecha) != 1'),
+        $noEsDomingo = match ($query->getConnection()->getDriverName()) {
+            'sqlite' => "strftime('%w', fecha) != '0'",
+            'pgsql' => 'EXTRACT(DOW FROM fecha) != 0',
+            'sqlsrv' => "DATENAME(WEEKDAY, fecha) != 'Sunday'",
+            default => 'DAYOFWEEK(fecha) != 1',
         };
+
+        return $query->whereRaw($noEsDomingo);
     }
 
     public function scopeEnPeriodo($query, $inicio, $fin)

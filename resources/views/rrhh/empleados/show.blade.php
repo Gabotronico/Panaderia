@@ -42,6 +42,23 @@
                     </td></tr>
                     <tr><th>Tipo pago</th><td>{{ ucfirst($empleado->tipo_pago) }}</td></tr>
                     <tr><th>Hora extra</th><td>x{{ $empleado->factor_hora_extra }}</td></tr>
+                    <tr>
+                        <th>Horario</th>
+                        <td>
+                            @if($empleado->tiene_horario)
+                                <i class="fas fa-clock text-primary me-1"></i>{{ $empleado->horario_texto }}
+                                <span class="text-muted">({{ $empleado->jornada_horas }} h)</span>
+                                <br>
+                                <small class="text-muted">
+                                    Tolerancia: {{ $empleado->tolerancia_minutos }} min ·
+                                    atraso y horas extra se calculan solos
+                                </small>
+                            @else
+                                <span class="badge bg-secondary">Sin horario</span>
+                                <br><small class="text-muted">Atraso y horas extra se cargan a mano</small>
+                            @endif
+                        </td>
+                    </tr>
                 </table>
 
                 {{-- Resumen de remuneración --}}

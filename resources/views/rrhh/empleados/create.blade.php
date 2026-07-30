@@ -76,6 +76,50 @@
                     <small class="text-muted">Ej: 1.5 = 150%</small>
                 </div>
 
+                {{-- Horario: habilita el cálculo automático en asistencias --}}
+                <div class="col-12">
+                    <hr class="my-1">
+                    <label class="form-label fw-bold mb-1">
+                        <i class="fas fa-clock me-1"></i>Horario de trabajo
+                        <span class="text-muted fw-normal">(opcional)</span>
+                    </label>
+                    <div class="small text-muted mb-2">
+                        Si defines un horario, al registrar la asistencia el sistema calcula solo
+                        los minutos de atraso y las horas extra. Si lo dejas vacío, esos valores
+                        se siguen cargando a mano.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Hora de entrada</label>
+                    <input type="time" id="hora_entrada" name="hora_entrada"
+                           class="form-control @error('hora_entrada') is-invalid @enderror"
+                           value="{{ old('hora_entrada') }}" onchange="calcJornada()">
+                    @error('hora_entrada')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Hora de salida</label>
+                    <input type="time" id="hora_salida" name="hora_salida"
+                           class="form-control @error('hora_salida') is-invalid @enderror"
+                           value="{{ old('hora_salida') }}" onchange="calcJornada()">
+                    @error('hora_salida')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Tolerancia (min)</label>
+                    <input type="number" name="minutos_tolerancia"
+                           class="form-control @error('minutos_tolerancia') is-invalid @enderror"
+                           value="{{ old('minutos_tolerancia') }}" min="0" max="120"
+                           placeholder="{{ config('nomina.tolerancia_tardanza') }}">
+                    @error('minutos_tolerancia')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <small class="text-muted">Minutos de gracia antes de contar atraso</small>
+                </div>
+                <div class="col-12">
+                    <div class="alert alert-light border py-2 mb-0" id="jornadaInfo" style="display:none;">
+                        <i class="fas fa-hourglass-half me-1 text-primary"></i>
+                        Jornada de <strong id="jornadaHoras">—</strong>
+                        <span class="text-muted" id="jornadaNota"></span>
+                    </div>
+                </div>
+
                 {{-- Calculador de equivalencias --}}
                 <div class="col-12">
                     <div class="card bg-light border-0" id="calcCard" style="display:none;">
@@ -149,6 +193,29 @@ function calcEquivalencias() {
     document.getElementById('calc_mes').textContent    = fmt(mensual);
     document.getElementById('calc_hora').textContent   = fmt(diario / 8);
 }
+
+// Muestra la duración de la jornada mientras se define el horario, para
+// detectar de una un turno mal cargado antes de guardarlo.
+function calcJornada() {
+    const entrada = document.getElementById('hora_entrada').value;
+    const salida  = document.getElementById('hora_salida').value;
+    const caja    = document.getElementById('jornadaInfo');
+
+    if (!entrada || !salida) { caja.style.display = 'none'; return; }
+
+    const aMin = h => { const [hh, mm] = h.split(':').map(Number); return hh * 60 + mm; };
+    let minutos = aMin(salida) - aMin(entrada);
+    const cruzaMedianoche = minutos <= 0;
+    if (cruzaMedianoche) minutos += 1440;
+
+    caja.style.display = 'block';
+    document.getElementById('jornadaHoras').textContent =
+        (minutos / 60).toFixed(2).replace(/\.00$/, '') + ' horas';
+    document.getElementById('jornadaNota').textContent =
+        cruzaMedianoche ? '— el turno cruza la medianoche' : '';
+}
+
+calcJornada();
 </script>
 @endpush
 @endsection

@@ -72,6 +72,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('ventas', VentaController::class);
 
     // Rutas de Cortes de Caja
+    // La corrección de un corte ya cerrado va aparte del cierre normal:
+    // distinto permiso, distinto formulario y deja rastro en observaciones.
+    Route::get('cortes/{corte}/cierre/editar', [CorteCajaController::class, 'editarCierre'])->name('cortes.cierre.editar');
+    Route::put('cortes/{corte}/cierre', [CorteCajaController::class, 'actualizarCierre'])->name('cortes.cierre.actualizar');
     Route::resource('cortes', CorteCajaController::class);
 
     // Rutas de RR.HH.

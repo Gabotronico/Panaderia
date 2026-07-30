@@ -54,6 +54,11 @@ class RoleSeeder extends Seeder
             'editar-cortes',
             'eliminar-cortes',
 
+            // Cortes ya cerrados: corregir o anular el arqueo de un cajero.
+            // Solo administración — el cajero no debe poder retocar su cierre.
+            'editar-cortes-cerrados',
+            'eliminar-cortes-cerrados',
+
             // Recetas
             'ver-recetas',
             'crear-recetas',

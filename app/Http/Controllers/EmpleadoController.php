@@ -64,10 +64,19 @@ class EmpleadoController extends Controller
             'tipo_pago'        => 'required|in:mensual,semanal',
             'factor_hora_extra'=> 'required|numeric|min:1',
             'fecha_ingreso'    => 'required|date',
+            // El horario habilita el cálculo automático de tardanza y horas
+            // extra. Es opcional, pero si se define uno hacen falta los dos
+            // extremos: sin salida no hay contra qué medir las extras.
+            'hora_entrada'       => 'nullable|date_format:H:i|required_with:hora_salida',
+            'hora_salida'        => 'nullable|date_format:H:i|required_with:hora_entrada',
+            'minutos_tolerancia' => 'nullable|integer|min:0|max:120',
             'observaciones'    => 'nullable|string',
+        ], [
+            'hora_entrada.required_with' => 'Indique también la hora de entrada del horario.',
+            'hora_salida.required_with'  => 'Indique también la hora de salida del horario.',
         ]);
 
-        Empleado::create($request->all());
+        Empleado::create($this->conHorarioNormalizado($request));
 
         return redirect()->route('empleados.index')->with('success', 'Empleado registrado exitosamente.');
     }
@@ -119,12 +128,39 @@ class EmpleadoController extends Controller
             'tipo_pago'        => 'required|in:mensual,semanal',
             'factor_hora_extra'=> 'required|numeric|min:1',
             'fecha_ingreso'    => 'required|date',
+            // El horario habilita el cálculo automático de tardanza y horas
+            // extra. Es opcional, pero si se define uno hacen falta los dos
+            // extremos: sin salida no hay contra qué medir las extras.
+            'hora_entrada'       => 'nullable|date_format:H:i|required_with:hora_salida',
+            'hora_salida'        => 'nullable|date_format:H:i|required_with:hora_entrada',
+            'minutos_tolerancia' => 'nullable|integer|min:0|max:120',
             'observaciones'    => 'nullable|string',
+        ], [
+            'hora_entrada.required_with' => 'Indique también la hora de entrada del horario.',
+            'hora_salida.required_with'  => 'Indique también la hora de salida del horario.',
         ]);
 
-        $empleado->update($request->all());
+        $empleado->update($this->conHorarioNormalizado($request));
 
         return redirect()->route('empleados.show', $empleado)->with('success', 'Empleado actualizado.');
+    }
+
+    /**
+     * Los inputs de tipo time y number llegan como cadena vacía cuando el
+     * usuario los deja en blanco. Guardarlos así dejaría un '' en columnas
+     * que deben quedar en null para que el sistema sepa que no hay horario.
+     */
+    private function conHorarioNormalizado(Request $request): array
+    {
+        $datos = $request->all();
+
+        foreach (['hora_entrada', 'hora_salida', 'minutos_tolerancia'] as $campo) {
+            if (($datos[$campo] ?? '') === '') {
+                $datos[$campo] = null;
+            }
+        }
+
+        return $datos;
     }
 
     public function destroy(Empleado $empleado)

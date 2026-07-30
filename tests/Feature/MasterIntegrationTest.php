@@ -55,6 +55,7 @@ class MasterIntegrationTest extends TestCase
 
         $response = $this->actingAs($admin)->put(route('cortes.update', $register), [
             'total_efectivo' => 150,
+            'total_qr' => 0,
             'observaciones' => 'Cierre de prueba',
         ]);
 

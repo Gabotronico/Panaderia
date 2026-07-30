@@ -31,6 +31,46 @@
         </div>
     </div>
 
+    {{-- Efectivo Hoy — es la plata que se arquea en el cierre de caja --}}
+    <div class="col-6 col-xl-3">
+        <div class="card stat-card" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); box-shadow: 0 6px 20px rgba(20,184,166,.28);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-card-label">Efectivo Hoy</p>
+                        <div class="stat-card-value">Bs {{ number_format($porPagoHoy['efectivo'], 2) }}</div>
+                        <div class="stat-card-sub">
+                            mes: Bs {{ number_format($porPagoMes['efectivo'], 2) }}
+                        </div>
+                    </div>
+                    <div class="stat-card-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- QR Hoy — no pasa por el cajón, va directo a la cuenta --}}
+    <div class="col-6 col-xl-3">
+        <div class="card stat-card" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); box-shadow: 0 6px 20px rgba(14,165,233,.28);">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="stat-card-label">QR Hoy</p>
+                        <div class="stat-card-value">Bs {{ number_format($porPagoHoy['qr'], 2) }}</div>
+                        <div class="stat-card-sub">
+                            mes: Bs {{ number_format($porPagoMes['qr'], 2) }}
+                        </div>
+                    </div>
+                    <div class="stat-card-icon">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Ventas del Mes --}}
     <div class="col-6 col-xl-3">
         <div class="card stat-card" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); box-shadow: 0 6px 20px rgba(99,102,241,.28);">
@@ -105,6 +145,47 @@
     </div>
     @endif
 </div>
+
+{{-- ── DISTRIBUCIÓN POR MEDIO DE PAGO ────────────────────────── --}}
+@if($porPagoHoy['total'] > 0)
+@php
+    $pctEfectivoHoy = round($porPagoHoy['efectivo'] / $porPagoHoy['total'] * 100);
+    $pctQrHoy       = 100 - $pctEfectivoHoy;
+@endphp
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0"><i class="fas fa-scale-balanced me-2"></i>Cómo se cobró hoy</h6>
+            <span class="text-muted small">Bs {{ number_format($porPagoHoy['total'], 2) }} en total</span>
+        </div>
+        <div class="progress" style="height: 1.5rem;" role="img"
+             aria-label="Efectivo {{ $pctEfectivoHoy }}%, QR {{ $pctQrHoy }}%">
+            @if($porPagoHoy['efectivo'] > 0)
+            <div class="progress-bar" style="width: {{ $pctEfectivoHoy }}%; background-color: #0d9488;">
+                {{ $pctEfectivoHoy }}%
+            </div>
+            @endif
+            @if($porPagoHoy['qr'] > 0)
+            <div class="progress-bar" style="width: {{ $pctQrHoy }}%; background-color: #0284c7;">
+                {{ $pctQrHoy }}%
+            </div>
+            @endif
+        </div>
+        <div class="d-flex gap-4 mt-2 small">
+            <span>
+                <i class="fas fa-money-bill-wave me-1" style="color:#0d9488;"></i>
+                Efectivo <strong>Bs {{ number_format($porPagoHoy['efectivo'], 2) }}</strong>
+                <span class="text-muted">— se arquea en el cierre de caja</span>
+            </span>
+            <span>
+                <i class="fas fa-qrcode me-1" style="color:#0284c7;"></i>
+                QR <strong>Bs {{ number_format($porPagoHoy['qr'], 2) }}</strong>
+                <span class="text-muted">— va directo a la cuenta</span>
+            </span>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- ── PANEL DE OPERACIÓN (solo administrador) ──────────────── --}}
 @if($operacion)

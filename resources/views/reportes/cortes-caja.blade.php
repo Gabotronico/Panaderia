@@ -79,6 +79,7 @@
                                 <th class="text-end">Monto Inicial</th>
                                 <th class="text-end">Total Ventas</th>
                                 <th class="text-end">Efectivo Contado</th>
+                                <th class="text-end">QR</th>
                                 <th class="text-end">Monto Final</th>
                                 <th class="text-end">Diferencia</th>
                                 <th>Estado</th>
@@ -103,6 +104,19 @@
                                     </td>
                                     <td class="text-end">
                                         @if($corte->estado == 'cerrado')
+                                            Bs{{ number_format($corte->total_qr, 2) }}
+                                            @if(abs($corte->diferencia_qr_real) >= 0.01)
+                                                <span class="badge bg-{{ $corte->diferencia_qr_real < 0 ? 'danger' : 'warning' }}"
+                                                      title="Ventas por QR: Bs{{ number_format($corte->ventas_qr, 2) }}">
+                                                    {{ $corte->diferencia_qr_real < 0 ? '−' : '+' }}Bs{{ number_format(abs($corte->diferencia_qr_real), 2) }}
+                                                </span>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-end">
+                                        @if($corte->estado == 'cerrado')
                                             Bs{{ number_format($corte->monto_final, 2) }}
                                         @else
                                             <span class="text-muted">-</span>
@@ -110,12 +124,13 @@
                                     </td>
                                     <td class="text-end">
                                         @if($corte->estado == 'cerrado')
-                                            @if($corte->diferencia == 0)
-                                                <span class="badge bg-success">Bs{{ number_format($corte->diferencia, 2) }}</span>
-                                            @elseif($corte->diferencia > 0)
-                                                <span class="badge bg-info">+Bs{{ number_format($corte->diferencia, 2) }}</span>
+                                            @php $dif = $corte->diferencia_efectivo; @endphp
+                                            @if(abs($dif) < 0.01)
+                                                <span class="badge bg-success">Bs0.00</span>
+                                            @elseif($dif > 0)
+                                                <span class="badge bg-info">+Bs{{ number_format($dif, 2) }}</span>
                                             @else
-                                                <span class="badge bg-danger">Bs{{ number_format($corte->diferencia, 2) }}</span>
+                                                <span class="badge bg-danger">Bs{{ number_format($dif, 2) }}</span>
                                             @endif
                                         @else
                                             <span class="text-muted">-</span>
@@ -131,7 +146,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="text-center text-muted">No hay cortes en el período seleccionado</td>
+                                    <td colspan="12" class="text-center text-muted">No hay cortes en el período seleccionado</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -141,6 +156,7 @@
                                 <th class="text-end">Bs{{ number_format($totalInicial, 2) }}</th>
                                 <th class="text-end">Bs{{ number_format($totalVentas, 2) }}</th>
                                 <th class="text-end">Bs{{ number_format($totalEfectivo, 2) }}</th>
+                                <th class="text-end">Bs{{ number_format($totalQr, 2) }}</th>
                                 <th class="text-end">Bs{{ number_format($cortes->where('estado', 'cerrado')->sum('monto_final'), 2) }}</th>
                                 <th class="text-end">
                                     <span class="badge bg-{{ $totalDiferencia >= 0 ? 'success' : 'danger' }}">

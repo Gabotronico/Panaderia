@@ -142,31 +142,29 @@ class ReporteController extends Controller
         ->get();
 
     // Calcular totales
+    $cerrados = $cortes->where('estado', 'cerrado');
+
     $totalInicial = $cortes->sum('monto_inicial');
-    $totalVentas = $cortes->where('estado', 'cerrado')->sum('total_ventas');
-    $totalEfectivo = $cortes->where('estado', 'cerrado')->sum('total_efectivo');
-    $totalDiferencia = $cortes->where('estado', 'cerrado')->sum('diferencia');
+    $totalVentas = $cerrados->sum('total_ventas');
+    $totalEfectivo = $cerrados->sum('total_efectivo');
+    $totalQr = $cerrados->sum('total_qr');
+    $totalDiferencia = $cerrados->sum('diferencia');
 
     // Calcular estados de cortes cerrados
     $cortesCuadrados = 0;
     $cortesConSobrante = 0;
     $cortesConFaltante = 0;
 
-    foreach ($cortes->where('estado', 'cerrado') as $corte) {
-        // Calcular el sobrante real (lo que quedó después de las ventas)
-        $sobranteReal = $corte->monto_final - $corte->total_ventas;
-        
-        // Comparar el sobrante con el monto inicial
-        $diferenciaMontoInicial = $sobranteReal - $corte->monto_inicial;
-        
-        if (abs($diferenciaMontoInicial) < 0.01) {
-            // Cuadra perfecto
+    foreach ($cerrados as $corte) {
+        // El esperado solo incluye las ventas en efectivo: el QR no pasa por
+        // el cajón, así que se arquea aparte y no afecta el cuadre de caja.
+        $diferencia = $corte->diferencia_efectivo;
+
+        if (abs($diferencia) < 0.01) {
             $cortesCuadrados++;
-        } elseif ($diferenciaMontoInicial > 0) {
-            // Hay sobrante
+        } elseif ($diferencia > 0) {
             $cortesConSobrante++;
         } else {
-            // Hay faltante
             $cortesConFaltante++;
         }
     }
@@ -179,6 +177,7 @@ class ReporteController extends Controller
             'totalInicial',
             'totalVentas',
             'totalEfectivo',
+            'totalQr',
             'totalDiferencia'
         ));
 
@@ -192,6 +191,7 @@ class ReporteController extends Controller
         'totalInicial',
         'totalVentas',
         'totalEfectivo',
+        'totalQr',
         'totalDiferencia',
         'cortesCuadrados',
         'cortesConSobrante',

@@ -118,17 +118,39 @@
         <span>Bs {{ number_format($corte->monto_inicial, 2) }}</span>
       </div>
       <div class="resumen-row">
+        <span>Ventas en efectivo</span>
+        <span>Bs {{ number_format($corte->ventas_efectivo, 2) }}</span>
+      </div>
+      <div class="resumen-row">
+        <span>Ventas por QR</span>
+        <span>Bs {{ number_format($corte->ventas_qr, 2) }}</span>
+      </div>
+      <div class="resumen-row">
         <span>Total ventas del turno</span>
         <span>Bs {{ number_format($corte->total_ventas, 2) }}</span>
+      </div>
+      <div class="resumen-row">
+        <span>Efectivo esperado (fondo + ventas en efectivo)</span>
+        <span>Bs {{ number_format($corte->efectivo_esperado, 2) }}</span>
       </div>
       <div class="resumen-row">
         <span>Efectivo contado</span>
         <span>Bs {{ number_format($corte->total_efectivo, 2) }}</span>
       </div>
       <div class="resumen-row">
-        <span>Diferencia</span>
+        <span>Diferencia en efectivo</span>
         <span class="{{ $corte->diferencia >= 0 ? 'dif-positiva' : 'dif-negativa' }}">
           {{ $corte->diferencia >= 0 ? '+' : '' }}Bs {{ number_format($corte->diferencia, 2) }}
+        </span>
+      </div>
+      <div class="resumen-row">
+        <span>QR verificado</span>
+        <span>Bs {{ number_format($corte->total_qr, 2) }}</span>
+      </div>
+      <div class="resumen-row">
+        <span>Diferencia en QR</span>
+        <span class="{{ $corte->diferencia_qr >= 0 ? 'dif-positiva' : 'dif-negativa' }}">
+          {{ $corte->diferencia_qr >= 0 ? '+' : '' }}Bs {{ number_format($corte->diferencia_qr, 2) }}
         </span>
       </div>
       <div class="resumen-row">
