@@ -72,11 +72,12 @@
                         <tr>
                             <th style="min-width:160px;">Empleado</th>
                             <th>Cargo</th>
+                            <th style="min-width:115px;">Horario</th>
                             <th style="min-width:150px;">Estado</th>
                             <th style="min-width:105px;">Hora entrada</th>
                             <th style="min-width:105px;">Hora salida</th>
-                            <th style="min-width:110px;">Min. tardanza</th>
-                            <th style="min-width:95px;">H. extra</th>
+                            <th style="min-width:115px;">Atraso</th>
+                            <th style="min-width:110px;">H. extra</th>
                             <th style="min-width:150px;">Observaciones</th>
                         </tr>
                     </thead>
@@ -85,7 +86,11 @@
                         @php
                             $prev = $registradas->get($emp->id); // objeto Asistencia o null
                         @endphp
-                        <tr>
+                        <tr data-emp="{{ $emp->id }}"
+                            data-horario="{{ $emp->tiene_horario ? '1' : '0' }}"
+                            data-entrada-prog="{{ $emp->tiene_horario ? \Carbon\Carbon::parse($emp->hora_entrada)->format('H:i') : '' }}"
+                            data-salida-prog="{{ $emp->tiene_horario ? \Carbon\Carbon::parse($emp->hora_salida)->format('H:i') : '' }}"
+                            data-tolerancia="{{ $emp->tolerancia_minutos }}">
                             <td>
                                 <strong>{{ $emp->nombre_completo }}</strong>
                                 @if($prev)
@@ -94,12 +99,22 @@
                             </td>
                             <td><span class="badge bg-info">{{ $emp->cargo->nombre }}</span></td>
 
+                            {{-- Horario programado: es la referencia del cálculo --}}
+                            <td>
+                                @if($emp->tiene_horario)
+                                    <small class="text-nowrap fw-semibold">{{ $emp->horario_texto }}</small>
+                                    <br><small class="text-muted">tol. {{ $emp->tolerancia_minutos }} min</small>
+                                @else
+                                    <span class="badge bg-secondary" style="font-size:.65rem;">Sin horario</span>
+                                @endif
+                            </td>
+
                             {{-- Estado --}}
                             <td>
                                 <select name="asistencias[{{ $emp->id }}][estado]"
                                         class="form-select form-select-sm estado-select"
                                         data-emp="{{ $emp->id }}"
-                                        onchange="toggleTardanza(this)">
+                                        onchange="filaCambio(this)">
                                     @foreach(['presente'=>'Presente','ausente'=>'Ausente','tardanza'=>'Tardanza','medio_dia'=>'Medio día','feriado'=>'Feriado','licencia'=>'Licencia'] as $val => $lbl)
                                     <option value="{{ $val }}"
                                         @selected(($prev ? $prev->estado : 'presente') === $val)>
@@ -113,35 +128,45 @@
                             <td>
                                 <input type="time"
                                        name="asistencias[{{ $emp->id }}][hora_entrada]"
-                                       class="form-control form-control-sm"
-                                       value="{{ $prev?->hora_entrada ? \Carbon\Carbon::parse($prev->hora_entrada)->format('H:i') : '' }}">
+                                       class="form-control form-control-sm hora-entrada"
+                                       value="{{ $prev?->hora_entrada ? \Carbon\Carbon::parse($prev->hora_entrada)->format('H:i') : '' }}"
+                                       onchange="filaCambio(this)">
                             </td>
 
                             {{-- Hora salida --}}
                             <td>
                                 <input type="time"
                                        name="asistencias[{{ $emp->id }}][hora_salida]"
-                                       class="form-control form-control-sm"
-                                       value="{{ $prev?->hora_salida ? \Carbon\Carbon::parse($prev->hora_salida)->format('H:i') : '' }}">
+                                       class="form-control form-control-sm hora-salida"
+                                       value="{{ $prev?->hora_salida ? \Carbon\Carbon::parse($prev->hora_salida)->format('H:i') : '' }}"
+                                       onchange="filaCambio(this)">
                             </td>
 
-                            {{-- Minutos tardanza --}}
+                            {{-- Atraso: calculado si hay horario, manual si no --}}
                             <td>
-                                <input type="number"
-                                       name="asistencias[{{ $emp->id }}][minutos_tardanza]"
-                                       class="form-control form-control-sm tardanza-field-{{ $emp->id }}"
-                                       min="0" max="480" placeholder="0"
-                                       value="{{ $prev?->minutos_tardanza ?: '' }}"
-                                       {{ ($prev ? $prev->estado : 'presente') !== 'tardanza' ? 'disabled' : '' }}>
+                                @if($emp->tiene_horario)
+                                    <span class="badge bg-light text-muted border calc-tardanza" style="font-size:.8rem;">—</span>
+                                @else
+                                    <input type="number"
+                                           name="asistencias[{{ $emp->id }}][minutos_tardanza]"
+                                           class="form-control form-control-sm tardanza-field-{{ $emp->id }}"
+                                           min="0" max="480" placeholder="0"
+                                           value="{{ $prev?->minutos_tardanza ?: '' }}"
+                                           {{ ($prev ? $prev->estado : 'presente') !== 'tardanza' ? 'disabled' : '' }}>
+                                @endif
                             </td>
 
-                            {{-- Horas extra --}}
+                            {{-- Horas extra: calculadas si hay horario, manuales si no --}}
                             <td>
-                                <input type="number"
-                                       name="asistencias[{{ $emp->id }}][horas_extra]"
-                                       class="form-control form-control-sm"
-                                       min="0" max="12" step="0.5" placeholder="0"
-                                       value="{{ $prev?->horas_extra ?: '' }}">
+                                @if($emp->tiene_horario)
+                                    <span class="badge bg-light text-muted border calc-extra" style="font-size:.8rem;">—</span>
+                                @else
+                                    <input type="number"
+                                           name="asistencias[{{ $emp->id }}][horas_extra]"
+                                           class="form-control form-control-sm"
+                                           min="0" max="12" step="0.5" placeholder="0"
+                                           value="{{ $prev?->horas_extra ?: '' }}">
+                                @endif
                             </td>
 
                             {{-- Observaciones --}}
@@ -155,7 +180,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
+                            <td colspan="9" class="text-center text-muted py-4">
                                 No hay empleados activos registrados.
                             </td>
                         </tr>
@@ -168,6 +193,8 @@
             <small class="text-muted">
                 <i class="fas fa-info-circle me-1"></i>
                 Los cambios reemplazarán los registros existentes para esta fecha.
+                En los empleados con horario, el atraso y las horas extra se calculan
+                a partir de las horas marcadas.
             </small>
             <button type="submit" class="btn btn-primary px-4">
                 <i class="fas fa-save me-2"></i>Guardar Asistencias
@@ -178,22 +205,94 @@
 
 @push('scripts')
 <script>
+// Estados que se comparan contra el horario. En los demás (ausente, feriado,
+// licencia) no hay jornada que medir, así que no se calcula nada.
+const ESTADOS_TRABAJADOS = ['presente', 'tardanza', 'medio_dia'];
+
+const aMinutos = h => { const [hh, mm] = h.split(':').map(Number); return hh * 60 + mm; };
+
+// Desfase normalizado a ±12 h, para que un turno que cruza la medianoche no
+// se lea como casi un día de diferencia.
+function desfase(programada, marcada) {
+    let d = aMinutos(marcada) - aMinutos(programada);
+    if (d > 720) d -= 1440;
+    else if (d < -720) d += 1440;
+    return d;
+}
+
+/**
+ * Vista previa del atraso y las horas extra de una fila.
+ * El valor definitivo lo recalcula el servidor al guardar; esto es solo para
+ * que el encargado vea el resultado mientras carga las horas.
+ */
+function recalcularFila(fila) {
+    if (fila.dataset.horario !== '1') return;
+
+    const estado    = fila.querySelector('.estado-select').value;
+    const entrada   = fila.querySelector('.hora-entrada').value;
+    const salida    = fila.querySelector('.hora-salida').value;
+    const tolerancia = parseInt(fila.dataset.tolerancia, 10) || 0;
+
+    const badgeTardanza = fila.querySelector('.calc-tardanza');
+    const badgeExtra    = fila.querySelector('.calc-extra');
+
+    const pintar = (badge, texto, clase) => {
+        badge.textContent = texto;
+        badge.className = 'badge ' + clase;
+        badge.style.fontSize = '.8rem';
+    };
+
+    if (!ESTADOS_TRABAJADOS.includes(estado)) {
+        pintar(badgeTardanza, 'no aplica', 'bg-light text-muted border');
+        pintar(badgeExtra, 'no aplica', 'bg-light text-muted border');
+        return;
+    }
+
+    if (entrada) {
+        const atraso = Math.max(0, desfase(fila.dataset.entradaProg, entrada) - tolerancia);
+        atraso > 0
+            ? pintar(badgeTardanza, atraso + ' min tarde', 'bg-warning text-dark')
+            : pintar(badgeTardanza, 'a tiempo', 'bg-success');
+    } else {
+        pintar(badgeTardanza, '—', 'bg-light text-muted border');
+    }
+
+    if (salida) {
+        const extra = Math.max(0, desfase(fila.dataset.salidaProg, salida));
+        extra > 0
+            ? pintar(badgeExtra, extra + ' min (' + (extra / 60).toFixed(2) + ' h)', 'bg-primary')
+            : pintar(badgeExtra, 'sin extra', 'bg-light text-muted border');
+    } else {
+        pintar(badgeExtra, '—', 'bg-light text-muted border');
+    }
+}
+
+// Los empleados sin horario conservan la carga manual de siempre.
 function toggleTardanza(select) {
-    const empId = select.dataset.emp;
-    const field = document.querySelector(`.tardanza-field-${empId}`);
+    const field = document.querySelector(`.tardanza-field-${select.dataset.emp}`);
+    if (!field) return;
     field.disabled = select.value !== 'tardanza';
     if (field.disabled) field.value = '';
+}
+
+function filaCambio(elemento) {
+    const fila = elemento.closest('tr');
+    if (elemento.classList.contains('estado-select')) toggleTardanza(elemento);
+    recalcularFila(fila);
 }
 
 function marcarTodos(estado) {
     document.querySelectorAll('.estado-select').forEach(sel => {
         sel.value = estado;
-        toggleTardanza(sel);
+        filaCambio(sel);
     });
 }
 
-// Inicializar estado de tardanza al cargar
-document.querySelectorAll('.estado-select').forEach(sel => toggleTardanza(sel));
+document.querySelectorAll('tbody tr[data-emp]').forEach(fila => {
+    const sel = fila.querySelector('.estado-select');
+    if (sel) toggleTardanza(sel);
+    recalcularFila(fila);
+});
 </script>
 @endpush
 @endsection

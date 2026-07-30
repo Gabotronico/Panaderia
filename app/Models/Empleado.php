@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 class Empleado extends Model
@@ -9,7 +10,8 @@ class Empleado extends Model
     protected $fillable = [
         'nombre', 'apellido', 'ci', 'telefono', 'cargo_id',
         'salario_base', 'tipo_pago', 'factor_hora_extra',
-        'fecha_ingreso', 'activo', 'observaciones',
+        'fecha_ingreso', 'hora_entrada', 'hora_salida', 'minutos_tolerancia',
+        'activo', 'observaciones',
     ];
 
     protected $casts = [
@@ -127,5 +129,120 @@ class Empleado extends Model
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
+    }
+
+    // ── Horario de trabajo ──────────────────────────────────────────
+
+    /** Solo con entrada y salida definidas se puede calcular algo. */
+    public function getTieneHorarioAttribute(): bool
+    {
+        return $this->hora_entrada !== null && $this->hora_salida !== null;
+    }
+
+    public function getHorarioTextoAttribute(): string
+    {
+        if (!$this->tiene_horario) {
+            return 'Sin horario definido';
+        }
+
+        return $this->formatoHora($this->hora_entrada) . ' – ' . $this->formatoHora($this->hora_salida);
+    }
+
+    /** Tolerancia propia del empleado; si no tiene, la general del sistema. */
+    public function getToleranciaMinutosAttribute(): int
+    {
+        return (int) ($this->minutos_tolerancia ?? config('nomina.tolerancia_tardanza'));
+    }
+
+    /** Duración de la jornada según su horario; sin horario, la estándar. */
+    public function getJornadaHorasAttribute(): float
+    {
+        if (!$this->tiene_horario) {
+            return (float) config('nomina.horas_jornada');
+        }
+
+        return round($this->minutosEntreHoras($this->hora_entrada, $this->hora_salida) / 60, 2);
+    }
+
+    /**
+     * Minutos de atraso respecto a la hora de entrada programada.
+     *
+     * Descuenta la tolerancia y nunca devuelve negativo: llegar temprano no
+     * genera crédito, solo evita el atraso.
+     */
+    public function calcularTardanza(?string $horaMarcada): int
+    {
+        if (!$this->tiene_horario || !$horaMarcada) {
+            return 0;
+        }
+
+        $desfase = $this->desfaseMinutos($this->hora_entrada, $horaMarcada);
+
+        return max(0, $desfase - $this->tolerancia_minutos);
+    }
+
+    /**
+     * Horas extra: tiempo trabajado después de la hora de salida programada.
+     *
+     * Solo cuenta la salida. Entrar antes de hora no suma extras — si eso
+     * hiciera falta habría que autorizarlo aparte, no inferirlo del marcaje.
+     */
+    public function calcularHorasExtra(?string $horaMarcada): float
+    {
+        if (!$this->tiene_horario || !$horaMarcada) {
+            return 0.0;
+        }
+
+        return round(max(0, $this->desfaseMinutos($this->hora_salida, $horaMarcada)) / 60, 2);
+    }
+
+    /** Igual que calcularHorasExtra pero en minutos, para mostrar en pantalla. */
+    public function calcularMinutosExtra(?string $horaMarcada): int
+    {
+        if (!$this->tiene_horario || !$horaMarcada) {
+            return 0;
+        }
+
+        return max(0, $this->desfaseMinutos($this->hora_salida, $horaMarcada));
+    }
+
+    /**
+     * Minutos de $marcada respecto a $programada, normalizados a ±12 h.
+     *
+     * La normalización resuelve los turnos que cruzan medianoche: si el
+     * horario termina a las 06:00 y el marcaje dice 05:50, la resta cruda da
+     * −10 min (salió antes), no +1430 (se quedó casi un día).
+     */
+    private function desfaseMinutos(string $programada, string $marcada): int
+    {
+        $diff = $this->minutoDelDia($marcada) - $this->minutoDelDia($programada);
+
+        if ($diff > 720) {
+            $diff -= 1440;
+        } elseif ($diff < -720) {
+            $diff += 1440;
+        }
+
+        return $diff;
+    }
+
+    /** Duración de un tramo horario, contemplando el cruce de medianoche. */
+    private function minutosEntreHoras(string $desde, string $hasta): int
+    {
+        $minutos = $this->minutoDelDia($hasta) - $this->minutoDelDia($desde);
+
+        return $minutos <= 0 ? $minutos + 1440 : $minutos;
+    }
+
+    private function minutoDelDia(string $hora): int
+    {
+        $t = Carbon::parse($hora);
+
+        return $t->hour * 60 + $t->minute;
+    }
+
+    private function formatoHora(string $hora): string
+    {
+        return Carbon::parse($hora)->format('H:i');
     }
 }

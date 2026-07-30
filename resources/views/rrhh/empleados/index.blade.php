@@ -87,6 +87,7 @@
                         <th class="text-end">Salario base</th>
                         <th class="text-end">Por día</th>
                         <th class="text-end">Por hora</th>
+                        <th>Horario</th>
                         <th>Antigüedad</th>
                         <th class="text-center">Estado</th>
                         <th class="text-end">Acciones</th>
@@ -115,6 +116,14 @@
                         <td class="text-end"><x-money :amount="$emp->valor_dia" /></td>
                         <td class="text-end text-muted"><x-money :amount="$emp->tarifa_hora" /></td>
                         <td>
+                            @if($emp->tiene_horario)
+                                <small class="text-nowrap">{{ $emp->horario_texto }}</small>
+                                <br><small class="text-muted">{{ $emp->jornada_horas }} h · tol. {{ $emp->tolerancia_minutos }} min</small>
+                            @else
+                                <span class="badge bg-secondary" style="font-size:.65rem;">Sin horario</span>
+                            @endif
+                        </td>
+                        <td>
                             <small>{{ $emp->antiguedad_texto }}</small>
                             <br><small class="text-muted">desde {{ $emp->fecha_ingreso?->format('d/m/Y') }}</small>
                         </td>
@@ -136,7 +145,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="p-0">
+                        <td colspan="9" class="p-0">
                             <x-empty-state icon="user-slash"
                                            title="No hay empleados que coincidan"
                                            message="Ajusta los filtros o registra el primer empleado del equipo.">

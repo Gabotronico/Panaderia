@@ -124,6 +124,7 @@
                 <th>Cierre</th>
                 <th class="text-right">Monto Inicial</th>
                 <th class="text-right">Ventas</th>
+                <th class="text-right">QR</th>
                 <th class="text-right">Monto Final</th>
                 <th class="text-right">Diferencia</th>
                 <th class="text-center">Estado</th>
@@ -141,6 +142,13 @@
                     <td class="text-right">Bs{{ number_format($corte->total_ventas, 2) }}</td>
                     <td class="text-right">
                         @if($corte->estado == 'cerrado')
+                            Bs{{ number_format($corte->total_qr, 2) }}
+                        @else
+                            -
+                        @endif
+                    </td>
+                    <td class="text-right">
+                        @if($corte->estado == 'cerrado')
                             Bs {{ number_format($corte->monto_final, 2) }}
                         @else
                             -
@@ -148,16 +156,13 @@
                     </td>
                     <td class="text-right">
                         @if($corte->estado == 'cerrado')
-                            @php
-                                $sobranteReal = $corte->monto_final - $corte->total_ventas;
-                                $diferenciaMontoInicial = $sobranteReal - $corte->monto_inicial;
-                            @endphp
-                            @if(abs($diferenciaMontoInicial) < 0.01)
-                                <span class="badge badge-success">Bs{{ number_format($corte->diferencia, 2) }}</span>
-                            @elseif($diferenciaMontoInicial > 0)
-                                <span class="badge badge-warning">+Bs{{ number_format($corte->diferencia, 2) }}</span>
+                            @php $dif = $corte->diferencia_efectivo; @endphp
+                            @if(abs($dif) < 0.01)
+                                <span class="badge badge-success">Bs0.00</span>
+                            @elseif($dif > 0)
+                                <span class="badge badge-warning">+Bs{{ number_format($dif, 2) }}</span>
                             @else
-                                <span class="badge badge-danger">Bs{{ number_format($corte->diferencia, 2) }}</span>
+                                <span class="badge badge-danger">Bs{{ number_format($dif, 2) }}</span>
                             @endif
                         @else
                             -
@@ -178,6 +183,7 @@
                 <td colspan="5" class="text-right">TOTALES:</td>
                 <td class="text-right">Bs{{ number_format($totalInicial, 2) }}</td>
                 <td class="text-right">Bs{{ number_format($totalVentas, 2) }}</td>
+                <td class="text-right">Bs{{ number_format($totalQr, 2) }}</td>
                 <td class="text-right">Bs{{ number_format($cortes->where('estado', 'cerrado')->sum('monto_final'), 2) }}</td>
                 <td class="text-right">
                     @if($totalDiferencia >= 0)

@@ -52,20 +52,29 @@
 
                                 @if($puedeVerEsperado)
                                     <p class="mb-1"><strong>Total Ventas:</strong> <span class="text-success">Bs{{ number_format($totalVentas, 2) }}</span></p>
+                                    <p class="mb-1 ps-3 small">
+                                        <i class="fas fa-money-bill-wave text-success me-1"></i>
+                                        Efectivo: <strong>Bs{{ number_format($totales['efectivo'], 2) }}</strong>
+                                    </p>
+                                    <p class="mb-1 ps-3 small">
+                                        <i class="fas fa-qrcode text-primary me-1"></i>
+                                        QR: <strong>Bs{{ number_format($totales['qr'], 2) }}</strong>
+                                    </p>
                                     <hr class="my-2">
-                                    <p class="mb-1"><strong>Efectivo Esperado:</strong> <span class="text-info fs-5">Bs{{ number_format($corte->monto_inicial + $totalVentas, 2) }}</span></p>
-                                    <small class="text-muted">
-                                        <i class="fas fa-info-circle"></i> Debe incluir el monto inicial
+                                    <p class="mb-1"><strong>Efectivo Esperado:</strong> <span class="text-info fs-5">Bs{{ number_format($corte->monto_inicial + $totales['efectivo'], 2) }}</span></p>
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-info-circle"></i> Monto inicial + ventas en efectivo. El QR no entra al cajón.
                                     </small>
+                                    <p class="mb-0 mt-2"><strong>QR Esperado:</strong> <span class="text-primary">Bs{{ number_format($totales['qr'], 2) }}</span></p>
                                 @else
                                     <hr class="my-2">
                                     <p class="mb-1 text-muted">
                                         <i class="fas fa-eye-slash me-1"></i>
-                                        <strong>Efectivo esperado:</strong> oculto
+                                        <strong>Montos esperados:</strong> ocultos
                                     </p>
                                     <small class="text-muted">
-                                        Contá el dinero de la caja y registrá el monto exacto.
-                                        El sistema hará la verificación.
+                                        Contá el dinero de la caja y revisá los cobros por QR,
+                                        y registrá cada monto exacto. El sistema hará la verificación.
                                     </small>
                                 @endif
                             </div>
@@ -77,11 +86,14 @@
                 @if($puedeVerEsperado)
                 <div class="alert alert-info mb-4">
                     <i class="fas fa-lightbulb me-2"></i>
-                    <strong>Importante:</strong> Al cerrar la caja, el efectivo contado debe incluir:
+                    <strong>Importante:</strong> el efectivo y el QR se arquean por separado.
                     <ul class="mb-0 mt-2">
-                        <li>El <strong>monto inicial</strong> con el que se abrió la caja (Bs{{ number_format($corte->monto_inicial, 2) }})</li>
-                        <li>Más el <strong>efectivo de las ventas</strong> del turno (Bs{{ number_format($totalVentas, 2) }})</li>
-                        <li><strong>Total esperado:</strong> Bs {{ number_format($corte->monto_inicial + $totalVentas, 2) }}</li>
+                        <li>El <strong>efectivo contado</strong> debe incluir el monto inicial
+                            (Bs{{ number_format($corte->monto_inicial, 2) }}) más las ventas cobradas en efectivo
+                            (Bs{{ number_format($totales['efectivo'], 2) }}) =
+                            <strong>Bs{{ number_format($corte->monto_inicial + $totales['efectivo'], 2) }}</strong></li>
+                        <li>El <strong>QR</strong> se verifica contra los comprobantes recibidos:
+                            <strong>Bs{{ number_format($totales['qr'], 2) }}</strong></li>
                     </ul>
                 </div>
                 @else
@@ -90,6 +102,7 @@
                     <strong>Cómo hacer el cierre:</strong> contá todo el efectivo que hay en la caja,
                     incluyendo el monto inicial con el que abriste el turno
                     (Bs{{ number_format($corte->monto_inicial, 2) }}), y registrá ese total.
+                    Aparte, revisá los cobros por QR en tu app bancaria y registrá esa suma.
                     <div class="mt-2 mb-0">
                         <small>
                             El conteo se hace a ciegas para que el arqueo sea confiable.
@@ -110,6 +123,7 @@
                                 <tr>
                                     <th>Hora</th>
                                     <th>Número</th>
+                                    <th>Pago</th>
                                     <th class="text-end">Total</th>
                                 </tr>
                             </thead>
@@ -126,13 +140,28 @@
                                 <tr>
                                     <td>{{ $venta->created_at->format('H:i:s') }}</td>
                                     <td>{{ $venta->numero_venta }}</td>
+                                    <td>
+                                        @if($venta->tipo_pago === 'qr')
+                                            <span class="badge bg-primary"><i class="fas fa-qrcode me-1"></i>QR</span>
+                                        @else
+                                            <span class="badge bg-success"><i class="fas fa-money-bill-wave me-1"></i>Efectivo</span>
+                                        @endif
+                                    </td>
                                     <td class="text-end">Bs{{ number_format($venta->total, 2) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
                             <tfoot class="table-light">
                                 <tr>
-                                    <th colspan="2" class="text-end">Total:</th>
+                                    <th colspan="3" class="text-end">Efectivo:</th>
+                                    <th class="text-end">Bs{{ number_format($totales['efectivo'], 2) }}</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="3" class="text-end">QR:</th>
+                                    <th class="text-end">Bs{{ number_format($totales['qr'], 2) }}</th>
+                                </tr>
+                                <tr>
+                                    <th colspan="3" class="text-end">Total:</th>
                                     <th class="text-end">Bs{{ number_format($totalVentas, 2) }}</th>
                                 </tr>
                             </tfoot>
@@ -154,7 +183,7 @@
                     @method('PUT')
                     
                     <h6 class="mb-3"><i class="fas fa-dollar-sign me-2"></i>Conteo de Efectivo</h6>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -163,14 +192,14 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text">Bs</span>
-                                    <input type="number" 
-                                           class="form-control form-control-lg @error('total_efectivo') is-invalid @enderror" 
-                                           id="total_efectivo" 
-                                           name="total_efectivo" 
-                                           value="{{ old('total_efectivo') }}" 
-                                           step="0.01" 
-                                           min="0" 
-                                           required 
+                                    <input type="number"
+                                           class="form-control form-control-lg @error('total_efectivo') is-invalid @enderror"
+                                           id="total_efectivo"
+                                           name="total_efectivo"
+                                           value="{{ old('total_efectivo') }}"
+                                           step="0.01"
+                                           min="0"
+                                           required
                                            autofocus
                                            oninput="calcularDiferencia()">
                                     @error('total_efectivo')
@@ -180,7 +209,7 @@
                                 <small class="text-muted">Cuente todo el efectivo presente en la caja (incluyendo monto inicial)</small>
                             </div>
                         </div>
-                        
+
                         @if($puedeVerEsperado)
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -195,7 +224,52 @@
                         </div>
                         @endif
                     </div>
-                    
+
+                    {{-- El QR se arquea aparte: ese dinero va a la cuenta, no al cajón. --}}
+                    <h6 class="mb-3 mt-2"><i class="fas fa-qrcode me-2"></i>Cobros por QR</h6>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="total_qr" class="form-label">
+                                    Total Cobrado por QR <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Bs</span>
+                                    <input type="number"
+                                           class="form-control form-control-lg @error('total_qr') is-invalid @enderror"
+                                           id="total_qr"
+                                           name="total_qr"
+                                           value="{{ old('total_qr', 0) }}"
+                                           step="0.01"
+                                           min="0"
+                                           required
+                                           oninput="calcularDiferenciaQr()">
+                                    @error('total_qr')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <small class="text-muted">
+                                    Sume los pagos por QR recibidos en el turno. Si no hubo, deje 0.
+                                </small>
+                            </div>
+                        </div>
+
+                        @if($puedeVerEsperado)
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Diferencia QR</label>
+                                <div class="card" id="diferencia-qr-card">
+                                    <div class="card-body text-center">
+                                        <h3 class="mb-0" id="diferencia-qr-display">Bs0.00</h3>
+                                        <small class="text-muted" id="diferencia-qr-texto">Ingrese el QR verificado</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+
                     <!-- Desglose de Billetes y Monedas (Opcional) -->
                     <div class="card mb-3">
                         <div class="card-header bg-light">
@@ -301,65 +375,58 @@
     const montoInicial = {{ $corte->monto_inicial }};
 
 @unless($puedeVerEsperado)
-    // El cajero cierra la caja a ciegas: ni el total de ventas ni el cálculo
-    // de la diferencia se envían al navegador.
+    // El cajero cierra la caja a ciegas: ni las ventas del turno ni el cálculo
+    // de las diferencias se envían al navegador.
     function calcularDiferencia() {}
+    function calcularDiferenciaQr() {}
 @else
-    const totalVentas = {{ $totalVentas }};
-    const efectivoEsperado = montoInicial + totalVentas;
+    // El QR queda fuera del efectivo esperado a propósito: ese dinero entra a
+    // la cuenta, no al cajón. Cada medio de pago se arquea contra lo suyo.
+    const ventasEfectivo   = {{ $totales['efectivo'] }};
+    const ventasQr         = {{ $totales['qr'] }};
+    const efectivoEsperado = montoInicial + ventasEfectivo;
+
+    function pintarDiferencia(card, display, texto, diferencia, etiquetaCuadra) {
+        card.classList.remove('border-success', 'border-danger', 'border-warning', 'border', 'border-2');
+        display.textContent = 'Bs' + diferencia.toFixed(2);
+
+        if (Math.abs(diferencia) < 0.01) {
+            card.classList.add('border-success', 'border', 'border-2');
+            texto.className = 'text-success';
+            texto.innerHTML = '✓ ' + etiquetaCuadra;
+        } else if (diferencia < 0) {
+            card.classList.add('border-danger', 'border', 'border-2');
+            texto.className = 'text-danger';
+            texto.innerHTML = '↓ Faltan Bs' + Math.abs(diferencia).toFixed(2);
+        } else {
+            card.classList.add('border-warning', 'border', 'border-2');
+            texto.className = 'text-warning';
+            texto.innerHTML = '↑ Sobran Bs' + diferencia.toFixed(2);
+        }
+    }
 
     function calcularDiferencia() {
-        const totalEfectivo = parseFloat(document.getElementById('total_efectivo').value) || 0;
+        const contado = parseFloat(document.getElementById('total_efectivo').value) || 0;
 
-        // Diferencia = Efectivo Contado - Total Ventas (cuánto sobra o falta respecto a las ventas)
-        const diferencia = totalEfectivo - totalVentas;
-        
-        // Sobrante Real = Lo que queda después de cubrir las ventas
-        const sobranteReal = totalEfectivo - totalVentas;
-        
-        // Diferencia con Monto Inicial = Cuánto sobra comparado con el monto inicial
-        const diferenciaMontoInicial = sobranteReal - montoInicial;
-        
-        const diferenciaDisplay = document.getElementById('diferencia-display');
-        const diferenciaTexto = document.getElementById('diferencia-texto');
-        const diferenciaCard = document.getElementById('diferencia-card');
-        
-        // Remover clases anteriores
-        diferenciaCard.classList.remove('border-success', 'border-danger', 'border-info', 'border-warning');
-        
-        // Mostrar la diferencia (sobrante después de ventas)
-        diferenciaDisplay.textContent = 'Bs' + diferencia.toFixed(2);
-        
-        // Validar el sobrante comparado con el monto inicial
-        if (Math.abs(diferenciaMontoInicial) < 0.01) {
-            // PERFECTO: El sobrante coincide exactamente con el monto inicial
-            diferenciaCard.classList.add('border-success', 'border', 'border-2');
-            diferenciaTexto.innerHTML = '✓ Cuadra perfecto<br><small class="text-success">Sobrante (Bs' + sobranteReal.toFixed(2) + ') = Monto Inicial (Bs' + montoInicial.toFixed(2) + ')</small>';
-            diferenciaTexto.className = 'text-success';
-        } else if (diferencia < 0) {
-            // FALTANTE: No alcanza ni para cubrir las ventas
-            diferenciaCard.classList.add('border-danger', 'border', 'border-2');
-            diferenciaTexto.innerHTML = '↓ Faltante crítico<br><small class="text-danger">Falta Bs' + Math.abs(diferencia).toFixed(2) + ' para cubrir las ventas</small>';
-            diferenciaTexto.className = 'text-danger';
-        } else if (sobranteReal < montoInicial) {
-            // SOBRANTE MENOR: Hay sobrante pero es menor al monto inicial
-            const faltante = montoInicial - sobranteReal;
-            diferenciaCard.classList.add('border-warning', 'border', 'border-2');
-            diferenciaTexto.innerHTML = '⚠️ Sobrante insuficiente<br><small class="text-warning">Sobrante: Bs' + sobranteReal.toFixed(2) + ' | Falta: Bs' + faltante.toFixed(2) + ' del monto inicial</small>';
-            diferenciaTexto.className = 'text-warning';
-        } else if (sobranteReal > montoInicial) {
-            // SOBRANTE MAYOR: Hay más sobrante del esperado
-            const excedente = sobranteReal - montoInicial;
-            diferenciaCard.classList.add('border-info', 'border', 'border-2');
-            diferenciaTexto.innerHTML = '↑ Sobrante mayor<br><small class="text-info">Sobrante: $' + sobranteReal.toFixed(2) + ' | Excede: Bs' + excedente.toFixed(2) + ' del monto inicial</small>';
-            diferenciaTexto.className = 'text-info';
-        } else if (diferencia === 0) {
-            // CASO ESPECIAL: Solo cubrió las ventas, sin sobrante
-            diferenciaCard.classList.add('border-danger', 'border', 'border-2');
-            diferenciaTexto.innerHTML = '⚠️ Sin sobrante<br><small class="text-danger">Solo cubrió ventas. Falta monto inicial (Bs' + montoInicial.toFixed(2) + ')</small>';
-            diferenciaTexto.className = 'text-danger';
-        }
-        
+        pintarDiferencia(
+            document.getElementById('diferencia-card'),
+            document.getElementById('diferencia-display'),
+            document.getElementById('diferencia-texto'),
+            contado - efectivoEsperado,
+            'Cuadra perfecto (esperado Bs' + efectivoEsperado.toFixed(2) + ')'
+        );
+    }
+
+    function calcularDiferenciaQr() {
+        const contado = parseFloat(document.getElementById('total_qr').value) || 0;
+
+        pintarDiferencia(
+            document.getElementById('diferencia-qr-card'),
+            document.getElementById('diferencia-qr-display'),
+            document.getElementById('diferencia-qr-texto'),
+            contado - ventasQr,
+            'Coincide con las ventas por QR (Bs' + ventasQr.toFixed(2) + ')'
+        );
     }
 @endunless
 
@@ -377,78 +444,66 @@
             { valor: 1, input: 9 },
             { valor: 0.50, input: 10 }
         ];
-        
+
         const inputs = document.querySelectorAll('#desglose input[type="number"]');
         let total = 0;
-        
+
         denominaciones.forEach(den => {
             const cantidad = parseFloat(inputs[den.input].value) || 0;
             total += den.valor * cantidad;
         });
-        
+
         document.getElementById('total-desglose').textContent = 'Bs' + total.toFixed(2);
     }
-    
+
     function aplicarDesglose() {
-        const totalDesglose = document.getElementById('total-desglose').textContent.replace('$', '');
+        const totalDesglose = document.getElementById('total-desglose').textContent.replace('Bs', '');
         document.getElementById('total_efectivo').value = totalDesglose;
         calcularDiferencia();
     }
-    
+
     // Validar antes de enviar
     document.getElementById('form-cierre').addEventListener('submit', function(e) {
-        const totalEfectivo = parseFloat(document.getElementById('total_efectivo').value) || 0;
-        
-        if (totalEfectivo === 0) {
-            e.preventDefault();
-            alert('Debe ingresar el efectivo total contado en caja');
-            return false;
-        }
-        
-        const diferencia = totalEfectivo - totalVentas;
-        const sobranteReal = totalEfectivo - totalVentas;
-        const diferenciaMontoInicial = sobranteReal - montoInicial;
-        
-        // Alerta si hay faltante (no cubre ni las ventas)
-        if (diferencia < 0) {
-            if (!confirm(`⚠️ FALTANTE CRÍTICO:\n\nFalta Bs${Math.abs(diferencia).toFixed(2)} para cubrir las ventas.\n\n¿Está seguro de cerrar la caja con este faltante?`)) {
+        const efectivoContado = parseFloat(document.getElementById('total_efectivo').value) || 0;
+
+        if (efectivoContado === 0) {
+            if (!confirm('Registró Bs0.00 de efectivo en caja. ¿Es correcto?')) {
                 e.preventDefault();
                 return false;
             }
         }
-        
-        // Alerta si la diferencia con el monto inicial es muy grande
-        if (Math.abs(diferenciaMontoInicial) > 100) {
-            if (!confirm(`Hay una diferencia de Bs${diferenciaMontoInicial.toFixed(2)} con el monto inicial. ¿Está seguro de cerrar la caja?`)) {
+
+@unless($puedeVerEsperado)
+        // Sin los montos esperados no hay nada más que validar del lado del
+        // cajero: la verificación la hace el servidor al guardar el cierre.
+        return true;
+@else
+        const qrContado = parseFloat(document.getElementById('total_qr').value) || 0;
+        const difEfectivo = efectivoContado - efectivoEsperado;
+        const difQr = qrContado - ventasQr;
+
+        if (Math.abs(difEfectivo) >= 0.01) {
+            const detalle = difEfectivo < 0
+                ? `Faltan Bs${Math.abs(difEfectivo).toFixed(2)}`
+                : `Sobran Bs${difEfectivo.toFixed(2)}`;
+
+            if (!confirm(`⚠️ EFECTIVO\n\nContado: Bs${efectivoContado.toFixed(2)}\nEsperado: Bs${efectivoEsperado.toFixed(2)}\n${detalle}\n\n¿Desea continuar con el cierre?`)) {
                 e.preventDefault();
                 return false;
             }
         }
-        
-        // Alerta si el sobrante no coincide con el monto inicial
-        if (Math.abs(diferenciaMontoInicial) > 0.01) {
-            let mensaje;
-            if (diferenciaMontoInicial < 0) {
-                // Sobrante menor al monto inicial
-                mensaje = `⚠️ ADVERTENCIA:\n\nSobrante: Bs${sobranteReal.toFixed(2)}\nMonto Inicial: $${montoInicial.toFixed(2)}\n\nFaltan $${Math.abs(diferenciaMontoInicial).toFixed(2)} del monto inicial.\n\n¿Desea continuar con el cierre?`;
-            } else {
-                // Sobrante mayor al monto inicial
-                mensaje = `⚠️ ADVERTENCIA:\n\nSobrante: Bs${sobranteReal.toFixed(2)}\nMonto Inicial: $${montoInicial.toFixed(2)}\n\nHay $${diferenciaMontoInicial.toFixed(2)} de más del monto inicial.\n\n¿Desea continuar con el cierre?`;
-            }
-            
-            if (!confirm(mensaje)) {
+
+        if (Math.abs(difQr) >= 0.01) {
+            const detalle = difQr < 0
+                ? `Faltan Bs${Math.abs(difQr).toFixed(2)}`
+                : `Sobran Bs${difQr.toFixed(2)}`;
+
+            if (!confirm(`⚠️ QR\n\nVerificado: Bs${qrContado.toFixed(2)}\nVentas por QR: Bs${ventasQr.toFixed(2)}\n${detalle}\n\n¿Desea continuar con el cierre?`)) {
                 e.preventDefault();
                 return false;
             }
         }
-        
-        // Alerta crítica si solo cubrió las ventas (sin sobrante)
-        if (diferencia === 0) {
-            if (!confirm('⚠️ ALERTA CRÍTICA:\n\nSolo cubrió el total de ventas.\nNo hay sobrante del monto inicial (Bs' + montoInicial.toFixed(2) + ').\n\n¿Está seguro de que el conteo es correcto?')) {
-                e.preventDefault();
-                return false;
-            }
-        }
+@endunless
     });
 </script>
 @endpush
