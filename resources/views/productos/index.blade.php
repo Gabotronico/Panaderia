@@ -11,6 +11,27 @@
     @endcan
 </div>
 
+{{-- Sin almacenes no hay a dónde transferir. Se avisa acá porque el botón
+     de transferencia queda deshabilitado y sin este aviso no se entiende. --}}
+@if($almacenes->isEmpty())
+<div class="alert alert-warning d-flex align-items-start gap-2">
+    <i class="fas fa-warehouse mt-1"></i>
+    <div>
+        <strong>No hay almacenes creados.</strong>
+        Para entregarle productos a un cajero primero necesitás un almacén: creá uno,
+        asignale el cajero desde su ficha y recién ahí vas a poder transferir stock
+        con el botón <i class="fas fa-truck"></i> de cada producto.
+        @can('crear-almacenes')
+        <div class="mt-2">
+            <a href="{{ route('almacenes.create') }}" class="btn btn-sm btn-warning">
+                <i class="fas fa-plus me-1"></i>Crear almacén
+            </a>
+        </div>
+        @endcan
+    </div>
+</div>
+@endif
+
 {{-- Buscador live --}}
 <div class="row g-2 align-items-center mb-3">
     <div class="col-sm-5 col-md-4">
@@ -105,9 +126,19 @@
                             </td>
                             <td>
                                 @can('editar-productos')
+                                {{-- El botón se muestra siempre: si no se puede transferir,
+                                     queda deshabilitado explicando por qué. Antes desaparecía
+                                     sin aviso y no había forma de saber qué faltaba. --}}
                                 @if($producto->stock > 0 && $almacenes->isNotEmpty())
                                 <button class="btn btn-primary btn-sm" title="Transferir a almacén"
                                         onclick="abrirTransferencia({{ $producto->id }}, '{{ addslashes($producto->nombre) }}', {{ $producto->stock }})">
+                                    <i class="fas fa-truck"></i>
+                                </button>
+                                @else
+                                <button class="btn btn-outline-secondary btn-sm" disabled
+                                        title="{{ $almacenes->isEmpty()
+                                            ? 'No hay almacenes creados. Creá uno y asignale un cajero para poder transferir.'
+                                            : 'Este producto no tiene stock disponible para transferir.' }}">
                                     <i class="fas fa-truck"></i>
                                 </button>
                                 @endif
@@ -190,6 +221,13 @@
                                 @if($producto->stock > 0 && $almacenes->isNotEmpty())
                                 <button class="btn btn-primary btn-sm flex-fill" title="Transferir"
                                         onclick="abrirTransferencia({{ $producto->id }}, '{{ addslashes($producto->nombre) }}', {{ $producto->stock }})">
+                                    <i class="fas fa-truck"></i>
+                                </button>
+                                @else
+                                <button class="btn btn-outline-secondary btn-sm flex-fill" disabled
+                                        title="{{ $almacenes->isEmpty()
+                                            ? 'No hay almacenes creados. Creá uno y asignale un cajero para poder transferir.'
+                                            : 'Este producto no tiene stock disponible para transferir.' }}">
                                     <i class="fas fa-truck"></i>
                                 </button>
                                 @endif

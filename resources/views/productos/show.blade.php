@@ -85,6 +85,13 @@
                             onclick="abrirTransferencia({{ $producto->id }}, '{{ addslashes($producto->nombre) }}', {{ $producto->stock }})">
                         <i class="fas fa-truck me-2"></i>Transferir a Almacén
                     </button>
+                    @else
+                    <button type="button" class="btn btn-outline-secondary btn-sm" disabled
+                            title="{{ $almacenes->isEmpty()
+                                ? 'No hay almacenes creados.'
+                                : 'Este producto no tiene stock disponible.' }}">
+                        <i class="fas fa-truck me-2"></i>Transferir a Almacén
+                    </button>
                     @endif
                     @endcan
                 </div>
@@ -93,8 +100,13 @@
                     <div class="alert alert-info py-2">
                         <i class="fas fa-info-circle me-2"></i>
                         Este producto aún no tiene stock distribuido en ningún almacén.
-                        @if($producto->stock > 0)
+                        @if($almacenes->isEmpty())
+                            Todavía no hay almacenes creados: creá uno y asignale un cajero
+                            para poder entregarle producto.
+                        @elseif($producto->stock > 0)
                             Usa el botón <strong>Transferir a Almacén</strong> para distribuir las {{ $producto->stock }} unidades disponibles.
+                        @else
+                            Cuando el producto tenga stock vas a poder transferirlo.
                         @endif
                     </div>
                 @else
