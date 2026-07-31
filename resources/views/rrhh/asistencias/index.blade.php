@@ -53,7 +53,6 @@
                         <th>Entrada</th>
                         <th>Salida</th>
                         <th class="text-center">Atraso</th>
-                        <th class="text-center">H. Extra</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -86,14 +85,6 @@
                                 <span class="text-muted">—</span>
                             @endif
                         </td>
-                        <td class="text-center">
-                            @if($asis->minutos_extra > 0)
-                                <span class="badge bg-primary">{{ $asis->minutos_extra }} min</span>
-                                <br><small class="text-muted">{{ number_format($asis->horas_extra, 2) }} h</small>
-                            @else
-                                <span class="text-muted">—</span>
-                            @endif
-                        </td>
                         <td>
                             <a href="{{ route('asistencias.edit', $asis) }}" class="btn btn-warning btn-sm">
                                 <i class="fas fa-edit"></i>
@@ -101,7 +92,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="10" class="text-center text-muted py-4">
+                    <tr><td colspan="9" class="text-center text-muted py-4">
                         No hay registros para esta fecha.
                         <a href="{{ route('asistencias.registrar', ['fecha' => $fecha]) }}">Registrar ahora</a>
                     </td></tr>

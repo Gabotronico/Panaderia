@@ -713,8 +713,10 @@ class GenerarDocumentacion extends Command
             ['cargo_id',          'bigint (FK)',         'Puesto que ocupa'],
             ['salario_base',      'decimal(10,2)',       'Sueldo del ciclo en Bs'],
             ['tipo_pago',         'mensual | semanal',   'Modalidad de pago'],
-            ['factor_hora_extra', 'decimal(4,2)',        'Multiplicador de hora extra (1.50)'],
             ['fecha_ingreso',     'date',                'Inicio de la relación laboral'],
+            ['hora_entrada',      'time',                'Entrada programada; referencia del atraso'],
+            ['hora_salida',       'time',                'Salida programada'],
+            ['minutos_tolerancia','entero',              'Gracia antes de contar atraso (null usa config)'],
             ['activo',            'booleano',            'Si sigue trabajando'],
         ]);
 
@@ -726,8 +728,11 @@ class GenerarDocumentacion extends Command
             ['hora_entrada',     'time',          'Marcaje de entrada'],
             ['hora_salida',      'time',          'Marcaje de salida'],
             ['minutos_tardanza', 'entero',        'Minutos de retraso'],
-            ['horas_extra',      'decimal(5,2)',  'Horas trabajadas de más'],
         ]);
+        $this->nota('Cálculo automático',
+            'Si el empleado tiene horario definido, los minutos de retraso se calculan comparando ' .
+            'la hora de entrada marcada contra la programada, descontando su tolerancia. En ese caso ' .
+            'el dato no se carga a mano. Los empleados sin horario conservan la carga manual.');
         $this->nota('Restricción importante',
             'La combinación de empleado y fecha es única: no pueden existir dos registros de ' .
             'asistencia para la misma persona el mismo día. Por eso, al volver a guardar una ' .
@@ -740,7 +745,6 @@ class GenerarDocumentacion extends Command
             ['planillas.estado',                      'borrador | cerrada | pagada', 'Etapa del proceso'],
             ['planillas.total_general',               'decimal(12,2)',               'Suma a pagar'],
             ['planilla_empleado.dias_trabajados',     'entero',                      'Días presentes más tardanzas'],
-            ['planilla_empleado.horas_extra',         'decimal(6,2)',                'Horas extra del período'],
             ['planilla_empleado.salario_bruto',       'decimal(10,2)',               'Ganado antes de descuentos'],
             ['planilla_empleado.adelantos_descontados','decimal(10,2)',              'Adelantos aplicados'],
             ['planilla_empleado.total_neto',          'decimal(10,2)',               'Monto final a entregar'],

@@ -62,7 +62,6 @@ class EmpleadoController extends Controller
             'cargo_id'         => 'required|exists:cargos,id',
             'salario_base'     => 'required|numeric|min:0',
             'tipo_pago'        => 'required|in:mensual,semanal',
-            'factor_hora_extra'=> 'required|numeric|min:1',
             'fecha_ingreso'    => 'required|date',
             // El horario habilita el cálculo automático de tardanza y horas
             // extra. Es opcional, pero si se define uno hacen falta los dos
@@ -126,7 +125,6 @@ class EmpleadoController extends Controller
             'cargo_id'         => 'required|exists:cargos,id',
             'salario_base'     => 'required|numeric|min:0',
             'tipo_pago'        => 'required|in:mensual,semanal',
-            'factor_hora_extra'=> 'required|numeric|min:1',
             'fecha_ingreso'    => 'required|date',
             // El horario habilita el cálculo automático de tardanza y horas
             // extra. Es opcional, pero si se define uno hacen falta los dos

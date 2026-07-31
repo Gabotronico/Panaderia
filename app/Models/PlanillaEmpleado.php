@@ -11,13 +11,16 @@ class PlanillaEmpleado extends Model
     protected $fillable = [
         'planilla_id', 'empleado_id',
         'dias_trabajados', 'dias_ausentes', 'dias_tardanza', 'dias_medio',
+<<<<<<< Updated upstream
         'horas_extra', 'monto_horas_extra', 'adelantos_descontados',
         'salario_bruto', 'total_neto',
+=======
+        'adelantos_descontados',
+        'salario_bruto', 'descuento_tardanzas', 'total_neto',
+>>>>>>> Stashed changes
     ];
 
     protected $casts = [
-        'horas_extra'           => 'decimal:2',
-        'monto_horas_extra'     => 'decimal:2',
         'adelantos_descontados' => 'decimal:2',
         'salario_bruto'         => 'decimal:2',
         'total_neto'            => 'decimal:2',

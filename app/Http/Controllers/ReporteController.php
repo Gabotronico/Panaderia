@@ -41,28 +41,63 @@ class ReporteController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalVentas = $ventas->sum('total');
-        $totalDescuentos = $ventas->sum('descuento');
-        $cantidadVentas = $ventas->count();
+        $totalVentas     = (float) $ventas->sum('total');
+        $totalSubtotal   = (float) $ventas->sum('subtotal');
+        $totalDescuentos = (float) $ventas->sum('descuento');
+        $cantidadVentas  = $ventas->count();
+        $ticketPromedio  = $cantidadVentas > 0 ? round($totalVentas / $cantidadVentas, 2) : 0.0;
 
-        if ($request->tipo === 'pdf') {
-            $pdf = Pdf::loadView('reportes.ventas-pdf', compact(
-                'ventas',
-                'totalVentas',
-                'totalDescuentos',
-                'cantidadVentas',
-                'request'
-            ));
-            return $pdf->download('reporte-ventas.pdf');
-        }
+        // Desglose por medio de cobro: el efectivo se arquea en caja, el QR va
+        // a la cuenta. Verlos separados es lo primero que se pregunta al
+        // cerrar el período.
+        $porPago = [
+            'efectivo' => (float) $ventas->where('tipo_pago', 'efectivo')->sum('total'),
+            'qr'       => (float) $ventas->where('tipo_pago', 'qr')->sum('total'),
+        ];
 
-        return view('reportes.ventas', compact(
+        // Rendimiento por cajero, de mayor a menor facturación
+        $porCajero = $ventas->groupBy(fn ($v) => $v->user->name ?? 'Sin asignar')
+            ->map(fn ($grupo) => [
+                'cantidad' => $grupo->count(),
+                'total'    => (float) $grupo->sum('total'),
+                'efectivo' => (float) $grupo->where('tipo_pago', 'efectivo')->sum('total'),
+                'qr'       => (float) $grupo->where('tipo_pago', 'qr')->sum('total'),
+            ])
+            ->sortByDesc('total');
+
+        // Evolución diaria, para ver de un vistazo los picos del período
+        $porDia = $ventas->groupBy(fn ($v) => $v->created_at->toDateString())
+            ->map(fn ($grupo) => [
+                'cantidad' => $grupo->count(),
+                'total'    => (float) $grupo->sum('total'),
+            ])
+            ->sortKeys();
+
+        $mejorDia = $porDia->sortByDesc('total')->keys()->first();
+
+        $datos = compact(
             'ventas',
             'totalVentas',
+            'totalSubtotal',
             'totalDescuentos',
             'cantidadVentas',
+            'ticketPromedio',
+            'porPago',
+            'porCajero',
+            'porDia',
+            'mejorDia',
             'request'
-        ));
+        );
+
+        if ($request->tipo === 'pdf') {
+            $pdf = Pdf::loadView('reportes.ventas-pdf', $datos)->setPaper('a4', 'portrait');
+
+            $nombre = 'reporte-ventas-' . $request->fecha_inicio . '-a-' . $request->fecha_fin . '.pdf';
+
+            return $pdf->download($nombre);
+        }
+
+        return view('reportes.ventas', $datos);
     }
 
     // Reporte de Productos Más Vendidos

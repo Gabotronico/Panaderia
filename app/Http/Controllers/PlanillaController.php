@@ -78,8 +78,6 @@ class PlanillaController extends Controller
                     'dias_ausentes'         => $detalle['dias_ausentes'],
                     'dias_tardanza'         => $detalle['dias_tardanza'],
                     'dias_medio'            => $detalle['dias_medio'],
-                    'horas_extra'           => $detalle['horas_extra'],
-                    'monto_horas_extra'     => $detalle['monto_horas_extra'],
                     'adelantos_descontados' => $detalle['adelantos'],
                     'salario_bruto'         => $detalle['salario_bruto'],
                     'total_neto'            => $detalle['total_neto'],
@@ -112,8 +110,13 @@ class PlanillaController extends Controller
     {
         $planilla->load(['detalles.empleado.cargo', 'user']);
 
+<<<<<<< Updated upstream
         // A4 horizontal: al quitar las columnas de descuento la tabla entra en
         // hoja estándar, que es la que hay en la panadería para imprimir.
+=======
+        // A4 horizontal: al quitar las columnas de horas extra la tabla entra
+        // en hoja estándar, que es la que hay en la panadería para imprimir.
+>>>>>>> Stashed changes
         $pdf = Pdf::loadView('rrhh.planillas.pdf', compact('planilla'))
                   ->setPaper('a4', 'landscape');
 
@@ -183,7 +186,11 @@ class PlanillaController extends Controller
         $diasTardanza    = $asistencias->where('estado', 'tardanza')->count();
         $diasAusente     = $asistencias->where('estado', 'ausente')->count();
         $diasMedio       = $asistencias->where('estado', 'medio_dia')->count();
+<<<<<<< Updated upstream
         $horasExtra      = $asistencias->sum('horas_extra');
+=======
+        $minutosTardanza = $asistencias->where('estado', 'tardanza')->sum('minutos_tardanza');
+>>>>>>> Stashed changes
 
         // Los minutos de tardanza se siguen registrando en asistencias, pero ya
         // no descuentan del sueldo: el día tarde cuenta como día trabajado.
@@ -196,11 +203,19 @@ class PlanillaController extends Controller
         $valorDia   = $empleado->valor_dia;
         $tarifaHora = $empleado->tarifa_hora;
 
+<<<<<<< Updated upstream
         $salarioBruto    = round($valorDia * $diasEfectivos, 2);
         $montoHorasExtra = round($horasExtra * $tarifaHora * (float) $empleado->factor_hora_extra, 2);
 
         // Lo que el empleado tiene disponible antes de descontar adelantos
         $disponible = round($salarioBruto + $montoHorasExtra, 2);
+=======
+        $salarioBruto       = round($valorDia * $diasEfectivos, 2);
+        $descuentoTardanzas = round(($minutosTardanza / 60) * $tarifaHora, 2);
+
+        // Lo que el empleado tiene disponible antes de descontar adelantos
+        $disponible = round($salarioBruto - $descuentoTardanzas, 2);
+>>>>>>> Stashed changes
 
         // Adelantos pendientes del período, del más antiguo al más reciente.
         // Los límites van como fecha sin hora por el mismo motivo que en
@@ -236,8 +251,6 @@ class PlanillaController extends Controller
             'dias_ausentes'        => $diasAusente,
             'dias_tardanza'        => $diasTardanza,
             'dias_medio'           => $diasMedio,
-            'horas_extra'          => $horasExtra,
-            'monto_horas_extra'    => $montoHorasExtra,
             'adelantos'            => $descontado,
             'adelantos_liquidados' => $liquidados,
             'saldo_arrastrado'     => $saldoArrastrado,

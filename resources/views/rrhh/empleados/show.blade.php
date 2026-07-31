@@ -41,7 +41,6 @@
                         @endif
                     </td></tr>
                     <tr><th>Tipo pago</th><td>{{ ucfirst($empleado->tipo_pago) }}</td></tr>
-                    <tr><th>Hora extra</th><td>x{{ $empleado->factor_hora_extra }}</td></tr>
                     <tr>
                         <th>Horario</th>
                         <td>
@@ -199,7 +198,7 @@
                 <div class="table-responsive">
                     <table class="table table-sm mb-0">
                         <thead>
-                            <tr><th>Fecha</th><th>Estado</th><th>Entrada</th><th>Tardanza</th><th>H. Extra</th><th>Obs.</th></tr>
+                            <tr><th>Fecha</th><th>Estado</th><th>Entrada</th><th>Salida</th><th>Atraso</th><th>Obs.</th></tr>
                         </thead>
                         <tbody>
                             @forelse($asistencias as $asis)
@@ -215,8 +214,8 @@
                                     </span>
                                 </td>
                                 <td>{{ $asis->hora_entrada ?? '—' }}</td>
+                                <td>{{ $asis->hora_salida ?? '—' }}</td>
                                 <td>{{ $asis->minutos_tardanza > 0 ? $asis->minutos_tardanza . ' min' : '—' }}</td>
-                                <td>{{ $asis->horas_extra > 0 ? number_format($asis->horas_extra, 1) . ' h' : '—' }}</td>
                                 <td class="text-muted small">{{ $asis->observaciones ?? '' }}</td>
                             </tr>
                             @empty
