@@ -9,12 +9,11 @@ class Asistencia extends Model
 {
     protected $fillable = [
         'empleado_id', 'fecha', 'estado', 'hora_entrada', 'hora_salida',
-        'minutos_tardanza', 'horas_extra', 'observaciones', 'user_id',
+        'minutos_tardanza', 'observaciones', 'user_id',
     ];
 
     protected $casts = [
         'fecha' => 'date',
-        'horas_extra' => 'decimal:2',
     ];
 
     /** Estados que cuentan como día trabajado (total o parcial). */
@@ -87,13 +86,7 @@ class Asistencia extends Model
         return $horas === null ? null : round($horas - config('nomina.horas_jornada'), 2);
     }
 
-    /** Horas extra expresadas en minutos, que es como se leen en planilla. */
-    public function getMinutosExtraAttribute(): int
-    {
-        return (int) round((float) $this->horas_extra * 60);
-    }
-
-    /** Verdadero si el atraso o las extras salieron del horario del empleado. */
+    /** Verdadero si el atraso se calculó a partir del horario del empleado. */
     public function getCalculadoDesdeHorarioAttribute(): bool
     {
         return (bool) $this->empleado?->tiene_horario;
@@ -123,8 +116,20 @@ class Asistencia extends Model
         return $query->whereRaw($noEsDomingo);
     }
 
+    /**
+     * Asistencias dentro de un rango de fechas, ambos extremos incluidos.
+     *
+     * Los límites se normalizan a fecha sin hora porque llegan casteados a
+     * Carbon ('2026-07-27 00:00:00') mientras que la columna guarda solo el día
+     * ('2026-07-27'). SQLite compara esos valores como texto y la cadena más
+     * corta queda antes, así que el día de inicio caía fuera del rango: la
+     * planilla perdía en silencio el primer día de cada período.
+     */
     public function scopeEnPeriodo($query, $inicio, $fin)
     {
-        return $query->whereBetween('fecha', [$inicio, $fin]);
+        return $query->whereBetween('fecha', [
+            Carbon::parse($inicio)->toDateString(),
+            Carbon::parse($fin)->toDateString(),
+        ]);
     }
 }

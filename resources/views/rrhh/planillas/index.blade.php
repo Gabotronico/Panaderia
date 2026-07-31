@@ -60,10 +60,34 @@
                             </span>
                         </td>
                         <td class="text-muted small">{{ $planilla->user->name ?? '—' }}</td>
-                        <td>
-                            <a href="{{ route('planillas.show', $planilla) }}" class="btn btn-info btn-sm">
+                        <td class="text-nowrap">
+                            <a href="{{ route('planillas.show', $planilla) }}" class="btn btn-info btn-sm" title="Ver detalle">
                                 <i class="fas fa-eye"></i>
                             </a>
+
+                            @php
+                                // Se arma con comillas simples a propósito: así el \n queda
+                                // literal y confirm() lo interpreta como salto de línea.
+                                // El aviso extra sale solo si la planilla ya se pagó, porque
+                                // ahí se estaría borrando el registro de un pago real.
+                                $avisoBorrado = ($planilla->estado === 'pagada'
+                                        ? 'ATENCIÓN: esta planilla figura como PAGADA.\n\n' : '')
+                                    . 'Vas a eliminar la planilla #' . $planilla->id
+                                    . ' del ' . $planilla->periodo_inicio->format('d/m/Y')
+                                    . ' al ' . $planilla->periodo_fin->format('d/m/Y') . '.\n\n'
+                                    . 'Se borrará el detalle de ' . $planilla->detalles_count . ' empleado(s)'
+                                    . ' y los adelantos descontados volverán a quedar pendientes.\n\n'
+                                    . 'Esta acción no se puede deshacer. ¿Continuar?';
+                            @endphp
+
+                            <form action="{{ route('planillas.destroy', $planilla) }}" method="POST" class="d-inline"
+                                  onsubmit="return confirm('{{ $avisoBorrado }}')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger btn-sm" title="Eliminar planilla">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     @empty

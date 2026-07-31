@@ -459,10 +459,12 @@ function validarMover(input) {
 }
 
 @if($preciosHistorial->isNotEmpty())
-document.addEventListener('DOMContentLoaded', () => {
 const precioData  = @json($preciosHistorial->pluck('precio_unitario'));
 const fechaData   = @json($preciosHistorial->map(fn($c) => \Carbon\Carbon::parse($c->fecha)->format('d/m/Y')));
 
+// Solo el gráfico espera al DOM listo: Chart.js viene en el módulo diferido de
+// Vite. Las funciones de arriba quedan globales porque las llaman los onclick.
+document.addEventListener('DOMContentLoaded', () => {
 new Chart(document.getElementById('precioChart'), {
     type: 'line',
     data: {

@@ -9,16 +9,15 @@ class Empleado extends Model
 {
     protected $fillable = [
         'nombre', 'apellido', 'ci', 'telefono', 'cargo_id',
-        'salario_base', 'tipo_pago', 'factor_hora_extra',
+        'salario_base', 'tipo_pago',
         'fecha_ingreso', 'hora_entrada', 'hora_salida', 'minutos_tolerancia',
         'activo', 'observaciones',
     ];
 
     protected $casts = [
-        'salario_base'      => 'decimal:2',
-        'factor_hora_extra' => 'decimal:2',
-        'fecha_ingreso'     => 'date',
-        'activo'            => 'boolean',
+        'salario_base'  => 'decimal:2',
+        'fecha_ingreso' => 'date',
+        'activo'        => 'boolean',
     ];
 
     public function cargo()
@@ -179,31 +178,6 @@ class Empleado extends Model
         $desfase = $this->desfaseMinutos($this->hora_entrada, $horaMarcada);
 
         return max(0, $desfase - $this->tolerancia_minutos);
-    }
-
-    /**
-     * Horas extra: tiempo trabajado después de la hora de salida programada.
-     *
-     * Solo cuenta la salida. Entrar antes de hora no suma extras — si eso
-     * hiciera falta habría que autorizarlo aparte, no inferirlo del marcaje.
-     */
-    public function calcularHorasExtra(?string $horaMarcada): float
-    {
-        if (!$this->tiene_horario || !$horaMarcada) {
-            return 0.0;
-        }
-
-        return round(max(0, $this->desfaseMinutos($this->hora_salida, $horaMarcada)) / 60, 2);
-    }
-
-    /** Igual que calcularHorasExtra pero en minutos, para mostrar en pantalla. */
-    public function calcularMinutosExtra(?string $horaMarcada): int
-    {
-        if (!$this->tiene_horario || !$horaMarcada) {
-            return 0;
-        }
-
-        return max(0, $this->desfaseMinutos($this->hora_salida, $horaMarcada));
     }
 
     /**

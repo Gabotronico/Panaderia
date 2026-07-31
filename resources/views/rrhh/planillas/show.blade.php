@@ -26,6 +26,30 @@
             <a href="{{ route('planillas.pdf', $planilla) }}" class="btn btn-danger" target="_blank">
                 <i class="fas fa-file-pdf me-1"></i>Descargar PDF
             </a>
+
+            @php
+                // Comillas simples a propósito: el \n queda literal y confirm() lo
+                // interpreta como salto de línea. El aviso extra sale solo si la
+                // planilla ya se pagó, porque ahí se borra un pago real.
+                $avisoBorrado = ($planilla->estado === 'pagada'
+                        ? 'ATENCIÓN: esta planilla figura como PAGADA.\n\n' : '')
+                    . 'Vas a eliminar la planilla #' . $planilla->id
+                    . ' del ' . $planilla->periodo_inicio->format('d/m/Y')
+                    . ' al ' . $planilla->periodo_fin->format('d/m/Y') . '.\n\n'
+                    . 'Se borrará el detalle de ' . $planilla->detalles->count() . ' empleado(s)'
+                    . ' y los adelantos descontados volverán a quedar pendientes.\n\n'
+                    . 'Esta acción no se puede deshacer. ¿Continuar?';
+            @endphp
+
+            <form action="{{ route('planillas.destroy', $planilla) }}" method="POST"
+                  onsubmit="return confirm('{{ $avisoBorrado }}')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-trash me-1"></i>Eliminar Planilla
+                </button>
+            </form>
+
             <a href="{{ route('planillas.index') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Volver
             </a>
@@ -113,10 +137,7 @@
                         <th class="text-center">Días Trab.</th>
                         <th class="text-center">Ausentes</th>
                         <th class="text-center">Tardanzas</th>
-                        <th class="text-center">H. Extra</th>
-                        <th class="text-end">Bruto</th>
-                        <th class="text-end">Desc. Tard.</th>
-                        <th class="text-end">H. Extra Bs</th>
+                        <th class="text-end">Ganado</th>
                         <th class="text-end">Adelantos</th>
                         <th class="text-end fw-bold">Neto</th>
                     </tr>
@@ -144,16 +165,7 @@
                             @else —
                             @endif
                         </td>
-                        <td class="text-center">
-                            {{ $det->horas_extra > 0 ? number_format($det->horas_extra, 1) . 'h' : '—' }}
-                        </td>
                         <td class="text-end">Bs {{ number_format($det->salario_bruto, 2) }}</td>
-                        <td class="text-end text-danger">
-                            {{ $det->descuento_tardanzas > 0 ? '−Bs ' . number_format($det->descuento_tardanzas, 2) : '—' }}
-                        </td>
-                        <td class="text-end text-success">
-                            {{ $det->monto_horas_extra > 0 ? '+Bs ' . number_format($det->monto_horas_extra, 2) : '—' }}
-                        </td>
                         <td class="text-end text-warning">
                             {{ $det->adelantos_descontados > 0 ? '−Bs ' . number_format($det->adelantos_descontados, 2) : '—' }}
                             @php $arrastre = $det->empleado->adelantos_pendientes; @endphp
@@ -172,10 +184,8 @@
                 </tbody>
                 <tfoot class="table-light fw-bold">
                     <tr>
-                        <td colspan="7" class="text-end">TOTALES:</td>
+                        <td colspan="6" class="text-end">TOTALES:</td>
                         <td class="text-end">Bs {{ number_format($planilla->detalles->sum('salario_bruto'), 2) }}</td>
-                        <td class="text-end text-danger">−Bs {{ number_format($planilla->detalles->sum('descuento_tardanzas'), 2) }}</td>
-                        <td class="text-end text-success">+Bs {{ number_format($planilla->detalles->sum('monto_horas_extra'), 2) }}</td>
                         <td class="text-end text-warning">−Bs {{ number_format($planilla->detalles->sum('adelantos_descontados'), 2) }}</td>
                         <td class="text-end text-success fs-5">Bs {{ number_format($planilla->total_general, 2) }}</td>
                     </tr>

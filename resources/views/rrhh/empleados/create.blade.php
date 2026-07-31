@@ -62,18 +62,12 @@
                            oninput="calcEquivalencias()">
                     @error('salario_base')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-7">
                     <label class="form-label fw-bold">Tipo de pago <span class="text-danger">*</span></label>
                     <select id="tipo_pago" name="tipo_pago" class="form-select" required onchange="calcEquivalencias()">
                         <option value="mensual" @selected(old('tipo_pago') === 'mensual')>Mensual</option>
                         <option value="semanal" @selected(old('tipo_pago') === 'semanal')>Semanal</option>
                     </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">Factor hora extra</label>
-                    <input type="number" name="factor_hora_extra" class="form-control"
-                           value="{{ old('factor_hora_extra', 1.50) }}" min="1" step="0.05">
-                    <small class="text-muted">Ej: 1.5 = 150%</small>
                 </div>
 
                 {{-- Horario: habilita el cálculo automático en asistencias --}}

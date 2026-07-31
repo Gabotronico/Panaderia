@@ -77,8 +77,7 @@
                             <th style="min-width:105px;">Hora entrada</th>
                             <th style="min-width:105px;">Hora salida</th>
                             <th style="min-width:115px;">Atraso</th>
-                            <th style="min-width:110px;">H. extra</th>
-                            <th style="min-width:150px;">Observaciones</th>
+                            <th style="min-width:180px;">Observaciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -156,19 +155,6 @@
                                 @endif
                             </td>
 
-                            {{-- Horas extra: calculadas si hay horario, manuales si no --}}
-                            <td>
-                                @if($emp->tiene_horario)
-                                    <span class="badge bg-light text-muted border calc-extra" style="font-size:.8rem;">—</span>
-                                @else
-                                    <input type="number"
-                                           name="asistencias[{{ $emp->id }}][horas_extra]"
-                                           class="form-control form-control-sm"
-                                           min="0" max="12" step="0.5" placeholder="0"
-                                           value="{{ $prev?->horas_extra ?: '' }}">
-                                @endif
-                            </td>
-
                             {{-- Observaciones --}}
                             <td>
                                 <input type="text"
@@ -180,7 +166,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted py-4">
+                            <td colspan="8" class="text-center text-muted py-4">
                                 No hay empleados activos registrados.
                             </td>
                         </tr>
@@ -193,8 +179,8 @@
             <small class="text-muted">
                 <i class="fas fa-info-circle me-1"></i>
                 Los cambios reemplazarán los registros existentes para esta fecha.
-                En los empleados con horario, el atraso y las horas extra se calculan
-                a partir de las horas marcadas.
+                En los empleados con horario, el atraso se calcula a partir de la
+                hora de entrada marcada.
             </small>
             <button type="submit" class="btn btn-primary px-4">
                 <i class="fas fa-save me-2"></i>Guardar Asistencias
@@ -221,50 +207,38 @@ function desfase(programada, marcada) {
 }
 
 /**
- * Vista previa del atraso y las horas extra de una fila.
- * El valor definitivo lo recalcula el servidor al guardar; esto es solo para
- * que el encargado vea el resultado mientras carga las horas.
+ * Vista previa del atraso de una fila. El valor definitivo lo recalcula el
+ * servidor al guardar; esto es solo para que el encargado vea el resultado
+ * mientras carga las horas.
  */
 function recalcularFila(fila) {
     if (fila.dataset.horario !== '1') return;
 
-    const estado    = fila.querySelector('.estado-select').value;
-    const entrada   = fila.querySelector('.hora-entrada').value;
-    const salida    = fila.querySelector('.hora-salida').value;
+    const estado     = fila.querySelector('.estado-select').value;
+    const entrada    = fila.querySelector('.hora-entrada').value;
     const tolerancia = parseInt(fila.dataset.tolerancia, 10) || 0;
+    const badge      = fila.querySelector('.calc-tardanza');
 
-    const badgeTardanza = fila.querySelector('.calc-tardanza');
-    const badgeExtra    = fila.querySelector('.calc-extra');
-
-    const pintar = (badge, texto, clase) => {
+    const pintar = (texto, clase) => {
         badge.textContent = texto;
         badge.className = 'badge ' + clase;
         badge.style.fontSize = '.8rem';
     };
 
     if (!ESTADOS_TRABAJADOS.includes(estado)) {
-        pintar(badgeTardanza, 'no aplica', 'bg-light text-muted border');
-        pintar(badgeExtra, 'no aplica', 'bg-light text-muted border');
+        pintar('no aplica', 'bg-light text-muted border');
         return;
     }
 
-    if (entrada) {
-        const atraso = Math.max(0, desfase(fila.dataset.entradaProg, entrada) - tolerancia);
-        atraso > 0
-            ? pintar(badgeTardanza, atraso + ' min tarde', 'bg-warning text-dark')
-            : pintar(badgeTardanza, 'a tiempo', 'bg-success');
-    } else {
-        pintar(badgeTardanza, '—', 'bg-light text-muted border');
+    if (!entrada) {
+        pintar('—', 'bg-light text-muted border');
+        return;
     }
 
-    if (salida) {
-        const extra = Math.max(0, desfase(fila.dataset.salidaProg, salida));
-        extra > 0
-            ? pintar(badgeExtra, extra + ' min (' + (extra / 60).toFixed(2) + ' h)', 'bg-primary')
-            : pintar(badgeExtra, 'sin extra', 'bg-light text-muted border');
-    } else {
-        pintar(badgeExtra, '—', 'bg-light text-muted border');
-    }
+    const atraso = Math.max(0, desfase(fila.dataset.entradaProg, entrada) - tolerancia);
+    atraso > 0
+        ? pintar(atraso + ' min tarde', 'bg-warning text-dark')
+        : pintar('a tiempo', 'bg-success');
 }
 
 // Los empleados sin horario conservan la carga manual de siempre.

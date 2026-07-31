@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Asistencia;
 use App\Models\Cargo;
 use App\Models\Empleado;
+use App\Models\Planilla;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,6 @@ class PlanillaTest extends TestCase
             'cargo_id' => $cargo->id,
             'salario_base' => 600,
             'tipo_pago' => 'semanal',
-            'factor_hora_extra' => 1.5,
             'fecha_ingreso' => '2026-01-01',
             'activo' => true,
         ]);
@@ -62,5 +62,11 @@ class PlanillaTest extends TestCase
             'salario_bruto' => 100,
             'total_neto' => 100,
         ]);
+
+        $planilla = Planilla::query()->firstOrFail();
+        $this->get(route('planillas.show', $planilla))->assertOk();
+        $this->get(route('planillas.pdf', $planilla))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
     }
 }

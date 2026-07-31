@@ -39,6 +39,11 @@ class SQLiteCompatibilityTest extends TestCase
         $this->assertTrue(Schema::hasColumns('empleados', [
             'hora_entrada', 'hora_salida', 'minutos_tolerancia',
         ]));
+        $this->assertFalse(Schema::hasColumn('empleados', 'factor_hora_extra'));
+        $this->assertFalse(Schema::hasColumn('asistencias', 'horas_extra'));
+        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'horas_extra'));
+        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'monto_horas_extra'));
+        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'descuento_tardanzas'));
 
         $this->assertSame(0, DB::table('cortes_caja')->sum('ventas_qr'));
         $this->assertSame(0, DB::table('cortes_caja')->sum('total_qr'));
@@ -52,12 +57,25 @@ class SQLiteCompatibilityTest extends TestCase
         $scheduleMigration = require database_path(
             'migrations/2026_07_29_200001_add_horario_to_empleados_table.php'
         );
+        $overtimeRemoval = require database_path(
+            'migrations/2026_07_30_100001_remove_horas_extra_from_nomina.php'
+        );
+        $latenessDiscountRemoval = require database_path(
+            'migrations/2026_07_31_100001_remove_descuento_tardanzas_from_planilla_empleado.php'
+        );
 
+        $latenessDiscountRemoval->down();
+        $overtimeRemoval->down();
         $scheduleMigration->down();
         $qrMigration->down();
 
         $this->assertFalse(Schema::hasColumn('cortes_caja', 'ventas_qr'));
         $this->assertFalse(Schema::hasColumn('empleados', 'hora_entrada'));
+        $this->assertTrue(Schema::hasColumn('empleados', 'factor_hora_extra'));
+        $this->assertTrue(Schema::hasColumn('asistencias', 'horas_extra'));
+        $this->assertTrue(Schema::hasColumns('planilla_empleado', [
+            'horas_extra', 'monto_horas_extra', 'descuento_tardanzas',
+        ]));
 
         $user = User::factory()->create();
         $register = CorteCaja::create([
@@ -75,6 +93,8 @@ class SQLiteCompatibilityTest extends TestCase
 
         $qrMigration->up();
         $scheduleMigration->up();
+        $overtimeRemoval->up();
+        $latenessDiscountRemoval->up();
 
         $this->assertTrue(Schema::hasColumns('cortes_caja', [
             'ventas_efectivo', 'ventas_qr', 'total_qr', 'diferencia_qr',
@@ -82,6 +102,11 @@ class SQLiteCompatibilityTest extends TestCase
         $this->assertTrue(Schema::hasColumns('empleados', [
             'hora_entrada', 'hora_salida', 'minutos_tolerancia',
         ]));
+        $this->assertFalse(Schema::hasColumn('empleados', 'factor_hora_extra'));
+        $this->assertFalse(Schema::hasColumn('asistencias', 'horas_extra'));
+        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'horas_extra'));
+        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'monto_horas_extra'));
+        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'descuento_tardanzas'));
         $this->assertSame(
             75.0,
             (float) DB::table('cortes_caja')->where('id', $register->id)->value('ventas_efectivo')

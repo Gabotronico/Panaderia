@@ -125,7 +125,7 @@ class LatestMasterFeaturesTest extends TestCase
         $this->assertDatabaseMissing('cortes_caja', ['id' => $register->id]);
     }
 
-    public function test_employee_schedules_calculate_lateness_and_overtime(): void
+    public function test_employee_schedules_calculate_lateness_and_shift_duration(): void
     {
         $employee = new Empleado([
             'hora_entrada' => '08:00',
@@ -134,7 +134,6 @@ class LatestMasterFeaturesTest extends TestCase
         ]);
 
         $this->assertSame(5, $employee->calcularTardanza('08:15'));
-        $this->assertSame(1.5, $employee->calcularHorasExtra('17:30'));
         $this->assertSame(8.0, $employee->jornada_horas);
 
         $overnight = new Empleado([
@@ -144,7 +143,6 @@ class LatestMasterFeaturesTest extends TestCase
         ]);
 
         $this->assertSame(10, $overnight->calcularTardanza('22:20'));
-        $this->assertSame(1.0, $overnight->calcularHorasExtra('07:00'));
         $this->assertSame(8.0, $overnight->jornada_horas);
     }
 }

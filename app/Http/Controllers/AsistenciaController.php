@@ -56,7 +56,6 @@ class AsistenciaController extends Controller
             'asistencias.*.hora_entrada'     => 'nullable|date_format:H:i',
             'asistencias.*.hora_salida'      => 'nullable|date_format:H:i',
             'asistencias.*.minutos_tardanza' => 'nullable|integer|min:0|max:480',
-            'asistencias.*.horas_extra'      => 'nullable|numeric|min:0|max:12',
             'asistencias.*.observaciones'    => 'nullable|string|max:200',
         ]);
 
@@ -75,7 +74,6 @@ class AsistenciaController extends Controller
                         'hora_entrada'     => $datos['hora_entrada'] ?? null,
                         'hora_salida'      => $datos['hora_salida'] ?? null,
                         'minutos_tardanza' => $marcaje['minutos_tardanza'],
-                        'horas_extra'      => $marcaje['horas_extra'],
                         'observaciones'    => $datos['observaciones'] ?? null,
                         'user_id'          => Auth::id(),
                     ]
@@ -99,7 +97,6 @@ class AsistenciaController extends Controller
             'hora_entrada'     => 'nullable|date_format:H:i',
             'hora_salida'      => 'nullable|date_format:H:i',
             'minutos_tardanza' => 'nullable|integer|min:0|max:480',
-            'horas_extra'      => 'nullable|numeric|min:0|max:12',
             'observaciones'    => 'nullable|string|max:200',
         ]);
 
@@ -110,7 +107,6 @@ class AsistenciaController extends Controller
             'hora_entrada'     => $request->hora_entrada,
             'hora_salida'      => $request->hora_salida,
             'minutos_tardanza' => $marcaje['minutos_tardanza'],
-            'horas_extra'      => $marcaje['horas_extra'],
             'observaciones'    => $request->observaciones,
             'user_id'          => Auth::id(),
         ]);
@@ -120,12 +116,12 @@ class AsistenciaController extends Controller
     }
 
     /**
-     * Decide estado, tardanza y horas extra de un registro de asistencia.
+     * Decide el estado y los minutos de atraso de un registro de asistencia.
      *
-     * Si el empleado tiene horario, los dos números salen de comparar el
-     * marcaje contra ese horario y no se aceptan a mano: el dato que llega
-     * del formulario es solo una vista previa. Sin horario no hay referencia,
-     * así que se respeta lo que cargó el encargado.
+     * Si el empleado tiene horario, el atraso sale de comparar la hora de
+     * entrada contra ese horario y no se acepta a mano: el dato que llega del
+     * formulario es solo una vista previa. Sin horario no hay referencia, así
+     * que se respeta lo que cargó el encargado.
      *
      * Un atraso detectado sobre un día marcado como "presente" cambia el
      * estado a "tardanza"; de otro modo el estado diría una cosa y los
@@ -133,7 +129,7 @@ class AsistenciaController extends Controller
      * respetan tal cual porque describen situaciones que el horario no ve.
      *
      * @param  array<string, mixed>  $datos
-     * @return array{estado: string, minutos_tardanza: int, horas_extra: float}
+     * @return array{estado: string, minutos_tardanza: int}
      */
     private function resolverMarcaje(?Empleado $empleado, array $datos): array
     {
@@ -143,26 +139,20 @@ class AsistenciaController extends Controller
             return [
                 'estado'           => $estado,
                 'minutos_tardanza' => $estado === 'tardanza' ? (int) ($datos['minutos_tardanza'] ?? 0) : 0,
-                'horas_extra'      => (float) ($datos['horas_extra'] ?? 0),
             ];
         }
 
         // Solo los días efectivamente trabajados se comparan contra el horario.
-        if (!in_array($estado, Asistencia::ESTADOS_TRABAJADOS, true)) {
-            return ['estado' => $estado, 'minutos_tardanza' => 0, 'horas_extra' => 0.0];
+        if (!\in_array($estado, Asistencia::ESTADOS_TRABAJADOS, true)) {
+            return ['estado' => $estado, 'minutos_tardanza' => 0];
         }
 
         $tardanza = $empleado->calcularTardanza($datos['hora_entrada'] ?? null);
-        $extra    = $empleado->calcularHorasExtra($datos['hora_salida'] ?? null);
 
         if ($tardanza > 0 && $estado === 'presente') {
             $estado = 'tardanza';
         }
 
-        return [
-            'estado'           => $estado,
-            'minutos_tardanza' => $tardanza,
-            'horas_extra'      => $extra,
-        ];
+        return ['estado' => $estado, 'minutos_tardanza' => $tardanza];
     }
 }

@@ -23,7 +23,7 @@
             Horario: <strong>{{ $emp->horario_texto }}</strong>
             <span class="text-muted">· tolerancia {{ $emp->tolerancia_minutos }} min</span>
             <div class="small text-muted mt-1">
-                El atraso y las horas extra se recalculan solos a partir de las horas marcadas.
+                El atraso se recalcula solo a partir de la hora de entrada marcada.
             </div>
         </div>
         @endif
@@ -57,21 +57,11 @@
                     <div class="form-control bg-light" id="calcTardanza">—</div>
                     <small class="text-muted">Calculado desde el horario</small>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Horas extra</label>
-                    <div class="form-control bg-light" id="calcExtra">—</div>
-                    <small class="text-muted">Calculadas desde el horario</small>
-                </div>
                 @else
                 <div class="col-md-6" id="tardanzaField">
                     <label class="form-label fw-bold">Minutos de tardanza</label>
                     <input type="number" name="minutos_tardanza" class="form-control"
                            min="0" max="480" value="{{ $asistencia->minutos_tardanza }}">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Horas extra</label>
-                    <input type="number" name="horas_extra" class="form-control"
-                           min="0" max="12" step="0.5" value="{{ $asistencia->horas_extra }}">
                 </div>
                 @endif
                 <div class="col-12">
@@ -100,7 +90,6 @@ function toggleTardanza() {
 @if($emp->tiene_horario)
 const ESTADOS_TRABAJADOS = ['presente', 'tardanza', 'medio_dia'];
 const ENTRADA_PROG = '{{ \Carbon\Carbon::parse($emp->hora_entrada)->format('H:i') }}';
-const SALIDA_PROG  = '{{ \Carbon\Carbon::parse($emp->hora_salida)->format('H:i') }}';
 const TOLERANCIA   = {{ $emp->tolerancia_minutos }};
 
 const aMinutos = h => { const [hh, mm] = h.split(':').map(Number); return hh * 60 + mm; };
@@ -117,31 +106,20 @@ function desfase(programada, marcada) {
 function recalcular() {
     const estado  = document.getElementById('estadoSel').value;
     const entrada = document.getElementById('horaEntrada').value;
-    const salida  = document.getElementById('horaSalida').value;
-    const cajaT   = document.getElementById('calcTardanza');
-    const cajaE   = document.getElementById('calcExtra');
+    const caja    = document.getElementById('calcTardanza');
 
     if (!ESTADOS_TRABAJADOS.includes(estado)) {
-        cajaT.textContent = 'No aplica';
-        cajaE.textContent = 'No aplica';
+        caja.textContent = 'No aplica';
         return;
     }
 
-    if (entrada) {
-        const atraso = Math.max(0, desfase(ENTRADA_PROG, entrada) - TOLERANCIA);
-        cajaT.textContent = atraso > 0 ? atraso + ' min tarde' : 'A tiempo';
-    } else {
-        cajaT.textContent = '—';
+    if (!entrada) {
+        caja.textContent = '—';
+        return;
     }
 
-    if (salida) {
-        const extra = Math.max(0, desfase(SALIDA_PROG, salida));
-        cajaE.textContent = extra > 0
-            ? extra + ' min (' + (extra / 60).toFixed(2) + ' h)'
-            : 'Sin extra';
-    } else {
-        cajaE.textContent = '—';
-    }
+    const atraso = Math.max(0, desfase(ENTRADA_PROG, entrada) - TOLERANCIA);
+    caja.textContent = atraso > 0 ? atraso + ' min tarde' : 'A tiempo';
 }
 @else
 function recalcular() {}

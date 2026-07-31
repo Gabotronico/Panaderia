@@ -78,11 +78,8 @@ class PlanillaController extends Controller
                     'dias_ausentes'         => $detalle['dias_ausentes'],
                     'dias_tardanza'         => $detalle['dias_tardanza'],
                     'dias_medio'            => $detalle['dias_medio'],
-                    'horas_extra'           => $detalle['horas_extra'],
-                    'monto_horas_extra'     => $detalle['monto_horas_extra'],
                     'adelantos_descontados' => $detalle['adelantos'],
                     'salario_bruto'         => $detalle['salario_bruto'],
-                    'descuento_tardanzas'   => $detalle['descuento_tardanzas'],
                     'total_neto'            => $detalle['total_neto'],
                 ]);
 
@@ -113,8 +110,10 @@ class PlanillaController extends Controller
     {
         $planilla->load(['detalles.empleado.cargo', 'user']);
 
+        // A4 horizontal: al quitar las columnas de horas extra y descuentos
+        // la tabla entra en la hoja estándar disponible para imprimir.
         $pdf = Pdf::loadView('rrhh.planillas.pdf', compact('planilla'))
-                  ->setPaper([0, 0, 1190, 842], 'landscape'); // A3 landscape
+                  ->setPaper('a4', 'landscape');
 
         $nombre = "planilla-{$planilla->id}-{$planilla->tipo}-{$planilla->periodo_inicio->format('Y-m-d')}.pdf";
 
@@ -139,6 +138,37 @@ class PlanillaController extends Controller
         return redirect()->route('planillas.show', $planilla)->with('success', 'Planilla marcada como pagada.');
     }
 
+    /**
+     * Elimina una planilla generada por error y deja todo como antes.
+     *
+     * Al generarse, la planilla "consume" los adelantos del período marcándolos
+     * con su id. Si se borra sin liberarlos esa deuda desaparece: el empleado
+     * dejaría de deber una plata que sí se le entregó. Por eso se devuelven a
+     * pendientes de forma explícita, dentro de la misma transacción que el
+     * borrado, en lugar de depender de la clave foránea.
+     */
+    public function destroy(Planilla $planilla)
+    {
+        $adelantosLiberados = Adelanto::where('planilla_id', $planilla->id)->count();
+        $identificador      = $planilla->id;
+        $periodo            = $planilla->periodo_inicio->format('d/m/Y') . ' al ' . $planilla->periodo_fin->format('d/m/Y');
+
+        DB::transaction(function () use ($planilla) {
+            Adelanto::where('planilla_id', $planilla->id)->update(['planilla_id' => null]);
+
+            // Los detalles por empleado se van en cascada con la planilla.
+            $planilla->delete();
+        });
+
+        $mensaje = "Se eliminó la planilla #{$identificador} ({$periodo}).";
+
+        if ($adelantosLiberados > 0) {
+            $mensaje .= " {$adelantosLiberados} adelanto(s) volvieron a quedar pendientes de descuento.";
+        }
+
+        return redirect()->route('planillas.index')->with('success', $mensaje);
+    }
+
     private function calcularDetalle(Empleado $empleado, Planilla $planilla): array
     {
         // Solo se cuentan asistencias de lunes a sábado — el domingo no se trabaja
@@ -151,28 +181,31 @@ class PlanillaController extends Controller
         $diasTardanza    = $asistencias->where('estado', 'tardanza')->count();
         $diasAusente     = $asistencias->where('estado', 'ausente')->count();
         $diasMedio       = $asistencias->where('estado', 'medio_dia')->count();
-        $minutosTardanza = $asistencias->where('estado', 'tardanza')->sum('minutos_tardanza');
-        $horasExtra      = $asistencias->sum('horas_extra');
+
+        // Los minutos de tardanza se siguen registrando en asistencias, pero ya
+        // no descuentan del sueldo: el día tarde cuenta como día trabajado.
 
         // Días efectivos = presentes + tardanzas + medios×0.5
         $diasEfectivos = $diasPresente + $diasTardanza + ($diasMedio * 0.5);
 
         // El valor por día sale del tipo de pago del empleado, no de la duración
         // del período. Ver config/nomina.php y App\Models\Empleado.
-        $valorDia   = $empleado->valor_dia;
-        $tarifaHora = $empleado->tarifa_hora;
+        $valorDia = $empleado->valor_dia;
+        $salarioBruto = round($valorDia * $diasEfectivos, 2);
 
-        $salarioBruto       = round($valorDia * $diasEfectivos, 2);
-        $descuentoTardanzas = round(($minutosTardanza / 60) * $tarifaHora, 2);
-        $montoHorasExtra    = round($horasExtra * $tarifaHora * (float) $empleado->factor_hora_extra, 2);
+        // Sin horas extra ni descuentos por tardanza, únicamente los
+        // adelantos reducen el salario ganado por los días efectivos.
+        $disponible = $salarioBruto;
 
-        // Lo que el empleado tiene disponible antes de descontar adelantos
-        $disponible = round($salarioBruto + $montoHorasExtra - $descuentoTardanzas, 2);
-
-        // Adelantos pendientes del período, del más antiguo al más reciente
+        // Adelantos pendientes del período, del más antiguo al más reciente.
+        // Los límites van como fecha sin hora por el mismo motivo que en
+        // Asistencia::scopeEnPeriodo: si no, el primer día queda fuera.
         $pendientes = Adelanto::where('empleado_id', $empleado->id)
             ->whereNull('planilla_id')
-            ->whereBetween('fecha', [$planilla->periodo_inicio, $planilla->periodo_fin])
+            ->whereBetween('fecha', [
+                $planilla->periodo_inicio->toDateString(),
+                $planilla->periodo_fin->toDateString(),
+            ])
             ->orderBy('fecha')
             ->orderBy('id')
             ->get();
@@ -198,13 +231,10 @@ class PlanillaController extends Controller
             'dias_ausentes'        => $diasAusente,
             'dias_tardanza'        => $diasTardanza,
             'dias_medio'           => $diasMedio,
-            'horas_extra'          => $horasExtra,
-            'monto_horas_extra'    => $montoHorasExtra,
             'adelantos'            => $descontado,
             'adelantos_liquidados' => $liquidados,
             'saldo_arrastrado'     => $saldoArrastrado,
             'salario_bruto'        => $salarioBruto,
-            'descuento_tardanzas'  => $descuentoTardanzas,
             'total_neto'           => $totalNeto,
         ];
     }
