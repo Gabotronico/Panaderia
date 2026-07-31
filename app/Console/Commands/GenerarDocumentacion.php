@@ -742,7 +742,6 @@ class GenerarDocumentacion extends Command
             ['planilla_empleado.dias_trabajados',     'entero',                      'Días presentes más tardanzas'],
             ['planilla_empleado.horas_extra',         'decimal(6,2)',                'Horas extra del período'],
             ['planilla_empleado.salario_bruto',       'decimal(10,2)',               'Ganado antes de descuentos'],
-            ['planilla_empleado.descuento_tardanzas', 'decimal(10,2)',               'Descuento por llegadas tarde'],
             ['planilla_empleado.adelantos_descontados','decimal(10,2)',              'Adelantos aplicados'],
             ['planilla_empleado.total_neto',          'decimal(10,2)',               'Monto final a entregar'],
         ]);

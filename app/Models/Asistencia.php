@@ -123,8 +123,20 @@ class Asistencia extends Model
         return $query->whereRaw($noEsDomingo);
     }
 
+    /**
+     * Asistencias dentro de un rango de fechas, ambos extremos incluidos.
+     *
+     * Los límites se normalizan a fecha sin hora porque llegan casteados a
+     * Carbon ('2026-07-27 00:00:00') mientras que la columna guarda solo el día
+     * ('2026-07-27'). SQLite compara esos valores como texto y la cadena más
+     * corta queda antes, así que el día de inicio caía fuera del rango: la
+     * planilla perdía en silencio el primer día de cada período.
+     */
     public function scopeEnPeriodo($query, $inicio, $fin)
     {
-        return $query->whereBetween('fecha', [$inicio, $fin]);
+        return $query->whereBetween('fecha', [
+            Carbon::parse($inicio)->toDateString(),
+            Carbon::parse($fin)->toDateString(),
+        ]);
     }
 }

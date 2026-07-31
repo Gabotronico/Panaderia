@@ -114,8 +114,7 @@
                         <th class="text-center">Ausentes</th>
                         <th class="text-center">Tardanzas</th>
                         <th class="text-center">H. Extra</th>
-                        <th class="text-end">Bruto</th>
-                        <th class="text-end">Desc. Tard.</th>
+                        <th class="text-end">Ganado</th>
                         <th class="text-end">H. Extra Bs</th>
                         <th class="text-end">Adelantos</th>
                         <th class="text-end fw-bold">Neto</th>
@@ -148,9 +147,6 @@
                             {{ $det->horas_extra > 0 ? number_format($det->horas_extra, 1) . 'h' : '—' }}
                         </td>
                         <td class="text-end">Bs {{ number_format($det->salario_bruto, 2) }}</td>
-                        <td class="text-end text-danger">
-                            {{ $det->descuento_tardanzas > 0 ? '−Bs ' . number_format($det->descuento_tardanzas, 2) : '—' }}
-                        </td>
                         <td class="text-end text-success">
                             {{ $det->monto_horas_extra > 0 ? '+Bs ' . number_format($det->monto_horas_extra, 2) : '—' }}
                         </td>
@@ -174,7 +170,6 @@
                     <tr>
                         <td colspan="7" class="text-end">TOTALES:</td>
                         <td class="text-end">Bs {{ number_format($planilla->detalles->sum('salario_bruto'), 2) }}</td>
-                        <td class="text-end text-danger">−Bs {{ number_format($planilla->detalles->sum('descuento_tardanzas'), 2) }}</td>
                         <td class="text-end text-success">+Bs {{ number_format($planilla->detalles->sum('monto_horas_extra'), 2) }}</td>
                         <td class="text-end text-warning">−Bs {{ number_format($planilla->detalles->sum('adelantos_descontados'), 2) }}</td>
                         <td class="text-end text-success fs-5">Bs {{ number_format($planilla->total_general, 2) }}</td>

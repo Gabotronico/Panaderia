@@ -96,6 +96,9 @@
 
 @push('scripts')
 <script>
+// Chart.js viene en el módulo de Vite, que se ejecuta diferido: hay que
+// esperar al DOM listo o `Chart` todavía no está definido.
+document.addEventListener('DOMContentLoaded', () => {
     const ctx = document.getElementById('productosChart');
     if (ctx) {
         const productos = @json($productos->take(5));
@@ -126,5 +129,6 @@
             }
         });
     }
+});
 </script>
 @endpush

@@ -500,6 +500,12 @@
 
 @push('scripts')
 <script>
+// Chart.js llega en el bundle de Vite, que es un módulo y por lo tanto se
+// ejecuta diferido: cuando este script corre, `Chart` todavía no existe y los
+// gráficos quedaban en blanco. Los módulos sí terminan antes de
+// DOMContentLoaded, así que ese es el momento seguro para dibujarlos.
+document.addEventListener('DOMContentLoaded', () => {
+
 // Gráfica de Ventas
 const ctxVentas = document.getElementById('ventasChart');
 if (ctxVentas) {
@@ -602,5 +608,7 @@ if (ctxCompras) {
         }
     });
 }
+
+});
 </script>
 @endpush
