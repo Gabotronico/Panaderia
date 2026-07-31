@@ -96,6 +96,7 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', () => {
     const ctx = document.getElementById('productosChart');
     if (ctx) {
         const productos = @json($productos->take(5));
@@ -126,5 +127,6 @@
             }
         });
     }
+});
 </script>
 @endpush

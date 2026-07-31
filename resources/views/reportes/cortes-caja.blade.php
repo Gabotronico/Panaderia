@@ -254,6 +254,7 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', () => {
     const ctx = document.getElementById('estadoChart');
     if (ctx) {
         const cortesCuadrados = {{ $cortesCuadrados }};
@@ -291,5 +292,6 @@
             }
         });
     }
+});
 </script>
 @endpush

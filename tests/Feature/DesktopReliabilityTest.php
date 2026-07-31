@@ -43,4 +43,37 @@ class DesktopReliabilityTest extends TestCase
         $this->assertStringContainsString('no-cache', $cacheControl);
         $response->assertHeader('Pragma', 'no-cache');
     }
+
+    public function test_chart_views_wait_until_the_javascript_bundle_is_ready(): void
+    {
+        $viewFiles = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator(
+                resource_path('views'),
+                \FilesystemIterator::SKIP_DOTS
+            )
+        );
+        $chartViews = 0;
+
+        foreach ($viewFiles as $viewFile) {
+            if (! $viewFile->isFile() || ! str_ends_with($viewFile->getFilename(), '.blade.php')) {
+                continue;
+            }
+
+            $contents = file_get_contents($viewFile->getPathname());
+
+            if (! str_contains($contents, 'new Chart(')) {
+                continue;
+            }
+
+            $chartViews++;
+            $listenerPosition = strpos($contents, "document.addEventListener('DOMContentLoaded'");
+            $firstChartPosition = strpos($contents, 'new Chart(');
+
+            $this->assertNotFalse($listenerPosition, $viewFile->getPathname());
+            $this->assertLessThan($firstChartPosition, $listenerPosition, $viewFile->getPathname());
+        }
+
+
+        $this->assertGreaterThan(0, $chartViews);
+    }
 }

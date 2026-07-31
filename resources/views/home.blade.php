@@ -500,6 +500,7 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', () => {
 // Gráfica de Ventas
 const ctxVentas = document.getElementById('ventasChart');
 if (ctxVentas) {
@@ -602,5 +603,6 @@ if (ctxCompras) {
         }
     });
 }
+});
 </script>
 @endpush

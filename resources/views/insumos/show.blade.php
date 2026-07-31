@@ -459,6 +459,7 @@ function validarMover(input) {
 }
 
 @if($preciosHistorial->isNotEmpty())
+document.addEventListener('DOMContentLoaded', () => {
 const precioData  = @json($preciosHistorial->pluck('precio_unitario'));
 const fechaData   = @json($preciosHistorial->map(fn($c) => \Carbon\Carbon::parse($c->fecha)->format('d/m/Y')));
 
@@ -493,6 +494,7 @@ new Chart(document.getElementById('precioChart'), {
             }
         }
     }
+});
 });
 @endif
 </script>
