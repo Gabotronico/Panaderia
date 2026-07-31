@@ -140,6 +140,37 @@ class PlanillaController extends Controller
         return redirect()->route('planillas.show', $planilla)->with('success', 'Planilla marcada como pagada.');
     }
 
+    /**
+     * Elimina una planilla generada por error y deja todo como antes.
+     *
+     * Al generarse, la planilla "consume" los adelantos del período marcándolos
+     * con su id. Si se borra sin liberarlos esa deuda desaparece: el empleado
+     * dejaría de deber una plata que sí se le entregó. Por eso se devuelven a
+     * pendientes de forma explícita, dentro de la misma transacción que el
+     * borrado, en lugar de depender de la clave foránea.
+     */
+    public function destroy(Planilla $planilla)
+    {
+        $adelantosLiberados = Adelanto::where('planilla_id', $planilla->id)->count();
+        $identificador      = $planilla->id;
+        $periodo            = $planilla->periodo_inicio->format('d/m/Y') . ' al ' . $planilla->periodo_fin->format('d/m/Y');
+
+        DB::transaction(function () use ($planilla) {
+            Adelanto::where('planilla_id', $planilla->id)->update(['planilla_id' => null]);
+
+            // Los detalles por empleado se van en cascada con la planilla.
+            $planilla->delete();
+        });
+
+        $mensaje = "Se eliminó la planilla #{$identificador} ({$periodo}).";
+
+        if ($adelantosLiberados > 0) {
+            $mensaje .= " {$adelantosLiberados} adelanto(s) volvieron a quedar pendientes de descuento.";
+        }
+
+        return redirect()->route('planillas.index')->with('success', $mensaje);
+    }
+
     private function calcularDetalle(Empleado $empleado, Planilla $planilla): array
     {
         // Solo se cuentan asistencias de lunes a sábado — el domingo no se trabaja

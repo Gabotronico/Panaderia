@@ -26,6 +26,30 @@
             <a href="{{ route('planillas.pdf', $planilla) }}" class="btn btn-danger" target="_blank">
                 <i class="fas fa-file-pdf me-1"></i>Descargar PDF
             </a>
+
+            @php
+                // Comillas simples a propósito: el \n queda literal y confirm() lo
+                // interpreta como salto de línea. El aviso extra sale solo si la
+                // planilla ya se pagó, porque ahí se borra un pago real.
+                $avisoBorrado = ($planilla->estado === 'pagada'
+                        ? 'ATENCIÓN: esta planilla figura como PAGADA.\n\n' : '')
+                    . 'Vas a eliminar la planilla #' . $planilla->id
+                    . ' del ' . $planilla->periodo_inicio->format('d/m/Y')
+                    . ' al ' . $planilla->periodo_fin->format('d/m/Y') . '.\n\n'
+                    . 'Se borrará el detalle de ' . $planilla->detalles->count() . ' empleado(s)'
+                    . ' y los adelantos descontados volverán a quedar pendientes.\n\n'
+                    . 'Esta acción no se puede deshacer. ¿Continuar?';
+            @endphp
+
+            <form action="{{ route('planillas.destroy', $planilla) }}" method="POST"
+                  onsubmit="return confirm('{{ $avisoBorrado }}')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-trash me-1"></i>Eliminar Planilla
+                </button>
+            </form>
+
             <a href="{{ route('planillas.index') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Volver
             </a>

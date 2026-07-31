@@ -87,7 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::post('planillas/{planilla}/cerrar', [PlanillaController::class, 'cerrar'])->name('planillas.cerrar');
     Route::post('planillas/{planilla}/pagar', [PlanillaController::class, 'pagar'])->name('planillas.pagar');
     Route::get('planillas/{planilla}/pdf', [PlanillaController::class, 'descargarPdf'])->name('planillas.pdf');
-    Route::resource('planillas', PlanillaController::class)->only(['index', 'create', 'store', 'show']);
+    Route::resource('planillas', PlanillaController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
 
     // Gestión de usuarios del sistema
     Route::resource('usuarios', UserController::class)
