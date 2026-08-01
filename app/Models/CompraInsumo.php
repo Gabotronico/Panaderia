@@ -22,7 +22,7 @@ class CompraInsumo extends Model
         'cantidad'        => 'decimal:5',
         'precio_unitario' => 'decimal:5',
         'total'          => 'decimal:2',
-        'fecha'          => 'date',
+        'fecha'          => 'date:Y-m-d',
     ];
 
     public function insumo()

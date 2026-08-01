@@ -12,7 +12,7 @@ class Adelanto extends Model
 
     protected $casts = [
         'monto' => 'decimal:2',
-        'fecha' => 'date',
+        'fecha' => 'date:Y-m-d',
     ];
 
     public function empleado()

@@ -188,10 +188,11 @@ class PlanillaController extends Controller
         // Días efectivos = presentes + tardanzas + medios×0.5
         $diasEfectivos = $diasPresente + $diasTardanza + ($diasMedio * 0.5);
 
-        // El valor por día sale del tipo de pago del empleado, no de la duración
-        // del período. Ver config/nomina.php y App\Models\Empleado.
-        $valorDia = $empleado->valor_dia;
-        $salarioBruto = round($valorDia * $diasEfectivos, 2);
+        // El sueldo sale del tipo de pago del empleado, no de la duración del
+        // período. Si cumplió el ciclo completo se le paga el salario tal como
+        // se registró, sin recomponerlo desde el valor diario redondeado.
+        // Ver config/nomina.php y Empleado::sueldoPorDias().
+        $salarioBruto = $empleado->sueldoPorDias($diasEfectivos);
 
         // Sin horas extra ni descuentos por tardanza, únicamente los
         // adelantos reducen el salario ganado por los días efectivos.

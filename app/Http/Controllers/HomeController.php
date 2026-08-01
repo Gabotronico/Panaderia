@@ -189,9 +189,14 @@ class HomeController extends Controller
 
             $gastosDelMes = \App\Models\GastoPago::where('periodo', $periodo)->get();
 
-            // Utilidad del mes en curso: ventas − insumos − sueldos − gastos pagados
-            $planillasMes = (float) \App\Models\Planilla::whereBetween('periodo_fin', [
-                    $hoy->copy()->startOfMonth(), $hoy->copy()->endOfMonth(),
+            // Utilidad del mes en curso: ventas − insumos − sueldos − gastos pagados.
+            // Solo las planillas pagadas cuentan como salida de plata, igual que
+            // en Finanzas. Los límites van como 'Y-m-d' porque periodo_fin
+            // guarda el día sin hora.
+            $planillasMes = (float) \App\Models\Planilla::where('estado', 'pagada')
+                ->whereBetween('periodo_fin', [
+                    $hoy->copy()->startOfMonth()->toDateString(),
+                    $hoy->copy()->endOfMonth()->toDateString(),
                 ])->sum('total_general');
 
             $operacion = [

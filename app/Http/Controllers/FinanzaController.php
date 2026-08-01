@@ -67,7 +67,7 @@ class FinanzaController extends Controller
             'cantidad'   => $sinPagar->count(),
             'vencidos'   => $sinPagar->where('estado', 'vencido')->count(),
             'borradores' => Planilla::where('estado', 'borrador')
-                                ->whereBetween('periodo_fin', [$inicio, $fin])
+                                ->whereBetween('periodo_fin', [$inicio->toDateString(), $fin->toDateString()])
                                 ->count(),
         ];
 
@@ -92,19 +92,29 @@ class FinanzaController extends Controller
             ->count();
 
         // ── COSTOS DIRECTOS ─────────────────────────────────────────
-        $compras = (float) CompraInsumo::whereBetween('fecha', [$inicio, $fin])->sum('total');
+        // Las columnas de fecha guardan el día sin hora, así que los límites
+        // van como 'Y-m-d'. Si se pasara el Carbon completo, el motor compara
+        // '2026-08-01' contra '2026-08-01 00:00:00' como texto y deja fuera
+        // justamente los registros del último día del rango.
+        $desde = $inicio->toDateString();
+        $hasta = $fin->toDateString();
+
+        $compras = (float) CompraInsumo::whereBetween('fecha', [$desde, $hasta])->sum('total');
 
         // La merma guarda cantidad, no monto: se valoriza al costo del insumo
         $mermas = (float) MermaInsumo::query()
             ->join('insumos', 'mermas_insumos.insumo_id', '=', 'insumos.id')
-            ->whereBetween('mermas_insumos.fecha', [$inicio, $fin])
+            ->whereBetween('mermas_insumos.fecha', [$desde, $hasta])
             ->sum(DB::raw('mermas_insumos.cantidad * insumos.costo_unitario'));
 
         $costosDirectos = $compras + $mermas;
 
         // ── GASTOS OPERATIVOS ───────────────────────────────────────
-        // La planilla se imputa al mes en que termina su período
-        $planillas = (float) Planilla::whereBetween('periodo_fin', [$inicio, $fin])
+        // La planilla se imputa al mes en que termina su período, y solo pesa
+        // como gasto cuando ya se pagó: mientras está en borrador o cerrada es
+        // un cálculo, no plata que salió de la caja.
+        $planillas = (float) Planilla::where('estado', 'pagada')
+            ->whereBetween('periodo_fin', [$desde, $hasta])
             ->sum('total_general');
 
         // Se imputa al período al que corresponde el gasto, no a la fecha en que

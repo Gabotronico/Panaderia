@@ -13,7 +13,7 @@ class Asistencia extends Model
     ];
 
     protected $casts = [
-        'fecha' => 'date',
+        'fecha' => 'date:Y-m-d',
     ];
 
     /** Estados que cuentan como día trabajado (total o parcial). */

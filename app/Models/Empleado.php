@@ -16,7 +16,7 @@ class Empleado extends Model
 
     protected $casts = [
         'salario_base'  => 'decimal:2',
-        'fecha_ingreso' => 'date',
+        'fecha_ingreso' => 'date:Y-m-d',
         'activo'        => 'boolean',
     ];
 
@@ -82,6 +82,30 @@ class Empleado extends Model
     public function getValorMesAttribute(): float
     {
         return round($this->valorDiaExacto() * config('nomina.dias_mes'), 2);
+    }
+
+    /**
+     * Lo ganado por trabajar cierta cantidad de días del ciclo.
+     *
+     * Si cumplió el ciclo completo se paga el salario tal cual fue registrado,
+     * sin recomponerlo desde el valor diario: Bs 500 semanales dividido entre
+     * 6 días da 83,33 y multiplicar eso por 6 devolvía 499,98. Al empleado se
+     * le prometieron 500, así que 500 se le pagan.
+     *
+     * Si trabajó de más, los días extra se suman al valor diario exacto (sin
+     * redondear) para que el redondeo ocurra una sola vez, al final.
+     */
+    public function sueldoPorDias(float $dias): float
+    {
+        $diasCiclo = $this->divisor_dias;
+
+        if ($dias >= $diasCiclo) {
+            $diasDeMas = $dias - $diasCiclo;
+
+            return round((float) $this->salario_base + $diasDeMas * $this->valorDiaExacto(), 2);
+        }
+
+        return round($this->valorDiaExacto() * $dias, 2);
     }
 
     /** Antigüedad en años cumplidos desde la fecha de ingreso. */

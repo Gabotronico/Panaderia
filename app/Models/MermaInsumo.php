@@ -19,7 +19,7 @@ class MermaInsumo extends Model
 
     protected $casts = [
         'cantidad' => 'decimal:2',
-        'fecha'    => 'date',
+        'fecha'    => 'date:Y-m-d',
     ];
 
     public function insumo()

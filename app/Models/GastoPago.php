@@ -14,8 +14,8 @@ class GastoPago extends Model
     ];
 
     protected $casts = [
-        'fecha_vencimiento' => 'date',
-        'fecha_pago'        => 'date',
+        'fecha_vencimiento' => 'date:Y-m-d',
+        'fecha_pago'        => 'date:Y-m-d',
         'monto_estimado'    => 'decimal:2',
         'monto_real'        => 'decimal:2',
     ];

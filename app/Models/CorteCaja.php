@@ -31,7 +31,7 @@ class CorteCaja extends Model
     ];
 
     protected $casts = [
-        'fecha_corte' => 'date',
+        'fecha_corte' => 'date:Y-m-d',
         'monto_inicial' => 'decimal:2',
         'total_ventas' => 'decimal:2',
         'ventas_efectivo' => 'decimal:2',

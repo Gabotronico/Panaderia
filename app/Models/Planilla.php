@@ -12,8 +12,8 @@ class Planilla extends Model
     ];
 
     protected $casts = [
-        'periodo_inicio' => 'date',
-        'periodo_fin'    => 'date',
+        'periodo_inicio' => 'date:Y-m-d',
+        'periodo_fin'    => 'date:Y-m-d',
         'total_general'  => 'decimal:2',
     ];
 
