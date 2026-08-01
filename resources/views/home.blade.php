@@ -10,6 +10,69 @@
 </div>
 @endif
 
+{{-- ── FILTRO DE PERÍODO ─────────────────────────────────────── --}}
+@php
+    $mesAnterior = $periodo['inicio']->copy()->subMonth();
+    $mesSiguiente = $periodo['inicio']->copy()->addMonth();
+    $meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+@endphp
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div>
+                <span class="fw-semibold"><i class="fas fa-calendar-days me-2 text-primary"></i>Período</span>
+                <span class="badge bg-primary ms-2">{{ $periodo['etiqueta'] }}</span>
+                @if($periodo['agrupacion'] === 'mes')
+                    <span class="text-muted small ms-2">· los gráficos se agrupan por mes</span>
+                @endif
+            </div>
+            @if($periodo['modo'] !== 'mes' || $periodo['mes'] != now()->month || $periodo['anio'] != now()->year)
+                <a href="{{ route('home') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-rotate-left me-1"></i>Volver al mes actual
+                </a>
+            @endif
+        </div>
+
+        <div class="row g-3 align-items-end">
+            {{-- Por mes --}}
+            <div class="col-lg-6">
+                <label class="form-label small text-muted mb-1">Ver un mes</label>
+                <form method="GET" action="{{ route('home') }}" class="d-flex gap-2">
+                    <a href="{{ route('home', ['mes' => $mesAnterior->month, 'anio' => $mesAnterior->year]) }}"
+                       class="btn btn-outline-secondary" title="Mes anterior">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <select name="mes" class="form-select">
+                        @foreach($meses as $i => $nombre)
+                            <option value="{{ $i + 1 }}" @selected($periodo['modo'] === 'mes' && $periodo['mes'] == $i + 1)>{{ $nombre }}</option>
+                        @endforeach
+                    </select>
+                    <input type="number" name="anio" class="form-control" style="max-width:6.5rem;"
+                           value="{{ $periodo['anio'] }}" min="2000" max="2999">
+                    <button class="btn btn-primary px-3">Ir</button>
+                    <a href="{{ route('home', ['mes' => $mesSiguiente->month, 'anio' => $mesSiguiente->year]) }}"
+                       class="btn btn-outline-secondary" title="Mes siguiente">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </form>
+            </div>
+
+            {{-- Por rango libre --}}
+            <div class="col-lg-6">
+                <label class="form-label small text-muted mb-1">O un rango de fechas</label>
+                <form method="GET" action="{{ route('home') }}" class="d-flex gap-2">
+                    <input type="date" name="desde" class="form-control"
+                           value="{{ $periodo['modo'] === 'rango' ? $periodo['inicio']->toDateString() : '' }}" required>
+                    <span class="align-self-center text-muted small">a</span>
+                    <input type="date" name="hasta" class="form-control"
+                           value="{{ $periodo['modo'] === 'rango' ? $periodo['fin']->toDateString() : '' }}" required>
+                    <button class="btn btn-primary px-3">Ver</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ── STAT CARDS ────────────────────────────────────────────── --}}
 <div class="row g-3 mb-4">
 
@@ -19,9 +82,12 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="stat-card-label">Ventas Hoy</p>
-                        <div class="stat-card-value">Bs {{ number_format($ventasHoy, 2) }}</div>
-                        <div class="stat-card-sub">ingresos del día</div>
+                        <p class="stat-card-label">Ventas del Período</p>
+                        <div class="stat-card-value">Bs {{ number_format($ventasPeriodo, 2) }}</div>
+                        <div class="stat-card-sub">
+                            {{ $cantidadVentas }} {{ $cantidadVentas === 1 ? 'venta' : 'ventas' }} ·
+                            ticket Bs {{ number_format($ticketPromedio, 2) }}
+                        </div>
                     </div>
                     <div class="stat-card-icon">
                         <i class="fas fa-sack-dollar"></i>
@@ -37,10 +103,10 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="stat-card-label">Efectivo Hoy</p>
-                        <div class="stat-card-value">Bs {{ number_format($porPagoHoy['efectivo'], 2) }}</div>
+                        <p class="stat-card-label">Efectivo</p>
+                        <div class="stat-card-value">Bs {{ number_format($porPagoPeriodo['efectivo'], 2) }}</div>
                         <div class="stat-card-sub">
-                            mes: Bs {{ number_format($porPagoMes['efectivo'], 2) }}
+                            hoy: Bs {{ number_format($porPagoHoy['efectivo'], 2) }}
                         </div>
                     </div>
                     <div class="stat-card-icon">
@@ -57,10 +123,10 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="stat-card-label">QR Hoy</p>
-                        <div class="stat-card-value">Bs {{ number_format($porPagoHoy['qr'], 2) }}</div>
+                        <p class="stat-card-label">QR</p>
+                        <div class="stat-card-value">Bs {{ number_format($porPagoPeriodo['qr'], 2) }}</div>
                         <div class="stat-card-sub">
-                            mes: Bs {{ number_format($porPagoMes['qr'], 2) }}
+                            hoy: Bs {{ number_format($porPagoHoy['qr'], 2) }}
                         </div>
                     </div>
                     <div class="stat-card-icon">
@@ -71,18 +137,18 @@
         </div>
     </div>
 
-    {{-- Ventas del Mes --}}
+    {{-- Ventas de hoy: no sigue al filtro, es el dato del día en curso --}}
     <div class="col-6 col-xl-3">
         <div class="card stat-card" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); box-shadow: 0 6px 20px rgba(99,102,241,.28);">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="stat-card-label">Ventas del Mes</p>
-                        <div class="stat-card-value">Bs {{ number_format($ventasMes, 2) }}</div>
-                        <div class="stat-card-sub">{{ \Carbon\Carbon::now()->locale('es')->isoFormat('MMMM Y') }}</div>
+                        <p class="stat-card-label">Ventas Hoy</p>
+                        <div class="stat-card-value">Bs {{ number_format($ventasHoy, 2) }}</div>
+                        <div class="stat-card-sub">{{ \Carbon\Carbon::today()->locale('es')->isoFormat('D [de] MMMM') }}</div>
                     </div>
                     <div class="stat-card-icon">
-                        <i class="fas fa-calendar-check"></i>
+                        <i class="fas fa-calendar-day"></i>
                     </div>
                 </div>
             </div>
@@ -132,7 +198,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="stat-card-label">Compras este Mes</p>
+                        <p class="stat-card-label">Compras del Período</p>
                         <div class="stat-card-value">Bs {{ number_format($totalGastoMes, 2) }}</div>
                         <div class="stat-card-sub">gasto en insumos</div>
                     </div>
@@ -147,25 +213,25 @@
 </div>
 
 {{-- ── DISTRIBUCIÓN POR MEDIO DE PAGO ────────────────────────── --}}
-@if($porPagoHoy['total'] > 0)
+@if($porPagoPeriodo['total'] > 0)
 @php
-    $pctEfectivoHoy = round($porPagoHoy['efectivo'] / $porPagoHoy['total'] * 100);
+    $pctEfectivoHoy = round($porPagoPeriodo['efectivo'] / $porPagoPeriodo['total'] * 100);
     $pctQrHoy       = 100 - $pctEfectivoHoy;
 @endphp
 <div class="card mb-4">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0"><i class="fas fa-scale-balanced me-2"></i>Cómo se cobró hoy</h6>
-            <span class="text-muted small">Bs {{ number_format($porPagoHoy['total'], 2) }} en total</span>
+            <h6 class="mb-0"><i class="fas fa-scale-balanced me-2"></i>Cómo se cobró en el período</h6>
+            <span class="text-muted small">Bs {{ number_format($porPagoPeriodo['total'], 2) }} en total</span>
         </div>
         <div class="progress" style="height: 1.5rem;" role="img"
              aria-label="Efectivo {{ $pctEfectivoHoy }}%, QR {{ $pctQrHoy }}%">
-            @if($porPagoHoy['efectivo'] > 0)
+            @if($porPagoPeriodo['efectivo'] > 0)
             <div class="progress-bar" style="width: {{ $pctEfectivoHoy }}%; background-color: #0d9488;">
                 {{ $pctEfectivoHoy }}%
             </div>
             @endif
-            @if($porPagoHoy['qr'] > 0)
+            @if($porPagoPeriodo['qr'] > 0)
             <div class="progress-bar" style="width: {{ $pctQrHoy }}%; background-color: #0284c7;">
                 {{ $pctQrHoy }}%
             </div>
@@ -174,12 +240,12 @@
         <div class="d-flex gap-4 mt-2 small">
             <span>
                 <i class="fas fa-money-bill-wave me-1" style="color:#0d9488;"></i>
-                Efectivo <strong>Bs {{ number_format($porPagoHoy['efectivo'], 2) }}</strong>
+                Efectivo <strong>Bs {{ number_format($porPagoPeriodo['efectivo'], 2) }}</strong>
                 <span class="text-muted">— se arquea en el cierre de caja</span>
             </span>
             <span>
                 <i class="fas fa-qrcode me-1" style="color:#0284c7;"></i>
-                QR <strong>Bs {{ number_format($porPagoHoy['qr'], 2) }}</strong>
+                QR <strong>Bs {{ number_format($porPagoPeriodo['qr'], 2) }}</strong>
                 <span class="text-muted">— va directo a la cuenta</span>
             </span>
         </div>
@@ -207,17 +273,17 @@
                 </div>
                 <div class="text-muted" style="font-size:.8rem;">
                     {{ $u >= 0 ? 'de ganancia' : 'de pérdida' }} en
-                    {{ \Carbon\Carbon::now()->locale('es')->isoFormat('MMMM') }}
+                    {{ $periodo['etiqueta'] }}
                 </div>
                 <hr class="my-3">
                 <div class="d-flex justify-content-between" style="font-size:.78rem;">
                     <span class="text-muted">Ventas</span>
-                    <span class="text-success fw-semibold">Bs {{ number_format($ventasMes, 2) }}</span>
+                    <span class="text-success fw-semibold">Bs {{ number_format($ventasPeriodo, 2) }}</span>
                 </div>
                 <div class="d-flex justify-content-between" style="font-size:.78rem;">
                     <span class="text-muted">Insumos + sueldos + gastos</span>
                     <span class="text-danger fw-semibold">
-                        Bs {{ number_format($ventasMes - $u, 2) }}
+                        Bs {{ number_format($ventasPeriodo - $u, 2) }}
                     </span>
                 </div>
             </div>
@@ -345,7 +411,7 @@
     <div class="col-lg-8">
         <div class="card h-100" style="margin-bottom:0">
             <div class="card-header">
-                <i class="fas fa-chart-line me-2"></i>Ventas — Últimos 7 Días
+                <i class="fas fa-chart-line me-2"></i>Ventas — {{ $periodo['etiqueta'] }}
             </div>
             <div class="card-body" style="padding:20px">
                 <canvas id="ventasChart" height="90"></canvas>
@@ -448,7 +514,7 @@
 {{-- ── ÚLTIMAS VENTAS ───────────────────────────────────────── --}}
 <div class="card" style="margin-bottom:0">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="fas fa-receipt me-2"></i>Últimas Ventas</span>
+        <span><i class="fas fa-receipt me-2"></i>Últimas Ventas del Período</span>
         @can('ver-ventas')
         <a href="{{ route('ventas.index') }}" class="btn btn-sm btn-outline-primary">
             Ver todas <i class="fas fa-arrow-right ms-1" style="font-size:.7rem"></i>
