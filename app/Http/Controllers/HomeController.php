@@ -152,9 +152,12 @@ class HomeController extends Controller
         if (!$isCajero) {
             $inicio = Carbon::today()->subDays(29);
 
+            // El límite va como 'Y-m-d': la columna guarda el día sin hora y
+            // comparar contra un Carbon completo dejaría fuera las compras
+            // hechas justo el primer día del rango.
             $comprasPorDia = DB::table('compras_insumo')
                 ->selectRaw('DATE(fecha) as dia, SUM(total) as total_dia')
-                ->where('fecha', '>=', $inicio)
+                ->where('fecha', '>=', $inicio->toDateString())
                 ->groupBy('dia')
                 ->orderBy('dia')
                 ->pluck('total_dia', 'dia');
