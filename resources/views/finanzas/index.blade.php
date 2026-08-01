@@ -174,11 +174,20 @@
                                 {{ $actual['ingresos'] > 0 ? round($actual['compras'] / $actual['ingresos'] * 100, 1) : 0 }}%
                             </td>
                         </tr>
-                        <tr>
+                        {{-- La merma es informativa: el insumo perdido ya se pagó
+                             al comprarlo, así que no vuelve a restar acá. Se
+                             muestra para poder controlarla. --}}
+                        <tr class="fst-italic" style="background:#fcfcfd;">
                             <td class="ps-4 text-muted">
-                                <i class="fas fa-minus text-danger me-2"></i>Mermas de insumos
+                                <i class="fas fa-circle-info text-secondary me-2"></i>Mermas de insumos
+                                <span class="badge bg-light text-secondary border ms-1" style="font-size:.62rem;">
+                                    informativo
+                                </span>
+                                <div class="text-muted" style="font-size:.7rem; padding-left:1.65rem;">
+                                    Ya incluidas en las compras · no se restan otra vez
+                                </div>
                             </td>
-                            <td class="text-end">Bs {{ number_format($actual['mermas'], 2) }}</td>
+                            <td class="text-end text-muted">Bs {{ number_format($actual['mermas'], 2) }}</td>
                             <td class="text-end">
                                 @include('finanzas._delta', [
                                     'valor' => $delta($actual['mermas'], $anterior['mermas']),
@@ -186,7 +195,8 @@
                                 ])
                             </td>
                             <td class="text-end text-muted">
-                                {{ $actual['ingresos'] > 0 ? round($actual['mermas'] / $actual['ingresos'] * 100, 1) : 0 }}%
+                                {{ $actual['compras'] > 0 ? round($actual['mermas'] / $actual['compras'] * 100, 1) : 0 }}%
+                                <div class="text-muted" style="font-size:.65rem;">de las compras</div>
                             </td>
                         </tr>
 
@@ -263,11 +273,13 @@
             <div class="card-body">
                 @if($actual['egresos_total'] > 0)
                     @php
+                        // Las mermas quedan fuera del reparto: no son plata que
+                        // salió aparte, ya están dentro de las compras. Si se
+                        // incluyeran, los segmentos sumarían más que el total.
                         $partes = [
                             ['Compras de insumos', $actual['compras'],      '#0ea5e9'],
                             ['Sueldos',            $actual['planillas'],    '#8b5cf6'],
                             ['Gastos fijos',       $actual['gastos_fijos'], '#f59e0b'],
-                            ['Mermas',             $actual['mermas'],       '#ef4444'],
                         ];
                         $partes = array_filter($partes, fn($p) => $p[1] > 0);
                     @endphp

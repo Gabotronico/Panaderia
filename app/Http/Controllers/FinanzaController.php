@@ -109,7 +109,12 @@ class FinanzaController extends Controller
             ->whereBetween('mermas_insumos.fecha', [$desde, $hasta])
             ->sum(DB::raw('mermas_insumos.cantidad * insumos.costo_unitario'));
 
-        $costosDirectos = $compras + $mermas;
+        // La merma NO se suma al costo: el insumo perdido ya se pagó cuando se
+        // compró, y las compras se cuentan enteras acá arriba. Sumarla otra vez
+        // cobraría dos veces la misma plata e inflaría la pérdida. Se mantiene
+        // calculada porque sirve como indicador de cuánto se está perdiendo por
+        // vencimiento o mal manejo, pero se muestra aparte del resultado.
+        $costosDirectos = $compras;
 
         // ── GASTOS OPERATIVOS ───────────────────────────────────────
         // La planilla se imputa al mes en que ARRANCA su período: una semana
