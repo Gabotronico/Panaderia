@@ -66,8 +66,10 @@ class FinanzaController extends Controller
             'gastos'     => (float) $sinPagar->sum('monto_estimado'),
             'cantidad'   => $sinPagar->count(),
             'vencidos'   => $sinPagar->where('estado', 'vencido')->count(),
+            // Mismo criterio que el gasto: la planilla pertenece al mes en que
+            // arranca su período.
             'borradores' => Planilla::where('estado', 'borrador')
-                                ->whereBetween('periodo_fin', [$inicio->toDateString(), $fin->toDateString()])
+                                ->whereBetween('periodo_inicio', [$inicio->toDateString(), $fin->toDateString()])
                                 ->count(),
         ];
 
@@ -110,11 +112,13 @@ class FinanzaController extends Controller
         $costosDirectos = $compras + $mermas;
 
         // ── GASTOS OPERATIVOS ───────────────────────────────────────
-        // La planilla se imputa al mes en que termina su período, y solo pesa
-        // como gasto cuando ya se pagó: mientras está en borrador o cerrada es
-        // un cálculo, no plata que salió de la caja.
+        // La planilla se imputa al mes en que ARRANCA su período: una semana
+        // que va del 27/07 al 01/08 se trabajó casi toda en julio, así que
+        // cargarla a agosto por terminar ahí distorsionaba los dos meses.
+        // Y solo pesa como gasto cuando ya se pagó: mientras está en borrador
+        // o cerrada es un cálculo, no plata que salió de la caja.
         $planillas = (float) Planilla::where('estado', 'pagada')
-            ->whereBetween('periodo_fin', [$desde, $hasta])
+            ->whereBetween('periodo_inicio', [$desde, $hasta])
             ->sum('total_general');
 
         // Se imputa al período al que corresponde el gasto, no a la fecha en que
