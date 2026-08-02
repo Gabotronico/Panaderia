@@ -26,7 +26,15 @@ class SQLiteCompatibilityTest extends TestCase
             'stock_minimo',
         ]));
         $this->assertFalse(Schema::hasColumn('productos', 'rendimiento_receta'));
-        $this->assertTrue(Schema::hasColumns('recetas', ['nombre', 'rendimiento']));
+        $this->assertFalse(Schema::hasTable('recetas'));
+        $this->assertTrue(Schema::hasColumns('producciones', ['fecha', 'observaciones', 'user_id']));
+        $this->assertTrue(Schema::hasColumns('produccion_insumo', [
+            'produccion_id', 'insumo_id', 'cantidad', 'costo_unitario',
+        ]));
+        $this->assertTrue(Schema::hasColumns('produccion_producto', [
+            'produccion_id', 'producto_id', 'cantidad',
+        ]));
+        $this->assertTrue(Schema::hasColumn('ventas', 'es_directa'));
         $this->assertTrue(Schema::hasColumns('asistencias', ['fecha', 'estado', 'hora_salida']));
         $this->assertTrue(Schema::hasColumns('planilla_empleado', [
             'planilla_id',
@@ -136,6 +144,8 @@ class SQLiteCompatibilityTest extends TestCase
             route('gastos-pagos.index', ['year' => 2026, 'month' => 7]),
             route('gastos-pagos.anual', ['year' => 2026]),
             route('planillas.index'),
+            route('produccion.index'),
+            route('ventas.directa'),
             route('usuarios.index'),
             route('reportes.index'),
             route('reportes.ventas', $period),
