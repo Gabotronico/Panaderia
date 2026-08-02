@@ -41,17 +41,26 @@ class NombreUnico implements ValidationRule
         }
     }
 
-    private function normalizar(string $texto): string
+    /**
+     * Deja un nombre listo para guardar: sin espacios en los bordes ni
+     * repetidos en el medio, para que no convivan "Pan " y "Pan".
+     *
+     * Vive acá y no en cada controlador a propósito: si la validación
+     * normalizara distinto que el guardado, se podrían colar duplicados que
+     * la regla creyó distintos.
+     */
+    public static function limpiar(string $texto): string
     {
-        // Varios espacios seguidos también cuentan como el mismo nombre:
-        // "Pan  integral" y "Pan integral" son el mismo producto.
         $texto = trim($texto);
 
         // Con /u, preg_replace devuelve null si el texto no es UTF-8 válido
         // (un pegado raro, un teclado viejo). En ese caso se colapsa sin
-        // Unicode en lugar de dejar pasar un null.
-        $colapsado = preg_replace('/\s+/u', ' ', $texto) ?? preg_replace('/\s+/', ' ', $texto);
+        // Unicode en lugar de devolver null y romper el alta.
+        return preg_replace('/\s+/u', ' ', $texto) ?? preg_replace('/\s+/', ' ', $texto);
+    }
 
-        return mb_strtolower($colapsado);
+    private function normalizar(string $texto): string
+    {
+        return mb_strtolower(self::limpiar($texto));
     }
 }

@@ -56,7 +56,7 @@ class InsumoController extends Controller
         ]);
 
         $datos = $request->all();
-        $datos['nombre'] = $this->limpiarNombre($request->nombre);
+        $datos['nombre'] = NombreUnico::limpiar($request->nombre);
 
         Insumo::create($datos);
 
@@ -111,7 +111,7 @@ class InsumoController extends Controller
         ]);
 
         $datos = $request->all();
-        $datos['nombre'] = $this->limpiarNombre($request->nombre);
+        $datos['nombre'] = NombreUnico::limpiar($request->nombre);
 
         $insumo->update($datos);
 
@@ -228,17 +228,4 @@ class InsumoController extends Controller
             ->with('success', "{$cant} {$insumo->unidad_medida} de \"{$insumo->nombre}\" movidas al stock de \"{$producto->nombre}\".");
     }
 
-    /**
-     * Deja el nombre listo para guardar: sin espacios en los bordes y sin
-     * repetidos en el medio, para que no convivan "Harina " y "Harina".
-     *
-     * Con /u, preg_replace devuelve null si el texto no es UTF-8 válido; el
-     * respaldo sin Unicode evita guardar un nombre nulo y reventar el alta.
-     */
-    private function limpiarNombre(string $nombre): string
-    {
-        $nombre = trim($nombre);
-
-        return preg_replace('/\s+/u', ' ', $nombre) ?? preg_replace('/\s+/', ' ', $nombre);
-    }
 }

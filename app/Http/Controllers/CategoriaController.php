@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Categoria;
+use App\Rules\NombreUnico;
 use Illuminate\Http\Request;
 
 class CategoriaController extends Controller
@@ -30,12 +31,19 @@ class CategoriaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:100|unique:categorias,nombre',
+            'nombre' => ['required', 'string', 'max:100', new NombreUnico(
+                'categorias',
+                null,
+                'Ya existe la categoría ":existente".'
+            )],
             'descripcion' => 'nullable|string',
             'activo' => 'boolean',
         ]);
 
-        Categoria::create($request->all());
+        $datos = $request->all();
+        $datos['nombre'] = NombreUnico::limpiar($request->nombre);
+
+        Categoria::create($datos);
 
         return redirect()->route('categorias.index')
             ->with('success', 'Categoría creada exitosamente.');
@@ -54,12 +62,19 @@ class CategoriaController extends Controller
     public function update(Request $request, Categoria $categoria)
     {
         $request->validate([
-            'nombre' => 'required|string|max:100|unique:categorias,nombre,' . $categoria->id,
+            'nombre' => ['required', 'string', 'max:100', new NombreUnico(
+                'categorias',
+                $categoria->id,
+                'Ya existe otra categoría llamada ":existente".'
+            )],
             'descripcion' => 'nullable|string',
             'activo' => 'boolean',
         ]);
 
-        $categoria->update($request->all());
+        $datos = $request->all();
+        $datos['nombre'] = NombreUnico::limpiar($request->nombre);
+
+        $categoria->update($datos);
 
         return redirect()->route('categorias.index')
             ->with('success', 'Categoría actualizada exitosamente.');

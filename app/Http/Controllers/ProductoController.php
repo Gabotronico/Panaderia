@@ -54,7 +54,7 @@ class ProductoController extends Controller
         ]);
 
         $data = $request->except('imagen');
-        $data['nombre'] = $this->limpiarNombre($request->nombre);
+        $data['nombre'] = NombreUnico::limpiar($request->nombre);
 
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $request->file('imagen')->store('productos', 'public');
@@ -97,7 +97,7 @@ class ProductoController extends Controller
         ]);
 
         $data = $request->except('imagen');
-        $data['nombre'] = $this->limpiarNombre($request->nombre);
+        $data['nombre'] = NombreUnico::limpiar($request->nombre);
 
         if ($request->hasFile('imagen')) {
             if ($producto->imagen) {
@@ -160,17 +160,4 @@ class ProductoController extends Controller
         }
     }
 
-    /**
-     * Deja el nombre listo para guardar: sin espacios en los bordes y sin
-     * repetidos en el medio, para que no convivan "Pan " y "Pan".
-     *
-     * Con /u, preg_replace devuelve null si el texto no es UTF-8 válido; el
-     * respaldo sin Unicode evita guardar un nombre nulo y reventar el alta.
-     */
-    private function limpiarNombre(string $nombre): string
-    {
-        $nombre = trim($nombre);
-
-        return preg_replace('/\s+/u', ' ', $nombre) ?? preg_replace('/\s+/', ' ', $nombre);
-    }
 }
