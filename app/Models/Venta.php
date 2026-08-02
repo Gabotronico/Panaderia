@@ -22,6 +22,7 @@ class Venta extends Model
         'monto_recibido',
         'cambio',
         'estado',
+        'es_directa',
         'observaciones',
     ];
 
@@ -31,6 +32,7 @@ class Venta extends Model
         'total'          => 'decimal:2',
         'monto_recibido' => 'decimal:2',
         'cambio'         => 'decimal:2',
+        'es_directa'     => 'boolean',
     ];
 
     public function user()

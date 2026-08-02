@@ -68,7 +68,11 @@ Route::middleware('auth')->group(function () {
     Route::post('almacenes/{almacen}/producto/{producto}/retornar', [AlmacenController::class, 'retornarBodega'])->name('almacenes.retornarBodega');
     Route::resource('almacenes', AlmacenController::class)->parameters(['almacenes' => 'almacen']);
 
-    // Rutas de Ventas
+    // Rutas de Ventas. La venta directa registra el monto vendido sin
+    // detallar productos; va antes del resource para que "directa" no se
+    // confunda con el {venta} de la ruta show.
+    Route::get('ventas/directa', [VentaController::class, 'crearDirecta'])->name('ventas.directa');
+    Route::post('ventas/directa', [VentaController::class, 'guardarDirecta'])->name('ventas.directa.store');
     Route::resource('ventas', VentaController::class);
 
     // Rutas de Cortes de Caja

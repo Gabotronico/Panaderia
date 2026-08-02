@@ -278,4 +278,104 @@ class VentaController extends Controller
             return redirect()->route('ventas.index')->with('error', 'Error al eliminar la venta.');
         }
     }
+
+    /** Formulario para registrar lo vendido por monto, sin detallar productos. */
+    public function crearDirecta()
+    {
+        $user    = Auth::user();
+        $almacen = $user->almacen;
+
+        // El admin sin almacén propio elige a cuál imputar la venta, igual que
+        // en la venta normal.
+        $almacenes = ($user->esAdministrador() && !$almacen)
+            ? Almacen::where('activo', true)->orderBy('nombre')->get()
+            : null;
+
+        if (!$user->esAdministrador() && !$almacen) {
+            return redirect()->route('ventas.index')
+                ->with('error', 'No tienes un almacén asignado. Contacta al administrador.');
+        }
+
+        return view('ventas.directa', compact('almacen', 'almacenes'));
+    }
+
+    /**
+     * Registra una venta por monto total, sin detalle de productos.
+     *
+     * Se guarda una venta por medio de cobro: el arqueo del corte de caja
+     * separa efectivo de QR, así que meter los dos montos en una sola fila
+     * dejaría el cuadre sin saber cuánto entró al cajón.
+     *
+     * No mueve stock a propósito: no se sabe qué se vendió. Si además se
+     * cargan las ventas producto por producto, esto duplicaría los ingresos.
+     */
+    public function guardarDirecta(Request $request)
+    {
+        $datos = $request->validate([
+            'efectivo'      => 'nullable|numeric|min:0|max:9999999',
+            'qr'            => 'nullable|numeric|min:0|max:9999999',
+            'almacen_id'    => 'nullable|exists:almacenes,id',
+            'observaciones' => 'nullable|string|max:500',
+        ]);
+
+        $efectivo = round((float) ($datos['efectivo'] ?? 0), 2);
+        $qr       = round((float) ($datos['qr'] ?? 0), 2);
+
+        if ($efectivo <= 0 && $qr <= 0) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Ingrese al menos un monto: efectivo o QR.');
+        }
+
+        $user    = Auth::user();
+        $almacen = $user->almacen
+            ?? (isset($datos['almacen_id']) ? Almacen::find($datos['almacen_id']) : null);
+
+        if (!$user->esAdministrador() && !$almacen) {
+            return redirect()->route('ventas.index')
+                ->with('error', 'No tienes un almacén asignado. Contacta al administrador.');
+        }
+
+        $montos = array_filter(
+            ['efectivo' => $efectivo, 'qr' => $qr],
+            fn ($monto) => $monto > 0
+        );
+
+        $creadas = DB::transaction(function () use ($montos, $almacen, $datos, $user) {
+            $creadas = [];
+
+            foreach ($montos as $tipoPago => $monto) {
+                // El número se pide dentro del bucle: la fila anterior ya está
+                // insertada, así que la segunda venta no repite el número.
+                $ultima = Venta::latest('id')->first();
+                $numero = 'VD-' . str_pad(($ultima ? $ultima->id + 1 : 1), 6, '0', STR_PAD_LEFT);
+
+                $creadas[] = Venta::create([
+                    'user_id'        => $user->id,
+                    'almacen_id'     => $almacen?->id,
+                    'numero_venta'   => $numero,
+                    'subtotal'       => $monto,
+                    'descuento'      => 0,
+                    'total'          => $monto,
+                    'tipo_pago'      => $tipoPago,
+                    'monto_recibido' => $monto,
+                    'cambio'         => 0,
+                    'estado'         => 'completada',
+                    'es_directa'     => true,
+                    'observaciones'  => $datos['observaciones'] ?? null,
+                ]);
+            }
+
+            return $creadas;
+        });
+
+        $detalle = collect($creadas)
+            ->map(fn ($v) => ($v->tipo_pago === 'qr' ? 'QR' : 'Efectivo') . ' Bs ' . number_format($v->total, 2))
+            ->implode(' · ');
+
+        $total = number_format($efectivo + $qr, 2);
+
+        return redirect()->route('ventas.index')
+            ->with('success', "Venta directa registrada por Bs {$total} ({$detalle}). No se descontó stock.");
+    }
 }
