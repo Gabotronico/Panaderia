@@ -643,12 +643,14 @@
         <div class="sidebar-label">Principal</div>
 
         <ul class="sidebar-nav">
+            @can('ver-dashboard')
             <li>
                 <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">
                     <i class="fas fa-gauge-high"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
+            @endcan
 
             @role('Administrador')
             <li>
@@ -686,11 +688,11 @@
             </li>
             @endcan
 
-            @can('ver-recetas')
+            @can('ver-produccion')
             <li>
-                <a href="{{ route('recetas.index') }}" class="{{ request()->routeIs('recetas.*') ? 'active' : '' }}">
-                    <i class="fas fa-book-open"></i>
-                    <span>Recetas</span>
+                <a href="{{ route('produccion.index') }}" class="{{ request()->routeIs('produccion.*') ? 'active' : '' }}">
+                    <i class="fas fa-industry"></i>
+                    <span>Producción</span>
                 </a>
             </li>
             @endcan

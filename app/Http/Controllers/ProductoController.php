@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Producto;
+use App\Rules\NombreUnico;
 use App\Models\Categoria;
 use App\Models\Almacen;
 use Illuminate\Http\Request;
@@ -39,7 +40,11 @@ class ProductoController extends Controller
     {
         $request->validate([
             'categoria_id' => 'required|exists:categorias,id',
-            'nombre'       => 'required|string|max:150',
+            'nombre'       => ['required', 'string', 'max:150', new NombreUnico(
+                'productos',
+                null,
+                'Ya existe el producto ":existente". Si querés sumarle stock, registralo desde Producción en vez de crearlo otra vez.'
+            )],
             'descripcion'  => 'nullable|string',
             'precio_venta' => 'required|numeric|min:0',
             'stock'        => 'required|integer|min:0',
@@ -49,6 +54,7 @@ class ProductoController extends Controller
         ]);
 
         $data = $request->except('imagen');
+        $data['nombre'] = NombreUnico::limpiar($request->nombre);
 
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $request->file('imagen')->store('productos', 'public');
@@ -77,7 +83,11 @@ class ProductoController extends Controller
     {
         $request->validate([
             'categoria_id' => 'required|exists:categorias,id',
-            'nombre'       => 'required|string|max:150',
+            'nombre'       => ['required', 'string', 'max:150', new NombreUnico(
+                'productos',
+                $producto->id,
+                'Ya existe otro producto llamado ":existente".'
+            )],
             'descripcion'  => 'nullable|string',
             'precio_venta' => 'required|numeric|min:0',
             'stock'        => 'required|integer|min:0',
@@ -87,6 +97,7 @@ class ProductoController extends Controller
         ]);
 
         $data = $request->except('imagen');
+        $data['nombre'] = NombreUnico::limpiar($request->nombre);
 
         if ($request->hasFile('imagen')) {
             if ($producto->imagen) {
@@ -148,4 +159,5 @@ class ProductoController extends Controller
                 ->with('error', 'No se puede eliminar el producto porque tiene ventas asociadas.');
         }
     }
+
 }

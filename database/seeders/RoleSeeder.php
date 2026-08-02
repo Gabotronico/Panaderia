@@ -59,11 +59,10 @@ class RoleSeeder extends Seeder
             'editar-cortes-cerrados',
             'eliminar-cortes-cerrados',
 
-            // Recetas
-            'ver-recetas',
-            'crear-recetas',
-            'editar-recetas',
-            'eliminar-recetas',
+            // Producción: una corrida no se edita, se anula y se vuelve a cargar
+            'ver-produccion',
+            'crear-produccion',
+            'eliminar-produccion',
 
             // Almacenes
             'ver-almacenes',
@@ -86,8 +85,9 @@ class RoleSeeder extends Seeder
 
         // Crear rol Cajero con permisos limitados
         $cajeroRole = Role::firstOrCreate(['name' => 'Cajero']);
+        // El cajero no ve el dashboard: son cifras de todo el negocio, no de
+        // su turno. Al entrar cae directo en Ventas.
         $cajeroRole->syncPermissions([
-            'ver-dashboard',
             'ver-categorias',
             'ver-productos',
             'ver-ventas',

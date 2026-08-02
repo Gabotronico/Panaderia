@@ -98,14 +98,24 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($venta->detalles as $detalle)
+                            @forelse($venta->detalles as $detalle)
                                 <tr>
                                     <td>{{ $detalle->producto->nombre }}</td>
                                     <td class="text-center">{{ $detalle->cantidad }}</td>
                                     <td class="text-end">Bs{{ number_format($detalle->precio_unitario, 2) }}</td>
                                     <td class="text-end">Bs{{ number_format($detalle->subtotal, 2) }}</td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                {{-- Las ventas directas se registran por monto: no hay
+                                     productos que listar. --}}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        <i class="fas fa-cash-register me-2"></i>
+                                        Venta registrada por monto total, sin detalle de productos.
+                                        <div class="small mt-1">Por eso no descontó stock.</div>
+                                    </td>
+                                </tr>
+                            @endforelse
                         </tbody>
                         <tfoot class="table-light">
                             <tr>
@@ -172,13 +182,17 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($venta->detalles as $detalle)
+                @forelse($venta->detalles as $detalle)
                 <tr>
                     <td>{{ $detalle->producto->nombre }}</td>
                     <td style="text-align: center;">{{ $detalle->cantidad }}</td>
                     <td style="text-align: right;">Bs{{ number_format($detalle->subtotal, 2) }}</td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="3" style="text-align: center;">Venta por monto total</td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
         

@@ -8,9 +8,15 @@
         <div class="d-flex justify-content-between align-items-center">
             <h4><i class="fas fa-shopping-cart me-2"></i>Gestión de Ventas</h4>
             @can('crear-ventas')
-            <a href="{{ route('ventas.create') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-2"></i>Nueva Venta
-            </a>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('ventas.directa') }}" class="btn btn-outline-primary"
+                   title="Registrar el total vendido sin detallar productos">
+                    <i class="fas fa-cash-register me-2"></i>Venta Directa
+                </a>
+                <a href="{{ route('ventas.create') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Nueva Venta
+                </a>
+            </div>
             @endcan
         </div>
     </div>
@@ -112,6 +118,12 @@
                 <tr>
                     <td>
                         <strong>{{ $venta->numero_venta }}</strong>
+                        @if($venta->es_directa)
+                            <br><span class="badge bg-secondary" style="font-size:.62rem;"
+                                      title="Registrada por monto total, sin detalle de productos">
+                                venta directa
+                            </span>
+                        @endif
                     </td>
                     <td>{{ $venta->created_at->format('d/m/Y H:i') }}</td>
                     <td>{{ $venta->user->name }}</td>

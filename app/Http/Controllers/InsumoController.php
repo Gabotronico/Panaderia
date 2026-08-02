@@ -6,6 +6,7 @@ use App\Models\Insumo;
 use App\Models\CompraInsumo;
 use App\Models\MermaInsumo;
 use App\Models\Producto;
+use App\Rules\NombreUnico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -41,18 +42,23 @@ class InsumoController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre'         => 'required|string|max:150|unique:insumos,nombre',
+            'nombre'         => ['required', 'string', 'max:150', new NombreUnico(
+                'insumos',
+                null,
+                'Ya existe el insumo ":existente". Para sumarle stock usá el botón "Registrar Compra" (carrito) en vez de crearlo otra vez.'
+            )],
             'descripcion'    => 'nullable|string',
             'unidad_medida'  => 'required|string|max:50',
             'cantidad_stock' => 'required|numeric|min:0',
             'stock_minimo'   => 'required|numeric|min:0',
             'costo_unitario' => 'required|numeric|min:0',
             'activo'         => 'boolean',
-        ], [
-            'nombre.unique' => 'Ya existe un insumo con ese nombre. Usa el botón "Registrar Compra" (carrito) para agregar stock al existente.',
         ]);
 
-        Insumo::create($request->all());
+        $datos = $request->all();
+        $datos['nombre'] = NombreUnico::limpiar($request->nombre);
+
+        Insumo::create($datos);
 
         return redirect()->route('insumos.index')
             ->with('success', 'Insumo creado exitosamente.');
@@ -91,7 +97,11 @@ class InsumoController extends Controller
     public function update(Request $request, Insumo $insumo)
     {
         $request->validate([
-            'nombre'         => 'required|string|max:150|unique:insumos,nombre,' . $insumo->id,
+            'nombre'         => ['required', 'string', 'max:150', new NombreUnico(
+                'insumos',
+                $insumo->id,
+                'Ya existe otro insumo llamado ":existente".'
+            )],
             'descripcion'    => 'nullable|string',
             'unidad_medida'  => 'required|string|max:50',
             'cantidad_stock' => 'required|numeric|min:0',
@@ -100,7 +110,10 @@ class InsumoController extends Controller
             'activo'         => 'boolean',
         ]);
 
-        $insumo->update($request->all());
+        $datos = $request->all();
+        $datos['nombre'] = NombreUnico::limpiar($request->nombre);
+
+        $insumo->update($datos);
 
         return redirect()->route('insumos.index')
             ->with('success', 'Insumo actualizado exitosamente.');
@@ -214,4 +227,5 @@ class InsumoController extends Controller
         return redirect()->route('insumos.show', $insumo)
             ->with('success', "{$cant} {$insumo->unidad_medida} de \"{$insumo->nombre}\" movidas al stock de \"{$producto->nombre}\".");
     }
+
 }

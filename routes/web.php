@@ -15,7 +15,7 @@ use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\LocalStorageController;
 use App\Http\Controllers\PlanillaController;
 use App\Http\Controllers\ProductoController;
-use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\SetupController;
 use App\Http\Controllers\UserController;
@@ -55,11 +55,11 @@ Route::middleware('auth')->group(function () {
     Route::post('insumos/{insumo}/mover-a-producto', [InsumoController::class, 'moverAProducto'])->name('insumos.moverAProducto');
     Route::resource('insumos', InsumoController::class);
 
-    // Rutas de Recetas
-    Route::get('recetas/{receta}/insumos', [RecetaController::class, 'insumos'])->name('recetas.insumos');
-    Route::get('recetas/{receta}/usar', [RecetaController::class, 'formUsar'])->name('recetas.formUsar');
-    Route::post('recetas/{receta}/usar', [RecetaController::class, 'ejecutarUsar'])->name('recetas.ejecutarUsar');
-    Route::resource('recetas', RecetaController::class);
+    // Rutas de Producción. Una corrida no se edita: ya movió stock, así que
+    // se anula y se vuelve a cargar.
+    Route::resource('produccion', ProduccionController::class)
+        ->only(['index', 'create', 'store', 'show', 'destroy'])
+        ->parameters(['produccion' => 'produccion']);
 
     // Rutas de Almacenes
     Route::post('almacenes/{almacen}/asignar-cajero', [AlmacenController::class, 'asignarCajero'])->name('almacenes.asignarCajero');
@@ -68,7 +68,11 @@ Route::middleware('auth')->group(function () {
     Route::post('almacenes/{almacen}/producto/{producto}/retornar', [AlmacenController::class, 'retornarBodega'])->name('almacenes.retornarBodega');
     Route::resource('almacenes', AlmacenController::class)->parameters(['almacenes' => 'almacen']);
 
-    // Rutas de Ventas
+    // Rutas de Ventas. La venta directa registra el monto vendido sin
+    // detallar productos; va antes del resource para que "directa" no se
+    // confunda con el {venta} de la ruta show.
+    Route::get('ventas/directa', [VentaController::class, 'crearDirecta'])->name('ventas.directa');
+    Route::post('ventas/directa', [VentaController::class, 'guardarDirecta'])->name('ventas.directa.store');
     Route::resource('ventas', VentaController::class);
 
     // Rutas de Cortes de Caja

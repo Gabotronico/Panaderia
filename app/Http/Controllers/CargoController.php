@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cargo;
+use App\Rules\NombreUnico;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,11 +28,18 @@ class CargoController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nombre'      => 'required|string|max:100|unique:cargos,nombre',
+            'nombre'      => ['required', 'string', 'max:100', new NombreUnico(
+                'cargos',
+                null,
+                'Ya existe el cargo ":existente".'
+            )],
             'descripcion' => 'nullable|string|max:255',
         ]);
 
-        Cargo::create($request->only('nombre', 'descripcion'));
+        Cargo::create([
+            'nombre'      => NombreUnico::limpiar($request->nombre),
+            'descripcion' => $request->descripcion,
+        ]);
 
         return redirect()->route('cargos.index')->with('success', 'Cargo creado exitosamente.');
     }
@@ -44,11 +52,18 @@ class CargoController extends Controller
     public function update(Request $request, Cargo $cargo)
     {
         $request->validate([
-            'nombre'      => 'required|string|max:100|unique:cargos,nombre,' . $cargo->id,
+            'nombre'      => ['required', 'string', 'max:100', new NombreUnico(
+                'cargos',
+                $cargo->id,
+                'Ya existe otro cargo llamado ":existente".'
+            )],
             'descripcion' => 'nullable|string|max:255',
         ]);
 
-        $cargo->update($request->only('nombre', 'descripcion'));
+        $cargo->update([
+            'nombre'      => NombreUnico::limpiar($request->nombre),
+            'descripcion' => $request->descripcion,
+        ]);
 
         return redirect()->route('cargos.index')->with('success', 'Cargo actualizado.');
     }
