@@ -17,11 +17,17 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->middleware('auth');
-        $this->middleware('permission:ver-dashboard');
     }
 
     public function index(Request $request)
     {
+        // Sin permiso de dashboard se redirige en vez de cortar con un 403:
+        // el cajero llega acá por la redirección del login, y verse rebotado
+        // con "no autorizado" al entrar al sistema no ayuda a nadie.
+        if (!Auth::user()->can('ver-dashboard')) {
+            return redirect()->route('ventas.index');
+        }
+
         // Si es cajero, mostrar solo su información
         $user = Auth::user();
         $isCajero = $user->hasRole('Cajero');

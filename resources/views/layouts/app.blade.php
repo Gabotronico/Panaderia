@@ -643,12 +643,14 @@
         <div class="sidebar-label">Principal</div>
 
         <ul class="sidebar-nav">
+            @can('ver-dashboard')
             <li>
                 <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">
                     <i class="fas fa-gauge-high"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
+            @endcan
 
             @role('Administrador')
             <li>

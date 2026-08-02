@@ -85,8 +85,9 @@ class RoleSeeder extends Seeder
 
         // Crear rol Cajero con permisos limitados
         $cajeroRole = Role::firstOrCreate(['name' => 'Cajero']);
+        // El cajero no ve el dashboard: son cifras de todo el negocio, no de
+        // su turno. Al entrar cae directo en Ventas.
         $cajeroRole->syncPermissions([
-            'ver-dashboard',
             'ver-categorias',
             'ver-productos',
             'ver-ventas',
