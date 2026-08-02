@@ -59,11 +59,10 @@ class RoleSeeder extends Seeder
             'editar-cortes-cerrados',
             'eliminar-cortes-cerrados',
 
-            // Recetas
-            'ver-recetas',
-            'crear-recetas',
-            'editar-recetas',
-            'eliminar-recetas',
+            // Producción: una corrida no se edita, se anula y se vuelve a cargar
+            'ver-produccion',
+            'crear-produccion',
+            'eliminar-produccion',
 
             // Almacenes
             'ver-almacenes',
