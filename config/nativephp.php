@@ -6,7 +6,7 @@ return [
      * It is used to determine if the app needs to be updated.
      * Increment this value every time you release a new version of your app.
      */
-    'version' => env('NATIVEPHP_APP_VERSION', '1.0.8'),
+    'version' => env('NATIVEPHP_APP_VERSION', '1.0.9'),
 
     /**
      * The ID of your application. This should be a unique identifier
@@ -29,12 +29,12 @@ return [
     /**
      * The author of your application.
      */
-    'author' => env('NATIVEPHP_APP_AUTHOR', 'Panadería Escritorio'),
+    'author' => env('NATIVEPHP_APP_AUTHOR', 'INC Group'),
 
     /**
      * The copyright notice for your application.
      */
-    'copyright' => env('NATIVEPHP_APP_COPYRIGHT'),
+    'copyright' => env('NATIVEPHP_APP_COPYRIGHT', '© 2026 INC Group. Todos los derechos reservados.'),
 
     /**
      * The description of your application.
@@ -44,7 +44,7 @@ return [
     /**
      * The Website of your application.
      */
-    'website' => env('NATIVEPHP_APP_WEBSITE', 'https://localhost'),
+    'website' => env('NATIVEPHP_APP_WEBSITE', 'https://www.linkedin.com/company/inc-groupbo/'),
 
     /**
      * The default service provider for your application. This provider
@@ -86,6 +86,7 @@ return [
         'build',
         'temp',
         'content',
+        '.tmp-*',
         'node_modules',
         '.composer-cache',
         '.git',

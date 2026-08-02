@@ -95,6 +95,15 @@
                         </form>
                     </div>
                 </div>
+                <div class="text-center mt-3">
+                    <small class="text-white-50">
+                        Sistema desarrollado por
+                        <a href="https://www.linkedin.com/company/inc-groupbo/"
+                           target="_blank" rel="noopener noreferrer" class="text-white text-decoration-none fw-semibold">
+                            INC Group
+                        </a>
+                    </small>
+                </div>
             </div>
         </div>
     </div>

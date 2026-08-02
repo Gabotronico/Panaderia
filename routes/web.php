@@ -122,6 +122,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('sistema')->name('system.')->group(function () {
+        Route::view('/acerca-de', 'system.about')->name('about');
         Route::get('/respaldos', [BackupController::class, 'index'])->name('backups.index');
         Route::get('/respaldos/descargar', [BackupController::class, 'download'])->name('backups.download');
         Route::post('/respaldos/restaurar', [BackupController::class, 'restore'])->name('backups.restore');

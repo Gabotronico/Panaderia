@@ -797,6 +797,12 @@
                     <span>Respaldos</span>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('system.about') }}" class="{{ request()->routeIs('system.about') ? 'active' : '' }}">
+                    <i class="fas fa-circle-info"></i>
+                    <span>Acerca del sistema</span>
+                </a>
+            </li>
         </ul>
         @endrole
 
@@ -849,6 +855,11 @@
                     <li>
                         <a class="dropdown-item" href="#">
                             <i class="fas fa-user me-2 text-muted" style="font-size:.8rem"></i>Perfil
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{{ route('system.about') }}">
+                            <i class="fas fa-circle-info me-2 text-muted" style="font-size:.8rem"></i>Acerca del sistema
                         </a>
                     </li>
                     <li><hr class="dropdown-divider"></li>
