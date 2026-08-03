@@ -200,7 +200,7 @@ body {
 {{-- ═══════ PIE FIJO (se repite en cada página) ═══════ --}}
 <table class="pie">
     <tr>
-        <td style="text-align:left;">Panadería Luna · Documento interno de uso administrativo</td>
+        <td style="text-align:left;">Obrador · Documento interno de uso administrativo</td>
         <td style="text-align:center;">Planilla N.º {{ $folio }}</td>
         <td style="text-align:right;">Emitido el {{ now()->format('d/m/Y') }} a las {{ now()->format('H:i') }}</td>
     </tr>
@@ -210,7 +210,7 @@ body {
 <table class="encabezado">
     <tr>
         <td style="width:54%;">
-            <div class="marca">Panadería Luna</div>
+            <div class="marca">Obrador</div>
             <div class="marca-sub">Recursos Humanos · Sistema de Gestión</div>
         </td>
         <td style="width:46%; text-align:right;">

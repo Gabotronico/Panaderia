@@ -16,7 +16,7 @@
                         <i class="fas fa-bread-slice"></i>
                     </div>
                     <div>
-                        <h2 class="h4 fw-bold mb-1">{{ config('app.name') }}</h2>
+                        <h2 class="h4 fw-bold mb-1">Obrador</h2>
                         <p class="text-muted mb-2">Sistema local de ventas, inventario, caja y administración para panaderías.</p>
                         <span class="badge text-bg-light border fw-semibold">
                             Versión {{ config('nativephp.version', '1.0.0') }}

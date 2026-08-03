@@ -71,7 +71,7 @@ class GenerarDocumentacion extends Command
         $this->doc->setDefaultFontSize(11);
 
         $props = $this->doc->getDocInfo();
-        $props->setCreator('Panadería Luna');
+        $props->setCreator('Obrador');
         $props->setTitle('Manual del Sistema de Gestión');
         $props->setDescription('Funcionamiento, base de datos y guía de uso');
 
@@ -119,7 +119,7 @@ class GenerarDocumentacion extends Command
         ]);
 
         $enc = $this->seccion->addHeader();
-        $enc->addText('Panadería Luna · Manual del Sistema',
+        $enc->addText('Obrador · Manual del Sistema',
             ['size' => 8, 'color' => self::GRIS], ['alignment' => Jc::END]);
 
         $pie = $this->seccion->addFooter();
@@ -228,7 +228,7 @@ class GenerarDocumentacion extends Command
             ['size' => 15, 'color' => self::GRIS, 'spacing' => 60],
             ['alignment' => Jc::CENTER, 'spaceAfter' => 60]);
 
-        $s->addText('Panadería Luna',
+        $s->addText('Obrador',
             ['size' => 40, 'bold' => true, 'color' => self::AZUL],
             ['alignment' => Jc::CENTER, 'spaceAfter' => 200]);
 
@@ -279,7 +279,7 @@ class GenerarDocumentacion extends Command
         $this->seccion->addTitle('1. Introducción', 1);
 
         $this->seccion->addTitle('1.1 Qué es el sistema', 2);
-        $this->p('El Sistema de Gestión de Panadería Luna es una aplicación de escritorio que administra ' .
+        $this->p('El Sistema de Gestión de Obrador es una aplicación de escritorio que administra ' .
             'la operación completa del negocio: desde la compra de insumos y la producción con ' .
             'recetas, hasta la venta al público, el pago del personal y el control de los gastos ' .
             'fijos del local.');
@@ -353,10 +353,10 @@ class GenerarDocumentacion extends Command
 
         $this->seccion->addTitle('2.2 Pasos de instalación', 2);
         $this->pasos([
-            'Cerrá Panadería Escritorio si hay una versión anterior abierta.',
-            'Ejecutá el archivo «Panadería Escritorio-x.y.z-setup.exe».',
+            'Cerrá Obrador si hay una versión anterior abierta.',
+            'Ejecutá el archivo «Obrador-x.y.z-setup.exe».',
             'Seguí el asistente de Windows hasta completar la instalación.',
-            'Abrí «Panadería Escritorio» desde el menú Inicio o su acceso directo.',
+            'Abrí «Obrador» desde el menú Inicio o su acceso directo.',
             'En el primer inicio, completá el nombre del negocio y creá el usuario administrador.',
             'Ingresá con ese usuario y verificá que aparezca el panel principal.',
         ]);
@@ -374,7 +374,7 @@ class GenerarDocumentacion extends Command
         $this->codigo([
             'Motor: SQLite',
             'Archivo principal: database.sqlite',
-            'Ubicación: carpeta de datos local de Panadería Escritorio',
+            'Ubicación: carpeta de datos local de Obrador',
             'Servicio externo: no requiere MySQL ni XAMPP',
         ]);
 
@@ -383,11 +383,11 @@ class GenerarDocumentacion extends Command
             'Para copiar o restaurar información usá siempre la pantalla «Sistema → Respaldos».');
 
         $this->seccion->addTitle('2.4 Acceso al sistema', 2);
-        $this->p('Abrí Panadería Escritorio desde Windows. En el primer inicio aparecerá el asistente ' .
+        $this->p('Abrí Obrador desde Windows. En el primer inicio aparecerá el asistente ' .
             'de configuración; en los siguientes inicios verás directamente la pantalla de acceso.');
 
         $this->captura('Pantalla de inicio de sesión del sistema',
-            'Aplicación Panadería Escritorio → Inicio de sesión');
+            'Aplicación Obrador → Inicio de sesión');
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -427,11 +427,11 @@ class GenerarDocumentacion extends Command
 
         $this->seccion->addTitle('3.2 Vista del administrador', 2);
         $this->captura('Panel principal completo, con las tarjetas de resumen y los paneles de operación diaria',
-            'Aplicación Panadería Escritorio → Inicio (sesión de administrador)');
+            'Aplicación Obrador → Inicio (sesión de administrador)');
 
         $this->seccion->addTitle('3.3 Vista del cajero', 2);
         $this->captura('Panel principal del cajero, sin las secciones administrativas en el menú lateral',
-            'Aplicación Panadería Escritorio → Inicio (sesión de cajero)');
+            'Aplicación Obrador → Inicio (sesión de cajero)');
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -593,7 +593,7 @@ class GenerarDocumentacion extends Command
         $this->seccion->addTitle('5. Base de datos', 1);
 
         $this->p('La información se guarda localmente en «database.sqlite», dentro de la carpeta de ' .
-            'datos de Panadería Escritorio del usuario de Windows. SQLite no necesita un servidor ' .
+            'datos de Obrador del usuario de Windows. SQLite no necesita un servidor ' .
             'ni credenciales. Las tablas están agrupadas por módulo y se relacionan mediante claves ' .
             'foráneas, que garantizan que no queden registros huérfanos.');
 
@@ -969,7 +969,7 @@ class GenerarDocumentacion extends Command
             'El cajero abre su caja declarando el monto inicial en efectivo.',
         ]);
         $this->captura('Panel principal mostrando el aviso de asistencia pendiente',
-            'Aplicación Panadería Escritorio → Inicio');
+            'Aplicación Obrador → Inicio');
 
         $this->seccion->addTitle('Durante el día', 3);
         $this->pasos([
@@ -1117,7 +1117,7 @@ class GenerarDocumentacion extends Command
         $this->seccion->addTitle('8.2 Actualizar el sistema', 2);
         $this->pasos([
             'Creá un respaldo desde «Sistema → Respaldos».',
-            'Cerrá completamente Panadería Escritorio.',
+            'Cerrá completamente Obrador.',
             'Ejecutá el instalador de la versión nueva sobre la instalación existente.',
             'Abrí la aplicación; las actualizaciones de la base se aplican automáticamente.',
             'Verificá que tus usuarios, ventas, inventario e imágenes sigan disponibles.',

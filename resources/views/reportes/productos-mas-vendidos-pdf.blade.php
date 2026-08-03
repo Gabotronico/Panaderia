@@ -51,7 +51,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>🍞 Panadería Luna</h1>
+        <h1>🍞 Obrador</h1>
         <h2>Productos Más Vendidos</h2>
         <p>Período: {{ \Carbon\Carbon::parse($request->fecha_inicio)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($request->fecha_fin)->format('d/m/Y') }}</p>
     </div>
@@ -85,7 +85,7 @@
     </table>
 
     <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
-        <p>Panadería Luna - Sistema de Gestión</p>
+        <p>Obrador - Sistema de Gestión</p>
         <p>Reporte generado el {{ now()->format('d/m/Y H:i:s') }}</p>
     </div>
 </body>

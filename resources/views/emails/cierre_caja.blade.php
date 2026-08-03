@@ -41,7 +41,7 @@
 <div class="container">
   <div class="header">
     <h1>🔒 Cierre de Caja</h1>
-    <p>Panadería Luna — Notificación automática</p>
+    <p>Obrador — Notificación automática</p>
   </div>
   <div class="body">
     <span class="badge">🏁 CAJA CERRADA</span>
@@ -166,7 +166,7 @@
     @endif
   </div>
   <div class="footer">
-    Panadería Luna &bull; Sistema de Gestión &bull; {{ now()->format('d/m/Y H:i') }}
+    Obrador &bull; Sistema de Gestión &bull; {{ now()->format('d/m/Y H:i') }}
   </div>
 </div>
 </body>

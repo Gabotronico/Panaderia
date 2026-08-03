@@ -95,7 +95,7 @@
 </head>
 <body>
     <div class="header">
-        <h1> Panadería Luna</h1>
+        <h1> Obrador</h1>
         <h2>Reporte de Cortes de Caja</h2>
         <p>Período: {{ \Carbon\Carbon::parse($request->fecha_inicio)->format('d/m/Y') }} - {{ \Carbon\Carbon::parse($request->fecha_fin)->format('d/m/Y') }}</p>
     </div>
@@ -198,7 +198,7 @@
     </table>
 
     <div class="footer">
-        <p>Panadería Luna - Sistema de Gestión</p>
+        <p>Obrador - Sistema de Gestión</p>
         <p>Reporte generado automáticamente el {{ now()->format('d/m/Y H:i:s') }}</p>
     </div>
 </body>

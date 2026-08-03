@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Reporte de Ventas — Panadería Luna</title>
+<title>Reporte de Ventas — Obrador</title>
 <style>
 /*
  * Reporte de ventas — hoja A4 vertical.
@@ -144,7 +144,7 @@ body {
 {{-- ════════ PIE FIJO ════════ --}}
 <table class="pie">
     <tr>
-        <td style="text-align:left;">Panadería Luna · Reporte interno de ventas</td>
+        <td style="text-align:left;">Obrador · Reporte interno de ventas</td>
         <td style="text-align:center;">{{ $ini->format('d/m/Y') }} — {{ $fin->format('d/m/Y') }}</td>
         <td style="text-align:right;">Emitido {{ now()->format('d/m/Y H:i') }}</td>
     </tr>
@@ -154,7 +154,7 @@ body {
 <table class="doc-head">
     <tr>
         <td style="width:52%;">
-            <div class="marca">Panadería Luna</div>
+            <div class="marca">Obrador</div>
             <div class="marca-sub">Sistema de Gestión · Reportes</div>
         </td>
         <td style="width:48%; text-align:right;">

@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'name' => env('APP_NAME', 'Panadería Escritorio'),
+    'name' => env('APP_NAME', 'Obrador'),
 
     /*
     |--------------------------------------------------------------------------
