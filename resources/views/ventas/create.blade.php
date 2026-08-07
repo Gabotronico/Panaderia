@@ -182,6 +182,15 @@
                         </div>
                     </div>
 
+                    {{-- Permite cargar en diferido lo vendido otro día --}}
+                    <div class="mb-3">
+                        <label for="fecha" class="form-label">Fecha de la venta:</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha"
+                               value="{{ old('fecha', now()->toDateString()) }}"
+                               max="{{ now()->toDateString() }}">
+                        <small class="text-muted">Cambiala solo si cargás una venta de otro día.</small>
+                    </div>
+
                     <div class="mb-3">
                         <label for="observaciones" class="form-label">Observaciones:</label>
                         <textarea class="form-control"

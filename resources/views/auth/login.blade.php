@@ -1,14 +1,11 @@
 <x-guest-layout>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-5">
-                <div class="auth-card">
-                    <div class="auth-header">
-                        <i class="fas fa-bread-slice fa-3x mb-3"></i>
-                        <h3>{{ config('app.name') }}</h3>
-                        <p class="mb-0">Iniciar Sesión</p>
-                    </div>
-                    
+    {{-- La marca ya la muestra el layout; acá va solo el formulario. --}}
+    <div class="auth-card">
+        <div class="auth-header">
+            <h3>Iniciar Sesión</h3>
+            <p>Ingresá con tu usuario del sistema</p>
+        </div>
+
                     <div class="auth-body">
                         <!-- Session Status -->
                         @if (session('status'))
@@ -93,19 +90,16 @@
                                      </small>
                                 </div>
                         </form>
-                    </div>
-                </div>
-                <div class="text-center mt-3">
-                    <small class="text-white-50">
-                        Sistema desarrollado por
-                        <a href="https://www.linkedin.com/company/inc-groupbo/"
-                           target="_blank" rel="noopener noreferrer" class="text-white text-decoration-none fw-semibold">
-                            INC Group
-                        </a>
-                    </small>
-                </div>
-            </div>
-        </div>
     </div>
- 
+    </div>
+
+    <div class="text-center mt-3">
+        <small class="text-white-50">
+            Sistema desarrollado por
+            <a href="https://www.linkedin.com/company/inc-groupbo/"
+               target="_blank" rel="noopener noreferrer" class="text-white text-decoration-none fw-semibold">
+                INC Group
+            </a>
+        </small>
+    </div>
 </x-guest-layout>

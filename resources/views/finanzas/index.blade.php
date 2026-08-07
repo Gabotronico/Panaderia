@@ -174,6 +174,27 @@
                                 {{ $actual['ingresos'] > 0 ? round($actual['compras'] / $actual['ingresos'] * 100, 1) : 0 }}%
                             </td>
                         </tr>
+                        {{-- Gastos variables: pesan sobre la utilidad bruta, igual
+                             que las compras. --}}
+                        <tr>
+                            <td class="ps-4 text-muted">
+                                <i class="fas fa-minus text-danger me-2"></i>Gastos variables
+                                <div class="text-muted" style="font-size:.7rem; padding-left:1.65rem;">
+                                    Transporte, fletes, reparaciones puntuales
+                                </div>
+                            </td>
+                            <td class="text-end">Bs {{ number_format($actual['gastos_variables'], 2) }}</td>
+                            <td class="text-end">
+                                @include('finanzas._delta', [
+                                    'valor' => $delta($actual['gastos_variables'], $anterior['gastos_variables']),
+                                    'positivoEsBueno' => false,
+                                ])
+                            </td>
+                            <td class="text-end text-muted">
+                                {{ $actual['ingresos'] > 0 ? round($actual['gastos_variables'] / $actual['ingresos'] * 100, 1) : 0 }}%
+                            </td>
+                        </tr>
+
                         {{-- La merma es informativa: el insumo perdido ya se pagó
                              al comprarlo, así que no vuelve a restar acá. Se
                              muestra para poder controlarla. --}}
@@ -277,9 +298,10 @@
                         // salió aparte, ya están dentro de las compras. Si se
                         // incluyeran, los segmentos sumarían más que el total.
                         $partes = [
-                            ['Compras de insumos', $actual['compras'],      '#0ea5e9'],
-                            ['Sueldos',            $actual['planillas'],    '#8b5cf6'],
-                            ['Gastos fijos',       $actual['gastos_fijos'], '#f59e0b'],
+                            ['Compras de insumos', $actual['compras'],          '#0ea5e9'],
+                            ['Gastos variables',   $actual['gastos_variables'], '#ef4444'],
+                            ['Sueldos',            $actual['planillas'],        '#8b5cf6'],
+                            ['Gastos fijos',       $actual['gastos_fijos'],     '#f59e0b'],
                         ];
                         $partes = array_filter($partes, fn($p) => $p[1] > 0);
                     @endphp

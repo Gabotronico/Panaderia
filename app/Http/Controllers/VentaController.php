@@ -6,6 +6,7 @@ use App\Models\Venta;
 use App\Models\DetalleVenta;
 use App\Models\Producto;
 use App\Models\Almacen;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -87,6 +88,7 @@ class VentaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'fecha'                => 'nullable|date|before_or_equal:today',
             'productos'            => 'required|array|min:1',
             'productos.*.id'       => 'required|exists:productos,id',
             'productos.*.cantidad' => 'required|integer|min:1',
@@ -97,6 +99,7 @@ class VentaController extends Controller
         ], [
             'tipo_pago.required'         => 'Seleccione el tipo de pago.',
             'monto_recibido.required_if' => 'Ingrese el monto recibido del cliente.',
+            'fecha.before_or_equal'      => 'No se pueden registrar ventas con fecha futura.',
         ]);
 
         $user    = Auth::user();
@@ -155,6 +158,15 @@ class VentaController extends Controller
                 'estado'         => 'completada',
                 'observaciones'  => $request->observaciones,
             ]);
+
+            // Ventas cargadas en diferido —vendieron el domingo y las ingresan
+            // el lunes— llevan la fecha real. created_at es lo que miran cortes,
+            // finanzas y reportes, por eso se ajusta aparte del create().
+            if ($request->filled('fecha')) {
+                $venta->forceFill([
+                    'created_at' => Carbon::parse($request->fecha)->setTimeFrom(now()),
+                ])->save();
+            }
 
             foreach ($request->productos as $prod) {
                 $producto = $productosDB[$prod['id']];
@@ -312,10 +324,13 @@ class VentaController extends Controller
     public function guardarDirecta(Request $request)
     {
         $datos = $request->validate([
+            'fecha'         => 'nullable|date|before_or_equal:today',
             'efectivo'      => 'nullable|numeric|min:0|max:9999999',
             'qr'            => 'nullable|numeric|min:0|max:9999999',
             'almacen_id'    => 'nullable|exists:almacenes,id',
             'observaciones' => 'nullable|string|max:500',
+        ], [
+            'fecha.before_or_equal' => 'No se pueden registrar ventas con fecha futura.',
         ]);
 
         $efectivo = round((float) ($datos['efectivo'] ?? 0), 2);
@@ -341,7 +356,14 @@ class VentaController extends Controller
             fn ($monto) => $monto > 0
         );
 
-        $creadas = DB::transaction(function () use ($montos, $almacen, $datos, $user) {
+        // Si se registra una venta de días pasados —vendieron el domingo y lo
+        // cargan el lunes— la venta lleva esa fecha, no la de hoy. Se conserva
+        // la hora actual para que el orden dentro del día sea el de carga.
+        $momento = isset($datos['fecha'])
+            ? Carbon::parse($datos['fecha'])->setTimeFrom(now())
+            : now();
+
+        $creadas = DB::transaction(function () use ($montos, $almacen, $datos, $user, $momento) {
             $creadas = [];
 
             foreach ($montos as $tipoPago => $monto) {
@@ -350,7 +372,7 @@ class VentaController extends Controller
                 $ultima = Venta::latest('id')->first();
                 $numero = 'VD-' . str_pad(($ultima ? $ultima->id + 1 : 1), 6, '0', STR_PAD_LEFT);
 
-                $creadas[] = Venta::create([
+                $venta = Venta::create([
                     'user_id'        => $user->id,
                     'almacen_id'     => $almacen?->id,
                     'numero_venta'   => $numero,
@@ -364,6 +386,12 @@ class VentaController extends Controller
                     'es_directa'     => true,
                     'observaciones'  => $datos['observaciones'] ?? null,
                 ]);
+
+                // created_at es la fecha con la que la venta cuenta en cortes,
+                // finanzas y reportes, así que se ajusta aparte del create().
+                $venta->forceFill(['created_at' => $momento])->save();
+
+                $creadas[] = $venta;
             }
 
             return $creadas;

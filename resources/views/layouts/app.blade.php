@@ -785,6 +785,12 @@
                     <span>Gastos Fijos</span>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('gastos-variables.index') }}" class="{{ request()->routeIs('gastos-variables.*') ? 'active' : '' }}">
+                    <i class="fas fa-cart-flatbed"></i>
+                    <span>Gastos Variables</span>
+                </a>
+            </li>
         </ul>
         @endrole
 

@@ -10,6 +10,7 @@ use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\FinanzaController;
 use App\Http\Controllers\GastoFijoController;
 use App\Http\Controllers\GastoPagoController;
+use App\Http\Controllers\GastoVariableController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\LocalStorageController;
@@ -103,6 +104,9 @@ Route::middleware('auth')->group(function () {
 
     // Rutas de Gastos Fijos
     Route::resource('gastos-fijos', GastoFijoController::class)->except(['show']);
+
+    // Gastos variables: ocasionales, sin frecuencia ni vencimiento
+    Route::resource('gastos-variables', GastoVariableController::class)->except(['show']);
     Route::get('gastos-pagos', [GastoPagoController::class, 'index'])->name('gastos-pagos.index');
     Route::get('gastos-pagos/anual', [GastoPagoController::class, 'anual'])->name('gastos-pagos.anual');
     Route::post('gastos-pagos/generar', [GastoPagoController::class, 'generar'])->name('gastos-pagos.generar');

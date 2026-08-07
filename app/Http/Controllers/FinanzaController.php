@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CompraInsumo;
 use App\Models\GastoPago;
+use App\Models\GastoVariable;
 use App\Models\MermaInsumo;
 use App\Models\Planilla;
 use App\Models\Venta;
@@ -109,12 +110,18 @@ class FinanzaController extends Controller
             ->whereBetween('mermas_insumos.fecha', [$desde, $hasta])
             ->sum(DB::raw('mermas_insumos.cantidad * insumos.costo_unitario'));
 
+        // Gastos ocasionales de operar: transporte, fletes, una reparación
+        // puntual. Van acá arriba, junto a las compras, porque pesan sobre la
+        // utilidad bruta: son costo de mover el negocio, no gastos de
+        // estructura como el alquiler o la luz.
+        $gastosVariables = (float) GastoVariable::whereBetween('fecha', [$desde, $hasta])->sum('monto');
+
         // La merma NO se suma al costo: el insumo perdido ya se pagó cuando se
         // compró, y las compras se cuentan enteras acá arriba. Sumarla otra vez
         // cobraría dos veces la misma plata e inflaría la pérdida. Se mantiene
         // calculada porque sirve como indicador de cuánto se está perdiendo por
         // vencimiento o mal manejo, pero se muestra aparte del resultado.
-        $costosDirectos = $compras;
+        $costosDirectos = $compras + $gastosVariables;
 
         // ── GASTOS OPERATIVOS ───────────────────────────────────────
         // La planilla se imputa al mes en que ARRANCA su período: una semana
@@ -144,6 +151,7 @@ class FinanzaController extends Controller
             'num_ventas'        => $numVentas,
             'ticket_promedio'   => $numVentas > 0 ? round($ingresos / $numVentas, 2) : 0.0,
             'compras'           => round($compras, 2),
+            'gastos_variables'  => round($gastosVariables, 2),
             'mermas'            => round($mermas, 2),
             'costos_directos'   => round($costosDirectos, 2),
             'planillas'         => round($planillas, 2),

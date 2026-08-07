@@ -28,6 +28,17 @@
                     <span class="fw-semibold"><i class="fas fa-coins me-2 text-warning"></i>¿Cuánto se vendió?</span>
                 </div>
                 <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fecha de la venta</label>
+                        <input type="date" name="fecha" class="form-control" style="max-width:15rem;"
+                               value="{{ old('fecha', now()->toDateString()) }}"
+                               max="{{ now()->toDateString() }}">
+                        <small class="text-muted">
+                            Dejala en hoy, o cambiala si estás cargando lo vendido otro día
+                            (por ejemplo, el domingo que se ingresa el lunes).
+                        </small>
+                    </div>
+
                     <p class="text-muted small">
                         Cargá el total cobrado por cada medio. Si solo hubo uno, dejá el otro en blanco.
                     </p>
