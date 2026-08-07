@@ -10,13 +10,15 @@
 
     <style>
         :root {
-            --primary:           #6366f1;
-            --primary-dark:      #4f46e5;
-            --primary-light:     #e0e7ff;
-            --sidebar-bg:        #0f172a;
-            --sidebar-text:      #94a3b8;
-            --sidebar-hover:     rgba(255,255,255,0.055);
-            --sidebar-active-bg: rgba(99,102,241,0.18);
+            --primary:           #12304f;
+            --primary-dark:      #0d2540;
+            --primary-light:     #dce9f8;
+            --oro:               #d9a441;
+            --oro-claro:         #e8c684;
+            --sidebar-bg:        #0d2540;
+            --sidebar-text:      #9db2ca;
+            --sidebar-hover:     rgba(217,164,65,0.10);
+            --sidebar-active-bg: rgba(217,164,65,0.16);
             --sidebar-width:     260px;
             --topbar-height:     62px;
             --bg-main:           #f1f5f9;
@@ -64,18 +66,14 @@
             gap: 12px;
             padding: 0 20px;
             height: var(--topbar-height);
-            border-bottom: 1px solid rgba(255,255,255,0.055);
+            border-bottom: 1px solid rgba(217,164,65,0.22);
             flex-shrink: 0;
         }
 
         .sidebar-brand-icon {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
-            border-radius: 10px;
+            width: 40px; height: 40px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 16px; color: white;
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(99,102,241,0.4);
         }
 
         .sidebar-brand-name {
@@ -98,7 +96,7 @@
             font-weight: 700;
             letter-spacing: 0.1em;
             text-transform: uppercase;
-            color: rgba(148,163,184,0.45);
+            color: rgba(217,164,65,0.55);
         }
 
         /* Nav items */
@@ -132,7 +130,7 @@
 
         .sidebar-nav a.active {
             background: var(--sidebar-active-bg);
-            color: #a5b4fc;
+            color: var(--oro-claro);
             font-weight: 600;
         }
 
@@ -142,7 +140,7 @@
             left: 0; top: 50%;
             transform: translateY(-50%);
             width: 3px; height: 18px;
-            background: var(--primary);
+            background: var(--oro);
             border-radius: 0 3px 3px 0;
         }
 
@@ -176,7 +174,7 @@
 
         .sidebar-avatar {
             width: 32px; height: 32px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, var(--oro), #c98f2e);
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             font-size: 0.7rem; font-weight: 700;
@@ -235,7 +233,7 @@
 
         .topbar-avatar {
             width: 30px; height: 30px;
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             font-size: 0.68rem; font-weight: 700; color: white;
@@ -631,12 +629,34 @@
     <!-- ── SIDEBAR ──────────────────────────────────────────── -->
     <aside class="sidebar">
         <div class="sidebar-brand">
+            {{-- Horno de ladrillo con el pan adentro, como el logo. Va en SVG
+                 para que se vea nítido en cualquier pantalla. --}}
             <div class="sidebar-brand-icon">
-                <i class="fas fa-bread-slice"></i>
+                <svg width="34" height="30" viewBox="0 0 112 96" fill="none" aria-hidden="true">
+                    <g fill="#d9a441">
+                        <rect x="12" y="52" width="13" height="30" rx="2"/>
+                        <rect x="87" y="52" width="13" height="30" rx="2"/>
+                        <rect x="12" y="36" width="13" height="13" rx="2"/>
+                        <rect x="87" y="36" width="13" height="13" rx="2"/>
+                        <rect x="16" y="21" width="13" height="13" rx="2" transform="rotate(-22 22 27)"/>
+                        <rect x="83" y="21" width="13" height="13" rx="2" transform="rotate(22 90 27)"/>
+                        <rect x="30" y="11" width="13" height="13" rx="2" transform="rotate(-13 36 17)"/>
+                        <rect x="69" y="11" width="13" height="13" rx="2" transform="rotate(13 76 17)"/>
+                        <rect x="49" y="7" width="14" height="13" rx="2"/>
+                    </g>
+                    <path d="M32 78c0-9 10-16 24-16s24 7 24 16c0 2-1 3-3 3H35c-2 0-3-1-3-3z" fill="#e8c684"/>
+                    <g stroke="#c98f2e" stroke-width="2.4" stroke-linecap="round">
+                        <path d="M44 70l4 6M56 68l4 7M68 70l4 6"/>
+                    </g>
+                </svg>
             </div>
             <div>
-                <div class="sidebar-brand-name">{{ config('app.name') }}</div>
-                <div class="sidebar-brand-sub">Panel de Gestión</div>
+                <div class="sidebar-brand-name" style="letter-spacing:.09em; font-family:Georgia,serif;">
+                    {{ config('app.name', 'Obrador') }}
+                </div>
+                <div class="sidebar-brand-sub" style="color:var(--oro-claro); font-size:.6rem; letter-spacing:.11em; text-transform:uppercase;">
+                    Ventas e Inventario
+                </div>
             </div>
         </div>
 

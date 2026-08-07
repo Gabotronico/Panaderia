@@ -23,14 +23,34 @@
                         <input type="text" class="form-control" value="{{ Auth::user()->name }}" readonly>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Fecha</label>
-                        <input type="text" class="form-control" value="{{ now()->format('d/m/Y') }}" readonly>
+                    {{-- Se puede abrir una caja de un día pasado para cargar en
+                         diferido lo vendido, por ejemplo, el domingo. --}}
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-7">
+                            <label for="fecha_corte" class="form-label">Fecha de la caja</label>
+                            <input type="date" class="form-control @error('fecha_corte') is-invalid @enderror"
+                                   id="fecha_corte" name="fecha_corte"
+                                   value="{{ old('fecha_corte', now()->toDateString()) }}"
+                                   max="{{ now()->toDateString() }}">
+                            @error('fecha_corte')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <small class="text-muted">
+                                Cambiala solo si estás abriendo la caja de un día anterior.
+                            </small>
+                        </div>
+
+                        <div class="col-sm-5">
+                            <label for="hora_apertura" class="form-label">Hora de apertura</label>
+                            <input type="time" class="form-control @error('hora_apertura') is-invalid @enderror"
+                                   id="hora_apertura" name="hora_apertura"
+                                   value="{{ old('hora_apertura', now()->format('H:i')) }}">
+                            @error('hora_apertura')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Hora de Apertura</label>
-                        <input type="text" class="form-control" value="{{ now()->format('H:i') }}" readonly>
+
+                    <div class="alert alert-light border" style="font-size:.85rem;">
+                        <i class="fas fa-circle-info me-1 text-primary"></i>
+                        La caja toma las ventas de esa fecha registradas <strong>después</strong> de la hora
+                        de apertura. Si vas a cargar ventas de un domingo, poné una hora temprana.
                     </div>
                     
                     <div class="mb-3">

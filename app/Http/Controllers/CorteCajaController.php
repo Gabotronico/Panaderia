@@ -59,7 +59,11 @@ class CorteCajaController extends Controller
     {
         $request->validate([
             'monto_inicial' => 'required|numeric|min:0',
+            'fecha_corte'   => 'nullable|date|before_or_equal:today',
+            'hora_apertura' => 'nullable|date_format:H:i',
             'observaciones' => 'nullable|string',
+        ], [
+            'fecha_corte.before_or_equal' => 'No se puede abrir una caja con fecha futura.',
         ]);
 
         // Verificar que no exista otro corte abierto
@@ -72,14 +76,42 @@ class CorteCajaController extends Controller
                 ->with('error', 'Ya tienes un corte de caja abierto.');
         }
 
+        $fecha = $request->filled('fecha_corte')
+            ? Carbon::parse($request->fecha_corte)->startOfDay()
+            : Carbon::today();
+
+        // Abrir una caja de un día pasado sirve para cargar en diferido lo que
+        // se vendió, por ejemplo, el domingo. Se valida que no haya otra del
+        // mismo día para el mismo cajero, o quedarían dos arqueos del turno.
+        $yaExiste = CorteCaja::where('user_id', Auth::id())
+            ->whereDate('fecha_corte', $fecha->toDateString())
+            ->exists();
+
+        if ($yaExiste) {
+            return redirect()->back()->withInput()->with('error',
+                'Ya existe un corte de caja tuyo para el ' . $fecha->format('d/m/Y') . '.'
+            );
+        }
+
+        $horaApertura = $request->filled('hora_apertura')
+            ? $request->hora_apertura . ':00'
+            : Carbon::now()->format('H:i:s');
+
         $corte = CorteCaja::create([
             'user_id' => Auth::id(),
-            'fecha_corte' => Carbon::today(),
-            'hora_apertura' => Carbon::now()->format('H:i:s'),
+            'fecha_corte' => $fecha->toDateString(),
+            'hora_apertura' => $horaApertura,
             'monto_inicial' => $request->monto_inicial,
             'estado' => 'abierto',
             'observaciones' => $request->observaciones,
         ]);
+
+        // created_at marca el arranque del turno: ventasDelTurno() solo toma
+        // ventas posteriores a ese instante. Si la caja es de un día pasado y
+        // se dejara la hora de hoy, no encontraría ninguna venta de ese día.
+        $corte->forceFill([
+            'created_at' => $fecha->copy()->setTimeFromTimeString($horaApertura),
+        ])->save();
 
         $corte->load('user.almacen');
         $this->notificarAdministradores(new AperturaCajaMail($corte));
