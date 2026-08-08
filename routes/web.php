@@ -86,6 +86,9 @@ Route::middleware('auth')->group(function () {
     // Rutas de RR.HH.
     Route::resource('cargos', CargoController::class)->except(['show']);
     Route::post('empleados/{empleado}/adelanto', [EmpleadoController::class, 'adelanto'])->name('empleados.adelanto');
+    // Reincorporar a un empleado dado de baja. La baja usa el destroy del
+    // resource, que desactiva en vez de borrar.
+    Route::patch('empleados/{empleado}/activar', [EmpleadoController::class, 'activar'])->name('empleados.activar');
     Route::resource('empleados', EmpleadoController::class);
     Route::get('asistencias/registrar', [AsistenciaController::class, 'registrar'])->name('asistencias.registrar');
     Route::resource('asistencias', AsistenciaController::class)->only(['index', 'store', 'edit', 'update']);

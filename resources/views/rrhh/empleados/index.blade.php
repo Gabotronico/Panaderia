@@ -62,16 +62,29 @@
                 @endforeach
             </select>
         </div>
+        <div class="col-sm-4 col-md-3">
+            <select name="estado" class="form-select">
+                <option value="activos"   @selected($estado === 'activos')>En actividad</option>
+                <option value="inactivos" @selected($estado === 'inactivos')>Dados de baja</option>
+                <option value="todos"     @selected($estado === 'todos')>Todos</option>
+            </select>
+        </div>
         <div class="col-auto d-flex gap-2">
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-filter me-1"></i>Filtrar
             </button>
-            @if($buscar || $cargo)
+            @if($buscar || $cargo || $estado !== 'activos')
                 <a href="{{ route('empleados.index') }}" class="btn btn-light border">Limpiar</a>
             @endif
         </div>
         <div class="col-auto ms-auto text-muted" style="font-size:.82rem;">
             {{ $empleados->total() }} empleado(s)
+            @if($estado === 'activos' && $totalInactivos > 0)
+                <a href="{{ route('empleados.index', ['estado' => 'inactivos']) }}"
+                   class="ms-2 text-decoration-none">
+                    · {{ $totalInactivos }} dado(s) de baja
+                </a>
+            @endif
         </div>
     </div>
 </form>
@@ -141,6 +154,32 @@
                             <a href="{{ route('empleados.edit', $emp) }}" class="btn btn-warning btn-sm" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </a>
+
+                            {{-- Baja y reincorporación. Nunca se borra: el empleado
+                                 tiene asistencias, adelantos y planillas colgando. --}}
+                            @if($emp->activo)
+                                @php
+                                    $avisoBaja = 'Vas a dar de baja a ' . $emp->nombre_completo . '.\n\n'
+                                        . 'Deja de aparecer al tomar asistencia y no entra en planillas nuevas.\n'
+                                        . 'Su ficha y su historial se conservan, y podés reincorporarlo cuando quieras.\n\n'
+                                        . '¿Continuar?';
+                                @endphp
+                                <form action="{{ route('empleados.destroy', $emp) }}" method="POST" class="d-inline"
+                                      onsubmit="return confirm('{{ $avisoBaja }}')">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-outline-danger btn-sm" title="Dar de baja">
+                                        <i class="fas fa-user-slash"></i>
+                                    </button>
+                                </form>
+                            @else
+                                <form action="{{ route('empleados.activar', $emp) }}" method="POST" class="d-inline"
+                                      onsubmit="return confirm('¿Reincorporar a {{ $emp->nombre_completo }}?')">
+                                    @csrf @method('PATCH')
+                                    <button class="btn btn-success btn-sm" title="Reincorporar">
+                                        <i class="fas fa-user-check"></i>
+                                    </button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                     @empty

@@ -7,6 +7,7 @@ use App\Models\Insumo;
 use App\Models\Venta;
 use App\Models\CorteCaja;
 use App\Models\CompraInsumo;
+use App\Models\GastoVariable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -108,8 +109,10 @@ class HomeController extends Controller
 
         // Gasto en compras de insumos dentro del período (solo admin)
         $gastosCompras     = [];
+        $gastosVariables   = [];
         $fechasCompras     = [];
         $totalGastoMes     = 0;
+        $totalVariables    = 0;
         $ultimasCompras    = collect();
 
         if (!$isCajero) {
@@ -120,9 +123,19 @@ class HomeController extends Controller
             $fechasCompras = $serieCompras['etiquetas'];
             $gastosCompras = $serieCompras['valores'];
 
+            // Los gastos variables (transporte, fletes, una reparación puntual)
+            // pesan sobre la utilidad igual que las compras, así que acompañan a
+            // la serie de insumos en la misma gráfica.
+            $gastosVariables = $this->serieDeGastosVariables($inicio, $fin, $periodo['agrupacion']);
+
             $totalGastoMes = (float) DB::table('compras_insumo')
                 ->whereBetween('fecha', [$inicio->toDateString(), $fin->toDateString()])
                 ->sum('total');
+
+            $totalVariables = (float) GastoVariable::whereBetween('fecha', [
+                $inicio->toDateString(),
+                $fin->toDateString(),
+            ])->sum('monto');
 
             $ultimasCompras = CompraInsumo::with('insumo', 'user')
                 ->whereBetween('fecha', [$inicio->toDateString(), $fin->toDateString()])
@@ -146,16 +159,24 @@ class HomeController extends Controller
 
             $gastosDelMes = \App\Models\GastoPago::where('periodo', $periodoMes)->get();
 
-            // Utilidad del mes en curso: ventas − insumos − sueldos − gastos pagados.
-            // Mismo criterio que Finanzas: solo las planillas pagadas cuentan
-            // como salida de plata, y se imputan al mes en que arranca su
-            // período. Los límites van como 'Y-m-d' porque la columna guarda
-            // el día sin hora.
-            $planillasMes = (float) \App\Models\Planilla::where('estado', 'pagada')
+            // Utilidad del período filtrado: ventas − insumos − gastos
+            // variables − sueldos − gastos fijos pagados. Mismo criterio que
+            // Finanzas, para que los dos tableros no den números distintos:
+            // solo las planillas pagadas cuentan como salida de plata y se
+            // imputan al mes en que ARRANCA su período. Los límites van como
+            // 'Y-m-d' porque la columna guarda el día sin hora.
+            $planillasPeriodo = (float) \App\Models\Planilla::where('estado', 'pagada')
                 ->whereBetween('periodo_inicio', [
-                    $hoy->copy()->startOfMonth()->toDateString(),
-                    $hoy->copy()->endOfMonth()->toDateString(),
+                    $inicio->toDateString(),
+                    $fin->toDateString(),
                 ])->sum('total_general');
+
+            // El gasto fijo se imputa al período al que corresponde, no a la
+            // fecha en que se pagó: la luz de enero es costo de enero aunque se
+            // pague en marzo. La columna guarda 'Y-m', que ordena bien como texto.
+            $fijosPeriodo = (float) \App\Models\GastoPago::where('estado', 'pagado')
+                ->whereBetween('periodo', [$inicio->format('Y-m'), $fin->format('Y-m')])
+                ->sum('monto_real');
 
             $operacion = [
                 'empleados_activos'  => $empleadosActivos,
@@ -175,10 +196,12 @@ class HomeController extends Controller
                 // La utilidad se calcula sobre el período filtrado, para que
                 // acompañe a lo que muestran las tarjetas de arriba.
                 'utilidad_mes'       => round(
-                    $ventasPeriodo - $totalGastoMes - $planillasMes
-                    - (float) $gastosDelMes->where('estado', 'pagado')->sum('monto_real'),
+                    $ventasPeriodo - $totalGastoMes - $totalVariables
+                    - $planillasPeriodo - $fijosPeriodo,
                     2
                 ),
+                'planillas_periodo'  => round($planillasPeriodo, 2),
+                'fijos_periodo'      => round($fijosPeriodo, 2),
             ];
         }
 
@@ -195,8 +218,10 @@ class HomeController extends Controller
             'ventasUltimos7Dias',
             'fechasUltimos7Dias',
             'gastosCompras',
+            'gastosVariables',
             'fechasCompras',
             'totalGastoMes',
+            'totalVariables',
             'ultimasCompras',
             'isCajero',
             'operacion',
@@ -335,6 +360,25 @@ class HomeController extends Controller
             ->pluck('total', 'tramo');
 
         return $this->rellenarSerie($inicio, $fin, $agrupacion, $totales);
+    }
+
+    /**
+     * Serie de gastos variables del período, con los mismos tramos que la de
+     * compras para poder apilarlas en una sola gráfica de egresos.
+     *
+     * @return array<float>
+     */
+    private function serieDeGastosVariables(Carbon $inicio, Carbon $fin, string $agrupacion): array
+    {
+        $tramo = $this->expresionDeTramo('fecha', $agrupacion);
+
+        $totales = DB::table('gastos_variables')
+            ->whereBetween('fecha', [$inicio->toDateString(), $fin->toDateString()])
+            ->selectRaw("{$tramo} as tramo, SUM(monto) as total")
+            ->groupBy('tramo')
+            ->pluck('total', 'tramo');
+
+        return $this->rellenarSerie($inicio, $fin, $agrupacion, $totales)['valores'];
     }
 
     /**
