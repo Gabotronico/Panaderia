@@ -20,6 +20,10 @@ class EmpleadoController extends Controller
         $buscar = $request->input('buscar');
         $cargo  = $request->input('cargo_id');
 
+        // Por defecto se ve solo el personal en actividad: los dados de baja
+        // se conservan pero estorban en el día a día.
+        $estado = $request->input('estado', 'activos');
+
         $empleados = Empleado::with('cargo')
             ->when($buscar, fn($q) => $q->where(function ($q) use ($buscar) {
                 $q->where('nombre', 'like', "%{$buscar}%")
@@ -27,9 +31,14 @@ class EmpleadoController extends Controller
                   ->orWhere('ci', 'like', "%{$buscar}%");
             }))
             ->when($cargo, fn($q) => $q->where('cargo_id', $cargo))
+            ->when($estado === 'activos',   fn($q) => $q->where('activo', true))
+            ->when($estado === 'inactivos', fn($q) => $q->where('activo', false))
+            ->orderBy('activo', 'desc')
             ->orderBy('apellido')
             ->paginate(15)
             ->withQueryString();
+
+        $totalInactivos = Empleado::where('activo', false)->count();
 
         $cargos = Cargo::orderBy('nombre')->get();
 
@@ -43,7 +52,9 @@ class EmpleadoController extends Controller
             'adelantos'     => Adelanto::whereNull('planilla_id')->sum('monto'),
         ];
 
-        return view('rrhh.empleados.index', compact('empleados', 'cargos', 'buscar', 'cargo', 'resumen'));
+        return view('rrhh.empleados.index', compact(
+            'empleados', 'cargos', 'buscar', 'cargo', 'resumen', 'estado', 'totalInactivos'
+        ));
     }
 
     public function create()
@@ -161,10 +172,39 @@ class EmpleadoController extends Controller
         return $datos;
     }
 
+    /**
+     * Da de baja a un empleado sin borrarlo.
+     *
+     * Nunca se elimina de la base: sus asistencias, adelantos y planillas
+     * pasadas siguen colgando de él, y borrarlo dejaría el historial de sueldos
+     * sin a quién atribuirle. Un empleado inactivo deja de aparecer al tomar
+     * asistencia y no entra en planillas nuevas, pero su ficha queda.
+     */
     public function destroy(Empleado $empleado)
     {
+        if (!$empleado->activo) {
+            return redirect()->route('empleados.index')
+                ->with('error', "{$empleado->nombre_completo} ya estaba dado de baja.");
+        }
+
         $empleado->update(['activo' => false]);
-        return redirect()->route('empleados.index')->with('success', 'Empleado desactivado.');
+
+        return redirect()->route('empleados.index')
+            ->with('success', "{$empleado->nombre_completo} fue dado de baja. Su historial se conserva; podés reincorporarlo cuando quieras.");
+    }
+
+    /** Reincorpora a un empleado dado de baja. */
+    public function activar(Empleado $empleado)
+    {
+        if ($empleado->activo) {
+            return redirect()->route('empleados.index')
+                ->with('error', "{$empleado->nombre_completo} ya está activo.");
+        }
+
+        $empleado->update(['activo' => true]);
+
+        return redirect()->route('empleados.index')
+            ->with('success', "{$empleado->nombre_completo} fue reincorporado. Vuelve a aparecer en asistencias y planillas.");
     }
 
     // Registrar adelanto desde ficha del empleado
