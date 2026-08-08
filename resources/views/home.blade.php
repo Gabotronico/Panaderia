@@ -192,15 +192,21 @@
     </div>
 
     @if(!$isCajero)
-    {{-- Gasto en compras mes --}}
+    {{-- Egresos directos del período: insumos + gastos variables. Los dos
+         pesan sobre la utilidad bruta, así que se muestran juntos. --}}
     <div class="col-6 col-xl-3">
         <div class="card stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); box-shadow: 0 6px 20px rgba(139,92,246,.28);">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="stat-card-label">Compras del Período</p>
-                        <div class="stat-card-value">Bs {{ number_format($totalGastoMes, 2) }}</div>
-                        <div class="stat-card-sub">gasto en insumos</div>
+                        <p class="stat-card-label">Egresos del Período</p>
+                        <div class="stat-card-value">Bs {{ number_format($totalGastoMes + $totalVariables, 2) }}</div>
+                        <div class="stat-card-sub">
+                            insumos Bs {{ number_format($totalGastoMes, 2) }}
+                            @if($totalVariables > 0)
+                                · variables Bs {{ number_format($totalVariables, 2) }}
+                            @endif
+                        </div>
                     </div>
                     <div class="stat-card-icon">
                         <i class="fas fa-shopping-basket"></i>
@@ -280,12 +286,21 @@
                     <span class="text-muted">Ventas</span>
                     <span class="text-success fw-semibold">Bs {{ number_format($ventasPeriodo, 2) }}</span>
                 </div>
-                <div class="d-flex justify-content-between" style="font-size:.78rem;">
-                    <span class="text-muted">Insumos + sueldos + gastos</span>
-                    <span class="text-danger fw-semibold">
-                        Bs {{ number_format($ventasPeriodo - $u, 2) }}
-                    </span>
-                </div>
+                {{-- Desglose de lo que se le resta a la venta, para que el
+                     resultado no salga de una caja negra. --}}
+                @foreach([
+                    'Insumos'         => $totalGastoMes,
+                    'Gastos variables'=> $totalVariables,
+                    'Sueldos pagados' => $operacion['planillas_periodo'],
+                    'Gastos fijos'    => $operacion['fijos_periodo'],
+                ] as $concepto => $monto)
+                    @if($monto > 0)
+                    <div class="d-flex justify-content-between" style="font-size:.78rem;">
+                        <span class="text-muted">{{ $concepto }}</span>
+                        <span class="text-danger fw-semibold">−Bs {{ number_format($monto, 2) }}</span>
+                    </div>
+                    @endif
+                @endforeach
             </div>
         </a>
     </div>
@@ -459,7 +474,7 @@
     <div class="col-lg-8">
         <div class="card h-100" style="margin-bottom:0">
             <div class="card-header">
-                <i class="fas fa-chart-bar me-2"></i>Gasto en Compras de Insumos — Últimos 30 Días
+                <i class="fas fa-chart-bar me-2"></i>Egresos directos — {{ $periodo['etiqueta'] }}
             </div>
             <div class="card-body" style="padding:20px">
                 <canvas id="comprasChart" height="90"></canvas>
@@ -633,10 +648,18 @@ if (ctxCompras) {
         data: {
             labels: @json($fechasCompras ?? []),
             datasets: [{
-                label: 'Gasto (Bs)',
+                label: 'Insumos',
                 data: @json($gastosCompras ?? []),
                 backgroundColor: 'rgba(139,92,246,0.75)',
                 borderColor: '#8b5cf6',
+                borderWidth: 1,
+                borderRadius: 5,
+                borderSkipped: false,
+            }, {
+                label: 'Gastos variables',
+                data: @json($gastosVariables ?? []),
+                backgroundColor: 'rgba(249,115,22,0.75)',
+                borderColor: '#f97316',
                 borderWidth: 1,
                 borderRadius: 5,
                 borderSkipped: false,
@@ -646,22 +669,28 @@ if (ctxCompras) {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
-                legend: { display: false },
+                legend: {
+                    display: true,
+                    position: 'bottom',
+                    labels: { boxWidth: 12, font: { size: 11 }, color: '#64748b' }
+                },
                 tooltip: {
                     backgroundColor: '#0f172a',
                     padding: 10,
                     cornerRadius: 8,
                     callbacks: {
-                        label: ctx => ' Bs ' + ctx.parsed.y.toFixed(2)
+                        label: ctx => ' ' + ctx.dataset.label + ': Bs ' + ctx.parsed.y.toFixed(2)
                     }
                 }
             },
             scales: {
                 x: {
+                    stacked: true,
                     grid: { display: false },
                     ticks: { maxTicksLimit: 10, font: { size: 11 }, color: '#94a3b8' }
                 },
                 y: {
+                    stacked: true,
                     beginAtZero: true,
                     grid: { color: '#f1f5f9', lineWidth: 1 },
                     ticks: {
