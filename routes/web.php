@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdelantoController;
 use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\AsistenciaController;
 use App\Http\Controllers\BackupController;
@@ -86,12 +87,19 @@ Route::middleware('auth')->group(function () {
     // Rutas de RR.HH.
     Route::resource('cargos', CargoController::class)->except(['show']);
     Route::post('empleados/{empleado}/adelanto', [EmpleadoController::class, 'adelanto'])->name('empleados.adelanto');
+    // Corregir o borrar un adelanto ya registrado. Van aparte del empleado
+    // porque operan sobre el adelanto en sí, no sobre su ficha.
+    Route::patch('adelantos/{adelanto}', [AdelantoController::class, 'update'])->name('adelantos.update');
+    Route::delete('adelantos/{adelanto}', [AdelantoController::class, 'destroy'])->name('adelantos.destroy');
     // Reincorporar a un empleado dado de baja. La baja usa el destroy del
     // resource, que desactiva en vez de borrar.
     Route::patch('empleados/{empleado}/activar', [EmpleadoController::class, 'activar'])->name('empleados.activar');
     Route::resource('empleados', EmpleadoController::class);
     Route::get('asistencias/registrar', [AsistenciaController::class, 'registrar'])->name('asistencias.registrar');
     Route::resource('asistencias', AsistenciaController::class)->only(['index', 'store', 'edit', 'update']);
+    // Horas extra cargadas a mano por el administrador sobre un empleado de la
+    // planilla: él decide cuántas reconoce y cuánto paga por ellas.
+    Route::patch('planillas/{planilla}/detalle/{detalle}/horas-extra', [PlanillaController::class, 'horasExtra'])->name('planillas.horas-extra');
     Route::post('planillas/{planilla}/cerrar', [PlanillaController::class, 'cerrar'])->name('planillas.cerrar');
     Route::post('planillas/{planilla}/pagar', [PlanillaController::class, 'pagar'])->name('planillas.pagar');
     Route::get('planillas/{planilla}/pdf', [PlanillaController::class, 'descargarPdf'])->name('planillas.pdf');
