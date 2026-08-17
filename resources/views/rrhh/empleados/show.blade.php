@@ -124,12 +124,20 @@
                 <div class="table-responsive" style="max-height:260px; overflow-y:auto;">
                     <table class="table table-sm mb-0">
                         <thead class="sticky-top bg-white">
-                            <tr><th>Fecha</th><th class="text-end">Monto</th><th>Estado</th></tr>
+                            <tr>
+                                <th>Fecha</th><th class="text-end">Monto</th><th>Estado</th>
+                                <th class="text-end"></th>
+                            </tr>
                         </thead>
                         <tbody>
                             @forelse($adelantos as $adv)
                             <tr>
-                                <td>{{ $adv->fecha->format('d/m/Y') }}</td>
+                                <td>
+                                    {{ $adv->fecha->format('d/m/Y') }}
+                                    @if($adv->descripcion)
+                                        <br><small class="text-muted">{{ $adv->descripcion }}</small>
+                                    @endif
+                                </td>
                                 <td class="text-end">Bs {{ number_format($adv->monto, 2) }}</td>
                                 <td>
                                     @if($adv->planilla_id)
@@ -138,9 +146,36 @@
                                         <span class="badge bg-warning text-dark">Pendiente</span>
                                     @endif
                                 </td>
+                                <td class="text-end text-nowrap">
+                                    {{-- Un adelanto ya descontado forma parte del total de una
+                                         planilla cerrada: tocarlo desincronizaría ese pago. --}}
+                                    @if($adv->planilla_id)
+                                        <i class="fas fa-lock text-muted" style="font-size:.7rem;"
+                                           title="Descontado en la planilla #{{ $adv->planilla_id }}. Para corregirlo hay que eliminar esa planilla."></i>
+                                    @else
+                                        <button class="btn btn-link btn-sm p-0 me-2 text-warning"
+                                                title="Corregir adelanto"
+                                                data-bs-toggle="modal" data-bs-target="#modalEditarAdelanto{{ $adv->id }}">
+                                            <i class="fas fa-pen" style="font-size:.7rem;"></i>
+                                        </button>
+                                        @php
+                                            $avisoAdv = 'Vas a eliminar el adelanto de Bs '
+                                                . number_format($adv->monto, 2) . ' del '
+                                                . $adv->fecha->format('d/m/Y') . '.\n\n'
+                                                . $empleado->nombre . ' deja de deber esa plata.\n\n¿Continuar?';
+                                        @endphp
+                                        <form action="{{ route('adelantos.destroy', $adv) }}" method="POST"
+                                              class="d-inline" onsubmit="return confirm('{{ $avisoAdv }}')">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-link btn-sm p-0 text-danger" title="Eliminar adelanto">
+                                                <i class="fas fa-trash" style="font-size:.7rem;"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
-                            <tr><td colspan="3" class="text-center text-muted py-2">Sin adelantos</td></tr>
+                            <tr><td colspan="4" class="text-center text-muted py-2">Sin adelantos</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -289,4 +324,79 @@
         </div>
     </div>
 </div>
+
+{{-- Un modal de corrección por cada adelanto pendiente. Los ya descontados
+     no llevan modal: su fila muestra un candado en lugar de los botones. --}}
+@foreach($adelantos->whereNull('planilla_id') as $adv)
+<div class="modal fade" id="modalEditarAdelanto{{ $adv->id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-pen me-2"></i>Corregir Adelanto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('adelantos.update', $adv) }}" method="POST">
+                @csrf @method('PATCH')
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Empleado: <strong>{{ $empleado->nombre_completo }}</strong><br>
+                        <small class="text-muted">
+                            Registrado el {{ $adv->created_at->format('d/m/Y H:i') }}
+                            @if($adv->user) por {{ $adv->user->name }} @endif
+                        </small>
+                    </p>
+
+                    @php
+                        // El tope no cuenta este adelanto: si no, corregir 100 por
+                        // 120 chocaría contra su propio monto viejo.
+                        $otros  = $adelantos->whereNull('planilla_id')->where('id', '!=', $adv->id)->sum('monto');
+                        $limite = round(max(0, (float) $empleado->salario_base - $otros), 2);
+                    @endphp
+
+                    <div class="alert alert-info py-2 mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Máximo para este adelanto</span>
+                            <strong>Bs {{ number_format($limite, 2) }}</strong>
+                        </div>
+                        @if($otros > 0)
+                        <div class="mt-1" style="font-size:.76rem; opacity:.85;">
+                            Sueldo del ciclo Bs {{ number_format($empleado->salario_base, 2) }}
+                            − Bs {{ number_format($otros, 2) }} en otros adelantos pendientes
+                        </div>
+                        @endif
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Monto (Bs) <span class="text-danger">*</span></label>
+                            <input type="number" name="monto" class="form-control"
+                                   min="0.01" step="0.01" max="{{ $limite }}"
+                                   value="{{ $adv->monto }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold">Fecha <span class="text-danger">*</span></label>
+                            <input type="date" name="fecha" class="form-control"
+                                   value="{{ $adv->fecha->format('Y-m-d') }}" required>
+                            <div class="form-text" style="font-size:.72rem;">
+                                Define en qué planilla se descuenta.
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Descripción</label>
+                            <input type="text" name="descripcion" class="form-control"
+                                   value="{{ $adv->descripcion }}" placeholder="Motivo del adelanto">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-2"></i>Guardar cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endforeach
 @endsection

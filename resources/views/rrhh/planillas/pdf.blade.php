@@ -242,7 +242,13 @@ body {
 
     $sumBruto = $planilla->detalles->sum('salario_bruto');
     $sumAdel  = $planilla->detalles->sum('adelantos_descontados');
+    $sumExtra = $planilla->detalles->sum('monto_horas_extra');
     $folio    = str_pad($planilla->id, 5, '0', STR_PAD_LEFT);
+
+    // La columna de horas extra solo aparece si alguien las tiene. En una
+    // planilla común sería una franja de guiones que le roba ancho al resto.
+    $hayExtras = $sumExtra > 0;
+    $columnas  = $hayExtras ? 14 : 13;
 @endphp
 
 {{-- ═══════ PIE FIJO (se repite en cada página) ═══════ --}}
@@ -325,19 +331,23 @@ body {
     <thead>
         {{-- Los anchos suman exactamente 100% para que dompdf no los reescale --}}
         <tr>
+            {{-- Los anchos suman 100% exacto: dompdf no reparte sobrantes. --}}
             <th style="width:3%;">N°</th>
-            <th class="izq" style="width:19%;">Empleado<br>(cargo)</th>
-            <th style="width:8%;">Salario<br>base</th>
-            <th style="width:7%;">Valor<br>día</th>
+            <th class="izq" style="width:{{ $hayExtras ? 16 : 19 }}%;">Empleado<br>(cargo)</th>
+            <th style="width:{{ $hayExtras ? 7 : 8 }}%;">Salario<br>base</th>
+            <th style="width:{{ $hayExtras ? 6 : 7 }}%;">Valor<br>día</th>
             <th style="width:6%;">Present.</th>
             <th style="width:6%;">Tardanz.</th>
             <th style="width:6%;">Medio<br>día</th>
             <th style="width:6%;">Ausent.</th>
             <th style="width:6%;">Días<br>efect.</th>
-            <th style="width:9%;">Ganado</th>
+            <th style="width:{{ $hayExtras ? 8 : 9 }}%;">Ganado</th>
+            @if($hayExtras)
+                <th style="width:7%;">Horas<br>extra</th>
+            @endif
             <th style="width:7%;">Adelantos</th>
             <th style="width:8%;">Líquido<br>pagable</th>
-            <th style="width:9%;">Firma</th>
+            <th style="width:{{ $hayExtras ? 8 : 9 }}%;">Firma</th>
         </tr>
     </thead>
     <tbody>
@@ -360,6 +370,18 @@ body {
             <td class="c" style="font-weight:bold;">{{ number_format($diasEf, 1) }}</td>
 
             <td class="d">Bs {{ number_format($det->salario_bruto, 2) }}</td>
+            @if($hayExtras)
+            <td class="d {{ $det->monto_horas_extra > 0 ? '' : 'n-cero' }}">
+                @if($det->monto_horas_extra > 0)
+                    +Bs {{ number_format($det->monto_horas_extra, 2) }}
+                    <br><span style="font-size:6.5pt; color:#64748b;">
+                        {{ rtrim(rtrim(number_format($det->horas_extra, 2), '0'), '.') }} h
+                    </span>
+                @else
+                    —
+                @endif
+            </td>
+            @endif
             <td class="d {{ $det->adelantos_descontados > 0 ? 'm-resta' : 'n-cero' }}">
                 {{ $det->adelantos_descontados > 0 ? '−Bs '.number_format($det->adelantos_descontados, 2) : '—' }}
             </td>
@@ -368,7 +390,7 @@ body {
             <td class="firma-celda"><div class="firma-linea"></div></td>
         </tr>
         @empty
-        <tr><td colspan="13" class="vacio">Esta planilla no tiene empleados asignados.</td></tr>
+        <tr><td colspan="{{ $columnas }}" class="vacio">Esta planilla no tiene empleados asignados.</td></tr>
         @endforelse
     </tbody>
     <tfoot>
@@ -380,6 +402,9 @@ body {
             <td class="c">{{ $planilla->detalles->sum('dias_ausentes') }}</td>
             <td class="c"></td>
             <td>Bs {{ number_format($sumBruto, 2) }}</td>
+            @if($hayExtras)
+                <td>+Bs {{ number_format($sumExtra, 2) }}</td>
+            @endif
             <td class="rojo">−Bs {{ number_format($sumAdel, 2) }}</td>
             <td>Bs {{ number_format($planilla->total_general, 2) }}</td>
             <td></td>
@@ -397,6 +422,12 @@ body {
                     <td>Total ganado por días trabajados</td>
                     <td class="d">Bs {{ number_format($sumBruto, 2) }}</td>
                 </tr>
+                @if($hayExtras)
+                <tr>
+                    <td>Horas extra reconocidas</td>
+                    <td class="d">+ Bs {{ number_format($sumExtra, 2) }}</td>
+                </tr>
+                @endif
                 <tr>
                     <td class="m-resta">Adelantos descontados</td>
                     <td class="d m-resta">− Bs {{ number_format($sumAdel, 2) }}</td>

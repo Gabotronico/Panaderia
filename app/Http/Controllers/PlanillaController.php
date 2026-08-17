@@ -139,6 +139,76 @@ class PlanillaController extends Controller
     }
 
     /**
+     * Carga a mano las horas extra de un empleado dentro de la planilla.
+     *
+     * El sistema no las deduce del horario: el administrador decide cuántas
+     * reconoce y cuánta plata paga por ellas, porque el monto suele ser un
+     * acuerdo y no el resultado de multiplicar la tarifa por las horas.
+     *
+     * Solo se pueden tocar mientras la planilla está en borrador: una vez
+     * cerrada el monto ya se comunicó, y una vez pagada la plata salió.
+     */
+    public function horasExtra(Request $request, Planilla $planilla, PlanillaEmpleado $detalle)
+    {
+        if ($detalle->planilla_id !== $planilla->id) {
+            abort(404);
+        }
+
+        if ($planilla->estado !== 'borrador') {
+            return redirect()->route('planillas.show', $planilla)->with('error',
+                'La planilla ya está ' . $planilla->estado . ': para cambiar las horas extra tiene que estar en borrador.'
+            );
+        }
+
+        $request->validate([
+            'horas_extra'         => 'required|numeric|min:0|max:400',
+            'monto_horas_extra'   => 'required|numeric|min:0',
+            'detalle_horas_extra' => 'nullable|string|max:255',
+        ], [
+            'horas_extra.max' => 'Son demasiadas horas para un solo período; revisá el dato.',
+        ]);
+
+        $horas = (float) $request->horas_extra;
+        $monto = (float) $request->monto_horas_extra;
+
+        // Pagar por horas que no se cargaron, o cargar horas que no se pagan,
+        // deja la planilla diciendo una cosa y el PDF otra.
+        if ($horas > 0 && $monto <= 0) {
+            return redirect()->route('planillas.show', $planilla)->with('error',
+                'Indicá cuánto se le paga por esas ' . rtrim(rtrim(number_format($horas, 2), '0'), '.') . ' horas extra.'
+            );
+        }
+
+        if ($monto > 0 && $horas <= 0) {
+            return redirect()->route('planillas.show', $planilla)->with('error',
+                'Indicá cuántas horas extra corresponden a ese monto.'
+            );
+        }
+
+        DB::transaction(function () use ($planilla, $detalle, $horas, $monto, $request) {
+            $detalle->update([
+                'horas_extra'         => $horas,
+                'monto_horas_extra'   => $monto,
+                'detalle_horas_extra' => $request->detalle_horas_extra,
+            ]);
+
+            $detalle->update(['total_neto' => $detalle->calcularNeto()]);
+
+            $planilla->update([
+                'total_general' => $planilla->detalles()->sum('total_neto'),
+            ]);
+        });
+
+        $nombre = $detalle->empleado->nombre_completo;
+
+        return redirect()->route('planillas.show', $planilla)->with('success',
+            $monto > 0
+                ? "Se cargaron {$request->horas_extra} horas extra a {$nombre} por Bs " . number_format($monto, 2) . '.'
+                : "Se quitaron las horas extra de {$nombre}."
+        );
+    }
+
+    /**
      * Elimina una planilla generada por error y deja todo como antes.
      *
      * Al generarse, la planilla "consume" los adelantos del período marcándolos
