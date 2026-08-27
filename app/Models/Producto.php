@@ -16,7 +16,6 @@ class Producto extends Model
         'nombre',
         'descripcion',
         'precio_venta',
-        'costo_unitario',
         'stock',
         'stock_minimo',
         'imagen',
@@ -25,10 +24,6 @@ class Producto extends Model
 
     protected $casts = [
         'precio_venta' => 'decimal:2',
-        // Cuatro decimales: el costo unitario de una pieza barata cae por
-        // debajo del centavo y redondear acá arrastra error al multiplicar
-        // por cientos de unidades vendidas.
-        'costo_unitario' => 'decimal:4',
         'activo' => 'boolean',
     ];
 

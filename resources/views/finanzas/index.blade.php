@@ -24,11 +24,6 @@
     <a href="{{ route('planillas.index') }}" class="btn btn-light border">
         <i class="fas fa-file-invoice-dollar me-1"></i>Planillas
     </a>
-    {{-- El tablero se mira; esto es lo que se entrega al contador. --}}
-    <a href="{{ route('finanzas.estado-resultados', ['year'=>$year,'month'=>$month]) }}"
-       class="btn btn-danger" target="_blank">
-        <i class="fas fa-file-pdf me-1"></i>Estado de Resultados
-    </a>
 </x-page-header>
 
 <x-alerts />
@@ -116,7 +111,7 @@
     <div class="col-6 col-lg-3">
         <x-stat-card label="Egresos totales" :value="'Bs '.number_format($actual['egresos_total'], 2)"
                      icon="arrow-trend-down" variant="danger"
-                     sub="Costo de ventas + variables + sueldos + fijos" />
+                     sub="Insumos + mano de obra + gastos fijos" />
     </div>
     <div class="col-6 col-lg-3">
         <x-stat-card label="Utilidad neta"
@@ -163,26 +158,20 @@
                             <td class="text-end text-muted">100%</td>
                         </tr>
 
-                        {{-- Costo de ventas: lo que costó producir lo que se
-                             vendió, con el costo congelado al momento de cada
-                             venta. Este es el costo que se enfrenta al ingreso,
-                             no las compras del mes. --}}
+                        {{-- Costos directos --}}
                         <tr>
                             <td class="ps-4 text-muted">
-                                <i class="fas fa-minus text-danger me-2"></i>Costo de ventas
-                                <div class="text-muted" style="font-size:.7rem; padding-left:1.65rem;">
-                                    Lo que costó producir lo vendido este mes
-                                </div>
+                                <i class="fas fa-minus text-danger me-2"></i>Compras de insumos
                             </td>
-                            <td class="text-end">Bs {{ number_format($actual['costo_ventas'], 2) }}</td>
+                            <td class="text-end">Bs {{ number_format($actual['compras'], 2) }}</td>
                             <td class="text-end">
                                 @include('finanzas._delta', [
-                                    'valor' => $delta($actual['costo_ventas'], $anterior['costo_ventas']),
+                                    'valor' => $delta($actual['compras'], $anterior['compras']),
                                     'positivoEsBueno' => false,
                                 ])
                             </td>
                             <td class="text-end text-muted">
-                                {{ $actual['ingresos'] > 0 ? round($actual['costo_ventas'] / $actual['ingresos'] * 100, 1) : 0 }}%
+                                {{ $actual['ingresos'] > 0 ? round($actual['compras'] / $actual['ingresos'] * 100, 1) : 0 }}%
                             </td>
                         </tr>
                         {{-- Gastos variables: pesan sobre la utilidad bruta, igual
@@ -206,34 +195,6 @@
                             </td>
                         </tr>
 
-                        {{-- Las compras dejaron de restar del resultado:
-                             comprar insumo mueve plata de la caja al
-                             inventario y su valor recién pesa cuando eso se
-                             produce y se vende. Se muestra igual porque es el
-                             esfuerzo de compra del mes y hace falta para leer
-                             el flujo de caja. --}}
-                        <tr class="fst-italic" style="background:#fcfcfd;">
-                            <td class="ps-4 text-muted">
-                                <i class="fas fa-circle-info text-secondary me-2"></i>Compras de insumos
-                                <span class="badge bg-light text-secondary border ms-1" style="font-size:.62rem;">
-                                    informativo
-                                </span>
-                                <div class="text-muted" style="font-size:.7rem; padding-left:1.65rem;">
-                                    Plata que pasó a inventario · no resta del resultado
-                                </div>
-                            </td>
-                            <td class="text-end text-muted">Bs {{ number_format($actual['compras'], 2) }}</td>
-                            <td class="text-end">
-                                @include('finanzas._delta', [
-                                    'valor' => $delta($actual['compras'], $anterior['compras']),
-                                    'positivoEsBueno' => false,
-                                ])
-                            </td>
-                            <td class="text-end text-muted">
-                                {{ $actual['ingresos'] > 0 ? round($actual['compras'] / $actual['ingresos'] * 100, 1) : 0 }}%
-                            </td>
-                        </tr>
-
                         {{-- La merma es informativa: el insumo perdido ya se pagó
                              al comprarlo, así que no vuelve a restar acá. Se
                              muestra para poder controlarla. --}}
@@ -244,7 +205,7 @@
                                     informativo
                                 </span>
                                 <div class="text-muted" style="font-size:.7rem; padding-left:1.65rem;">
-                                    Salen del inventario · no se restan otra vez
+                                    Ya incluidas en las compras · no se restan otra vez
                                 </div>
                             </td>
                             <td class="text-end text-muted">Bs {{ number_format($actual['mermas'], 2) }}</td>
@@ -274,26 +235,6 @@
                             </td>
                             <td class="text-end fw-semibold">{{ $actual['margen_bruto'] }}%</td>
                         </tr>
-
-                        {{-- Aviso pegado al margen bruto, que es el número que
-                             esta falta distorsiona. Sin esto, un mes lleno de
-                             ventas directas muestra un margen enorme y parece
-                             una buena noticia. --}}
-                        @if($actual['venta_sin_costo'] > 0)
-                        <tr style="background:#fffbeb;">
-                            <td colspan="4" class="text-muted" style="font-size:.75rem;">
-                                <i class="fas fa-triangle-exclamation text-warning me-2"></i>
-                                <strong>Bs {{ number_format($actual['venta_sin_costo'], 2) }}</strong>
-                                de venta ({{ $actual['venta_sin_costo_pct'] }}% de los ingresos)
-                                entró <strong>sin costo conocido</strong>: ventas directas —que se
-                                registran por monto, sin detallar productos— y productos que
-                                todavía no tienen costo cargado. Su ingreso suma al resultado y su
-                                costo no, así que el margen bruto real es
-                                <strong>menor</strong> al que muestra esta tabla.
-                                Para corregirlo hay que cargar las ventas con detalle de productos.
-                            </td>
-                        </tr>
-                        @endif
 
                         {{-- Gastos operativos --}}
                         <tr>
@@ -326,37 +267,6 @@
                                 {{ $actual['ingresos'] > 0 ? round($actual['gastos_fijos'] / $actual['ingresos'] * 100, 1) : 0 }}%
                             </td>
                         </tr>
-
-                        {{-- Descuadre de caja. Un faltante es plata que entró
-                             como venta y no aparece: hasta ahora el resultado
-                             la contaba como si estuviera. Incluye el descuadre
-                             de QR: el QR no entra en el arqueo de efectivo,
-                             pero un cobro que no cuadra es plata que no cuadra
-                             igual. --}}
-                        @if(abs($actual['diferencias_caja']) >= 0.01)
-                        @php $dCaja = $actual['diferencias_caja']; @endphp
-                        <tr>
-                            <td class="ps-4 text-muted">
-                                <i class="fas fa-{{ $dCaja < 0 ? 'minus text-danger' : 'plus text-success' }} me-2"></i>
-                                {{ $dCaja < 0 ? 'Faltante de caja' : 'Sobrante de caja' }}
-                                <div class="text-muted" style="font-size:.7rem; padding-left:1.65rem;">
-                                    Arqueos cerrados del mes · efectivo y QR
-                                </div>
-                            </td>
-                            <td class="text-end {{ $dCaja < 0 ? 'text-danger' : 'text-success' }}">
-                                {{ $dCaja < 0 ? '−' : '+' }}Bs {{ number_format(abs($dCaja), 2) }}
-                            </td>
-                            <td class="text-end">
-                                @include('finanzas._delta', [
-                                    'valor' => $delta($actual['diferencias_caja'], $anterior['diferencias_caja']),
-                                    'positivoEsBueno' => true,
-                                ])
-                            </td>
-                            <td class="text-end text-muted">
-                                {{ $actual['ingresos'] > 0 ? round(abs($dCaja) / $actual['ingresos'] * 100, 1) : 0 }}%
-                            </td>
-                        </tr>
-                        @endif
                     </tbody>
                     <tfoot>
                         <tr class="pl-total">
@@ -384,34 +294,23 @@
             <div class="card-body">
                 @if($actual['egresos_total'] > 0)
                     @php
-                        // Se reparte lo que efectivamente pesó sobre el
-                        // resultado, no la plata que salió: las COMPRAS quedan
-                        // fuera —van a inventario— y en su lugar entra el costo
-                        // de lo vendido. Las mermas también quedan fuera: salen
-                        // del inventario, no del resultado, y sumarlas haría
-                        // que los segmentos pasaran del total.
-                        // El faltante de caja sí entra: es plata que se perdió.
+                        // Las mermas quedan fuera del reparto: no son plata que
+                        // salió aparte, ya están dentro de las compras. Si se
+                        // incluyeran, los segmentos sumarían más que el total.
                         $partes = [
-                            ['Costo de ventas',  $actual['costo_ventas'],     '#0ea5e9'],
-                            ['Gastos variables', $actual['gastos_variables'], '#ef4444'],
-                            ['Sueldos',          $actual['planillas'],        '#8b5cf6'],
-                            ['Gastos fijos',     $actual['gastos_fijos'],     '#f59e0b'],
-                            ['Faltante de caja', max(0, -$actual['diferencias_caja']), '#64748b'],
+                            ['Compras de insumos', $actual['compras'],          '#0ea5e9'],
+                            ['Gastos variables',   $actual['gastos_variables'], '#ef4444'],
+                            ['Sueldos',            $actual['planillas'],        '#8b5cf6'],
+                            ['Gastos fijos',       $actual['gastos_fijos'],     '#f59e0b'],
                         ];
                         $partes = array_filter($partes, fn($p) => $p[1] > 0);
-
-                        // El reparto se hace sobre la suma de los segmentos, no
-                        // sobre egresos_total: un sobrante de caja BAJA el total
-                        // de egresos y usarlo de denominador haría que la barra
-                        // pasara del 100% y se desbordara.
-                        $totalPartes = array_sum(array_column($partes, 1)) ?: 1;
                     @endphp
 
                     {{-- Barra apilada --}}
                     <div class="stacked-bar mb-3">
                         @foreach($partes as [$nombre, $monto, $color])
                             <div class="stacked-seg"
-                                 style="width: {{ ($monto / $totalPartes) * 100 }}%; background: {{ $color }};"
+                                 style="width: {{ ($monto / $actual['egresos_total']) * 100 }}%; background: {{ $color }};"
                                  title="{{ $nombre }}: Bs {{ number_format($monto, 2) }}"></div>
                         @endforeach
                     </div>
@@ -426,7 +325,7 @@
                                 <td>{{ $nombre }}</td>
                                 <td class="text-end fw-semibold">Bs {{ number_format($monto, 2) }}</td>
                                 <td class="text-end text-muted" style="width:52px;">
-                                    {{ round($monto / $totalPartes * 100) }}%
+                                    {{ round($monto / $actual['egresos_total'] * 100) }}%
                                 </td>
                             </tr>
                         @endforeach
@@ -449,7 +348,7 @@
                 @else
                     <x-empty-state icon="wallet"
                                    title="Sin egresos registrados"
-                                   message="Este mes no tiene costo de ventas, sueldos ni gastos fijos pagados." />
+                                   message="Este mes no tiene compras, sueldos ni gastos fijos pagados." />
                 @endif
             </div>
         </div>

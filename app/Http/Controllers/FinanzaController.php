@@ -2,25 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\CalculaResultado;
 use App\Models\CompraInsumo;
 use App\Models\GastoPago;
 use App\Models\GastoVariable;
 use App\Models\MermaInsumo;
 use App\Models\Planilla;
 use App\Models\Venta;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class FinanzaController extends Controller
 {
-    // Costo de ventas, venta sin costo conocido y diferencias de caja se
-    // calculan igual acá y en el dashboard. Ver el trait.
-    use CalculaResultado;
-
     public function __construct()
     {
         $this->middleware(['auth', 'admin']);
@@ -88,77 +81,17 @@ class FinanzaController extends Controller
     }
 
     /**
-     * Estado de resultados del mes en PDF.
-     *
-     * El tablero de Finanzas se mira en pantalla; esto es lo que se le entrega
-     * al contador o al socio, así que sale como documento con el mismo formato
-     * que la planilla: A4, membrete y firmas.
-     */
-    public function estadoResultados(Request $request)
-    {
-        $year  = (int) $request->input('year', now()->year);
-        $month = (int) $request->input('month', now()->month);
-
-        $inicio = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $fin    = $inicio->copy()->endOfMonth();
-
-        $previo    = $inicio->copy()->subMonthNoOverflow();
-        $resultado = $this->calcularPeriodo($inicio, $fin);
-        $anterior  = $this->calcularPeriodo($previo->copy()->startOfMonth(), $previo->copy()->endOfMonth());
-
-        // La vista nombra al porcentaje 'pct_sin_costo'. El cálculo lo devuelve
-        // como 'venta_sin_costo_pct', que es el nombre que ya usan el tablero y
-        // el dashboard: se traduce acá en lugar de renombrarlo en tres lugares.
-        $r = $resultado + ['pct_sin_costo' => $resultado['venta_sin_costo_pct']];
-
-        // Se pasan todas las líneas comparables, no solo las de resumen: la
-        // vista arma la columna de variación por clave, así que cada renglón
-        // que exista acá gana su comparación con el mes anterior.
-        $comparativo = array_intersect_key($anterior, array_flip([
-            'ingresos', 'costo_ventas', 'gastos_variables', 'utilidad_bruta',
-            'planillas', 'gastos_fijos', 'diferencias_caja', 'gastos_operativos',
-            'utilidad_neta',
-        ]));
-
-        $empresa = [
-            'nombre'    => config('app.name', 'Obrador'),
-            'subtitulo' => 'Sistema de gestión',
-        ];
-
-        $periodo = [
-            'etiqueta' => ucfirst($inicio->locale('es')->isoFormat('MMMM [de] YYYY')),
-            'desde'    => $inicio,
-            'hasta'    => $fin,
-        ];
-
-        $pdf = Pdf::loadView('finanzas.estado-resultados', [
-            'empresa'     => $empresa,
-            'periodo'     => $periodo,
-            'r'           => $r,
-            'comparativo' => $comparativo,
-            'usuario'     => Auth::user()?->name,
-        ])->setPaper('a4', 'portrait');
-
-        return $pdf->download("estado-resultados-{$inicio->format('Y-m')}.pdf");
-    }
-
-    /**
      * Consolida ingresos y egresos de todos los módulos para un rango de fechas.
      */
     private function calcularPeriodo(Carbon $inicio, Carbon $fin): array
     {
         // ── INGRESOS ────────────────────────────────────────────────
-        // Las ventas guardan created_at con hora, así que el rango se abre al
-        // inicio del primer día y se cierra al final del último.
-        $desdeHora = $inicio->copy()->startOfDay();
-        $hastaHora = $fin->copy()->endOfDay();
-
         $ingresos = (float) Venta::where('estado', 'completada')
-            ->whereBetween('created_at', [$desdeHora, $hastaHora])
+            ->whereBetween('created_at', [$inicio->copy()->startOfDay(), $fin->copy()->endOfDay()])
             ->sum('total');
 
         $numVentas = Venta::where('estado', 'completada')
-            ->whereBetween('created_at', [$desdeHora, $hastaHora])
+            ->whereBetween('created_at', [$inicio->copy()->startOfDay(), $fin->copy()->endOfDay()])
             ->count();
 
         // ── COSTOS DIRECTOS ─────────────────────────────────────────
@@ -169,23 +102,6 @@ class FinanzaController extends Controller
         $desde = $inicio->toDateString();
         $hasta = $fin->toDateString();
 
-        // COSTO DE VENTAS: lo que costó producir lo que efectivamente se
-        // vendió este mes, con el costo congelado al momento de cada venta.
-        // Este es el costo que se enfrenta al ingreso; ver el trait.
-        $costoVentas = $this->costoDeVentas($desdeHora, $hastaHora);
-
-        // Cuánta venta entró al resultado sin costo detrás (ventas directas y
-        // detalles con costo 0). Sin este dato, el margen puede verse enorme
-        // solo porque falta la mitad de la ecuación.
-        $ventaSinCosto = $this->ventasSinCostoConocido($desdeHora, $hastaHora);
-
-        // LAS COMPRAS YA NO RESTAN DEL RESULTADO. Comprar insumo no es un
-        // gasto: mueve plata de la caja al inventario, y el valor sigue en la
-        // panadería hasta que se consume y se vende. Restarlas era lo que
-        // hundía el mes en que se compra para varios meses y regalaba los
-        // siguientes. Se sigue calculando y devolviendo como DATO INFORMATIVO
-        // —para ver el esfuerzo de compra y el flujo de caja— pero fuera del
-        // cálculo de la utilidad.
         $compras = (float) CompraInsumo::whereBetween('fecha', [$desde, $hasta])->sum('total');
 
         // La merma guarda cantidad, no monto: se valoriza al costo del insumo
@@ -201,10 +117,11 @@ class FinanzaController extends Controller
         $gastosVariables = (float) GastoVariable::whereBetween('fecha', [$desde, $hasta])->sum('monto');
 
         // La merma NO se suma al costo: el insumo perdido ya se pagó cuando se
-        // compró y su valor sale del inventario, no del resultado del mes. Se
-        // mantiene calculada porque sirve como indicador de cuánto se está
-        // perdiendo por vencimiento o mal manejo, pero se muestra aparte.
-        $costosDirectos = $costoVentas + $gastosVariables;
+        // compró, y las compras se cuentan enteras acá arriba. Sumarla otra vez
+        // cobraría dos veces la misma plata e inflaría la pérdida. Se mantiene
+        // calculada porque sirve como indicador de cuánto se está perdiendo por
+        // vencimiento o mal manejo, pero se muestra aparte del resultado.
+        $costosDirectos = $compras + $gastosVariables;
 
         // ── GASTOS OPERATIVOS ───────────────────────────────────────
         // La planilla se imputa al mes en que ARRANCA su período: una semana
@@ -224,27 +141,15 @@ class FinanzaController extends Controller
 
         $gastosOperativos = $planillas + $gastosFijos;
 
-        // ── DESCUADRE DE CAJA ───────────────────────────────────────
-        // El faltante de caja es plata que entró como venta y no aparece: sin
-        // esta línea el resultado la contaba como si estuviera. Viene con signo
-        // (negativo = faltante, resta; positivo = sobrante, suma) e incluye el
-        // descuadre de QR. Ver el trait para el porqué.
-        $diferenciasCaja = $this->diferenciasDeCaja($desde, $hasta);
-
         // ── RESULTADOS ──────────────────────────────────────────────
-        $utilidadBruta = $ingresos - $costoVentas - $gastosVariables;
-        $utilidadNeta  = $utilidadBruta - $gastosOperativos + $diferenciasCaja;
-
-        // El faltante suma a los egresos y el sobrante los baja, de modo que
-        // ingresos − egresos_total siga dando exactamente la utilidad neta.
-        $egresosTotal = $costosDirectos + $gastosOperativos - $diferenciasCaja;
+        $utilidadBruta = $ingresos - $costosDirectos;
+        $utilidadNeta  = $utilidadBruta - $gastosOperativos;
+        $egresosTotal  = $costosDirectos + $gastosOperativos;
 
         return [
             'ingresos'          => round($ingresos, 2),
             'num_ventas'        => $numVentas,
             'ticket_promedio'   => $numVentas > 0 ? round($ingresos / $numVentas, 2) : 0.0,
-            'costo_ventas'      => round($costoVentas, 2),
-            // Informativo: mueve plata a inventario, no resta del resultado.
             'compras'           => round($compras, 2),
             'gastos_variables'  => round($gastosVariables, 2),
             'mermas'            => round($mermas, 2),
@@ -252,20 +157,11 @@ class FinanzaController extends Controller
             'planillas'         => round($planillas, 2),
             'gastos_fijos'      => round($gastosFijos, 2),
             'gastos_operativos' => round($gastosOperativos, 2),
-            'diferencias_caja'  => round($diferenciasCaja, 2),
             'egresos_total'     => round($egresosTotal, 2),
             'utilidad_bruta'    => round($utilidadBruta, 2),
             'utilidad_neta'     => round($utilidadNeta, 2),
             'margen_bruto'      => $ingresos > 0 ? round(($utilidadBruta / $ingresos) * 100, 1) : 0.0,
             'margen_neto'       => $ingresos > 0 ? round(($utilidadNeta / $ingresos) * 100, 1) : 0.0,
-
-            // Señal de confiabilidad del margen: cuánta venta del período entró
-            // sin costo detrás. Si esto es alto, el margen bruto está inflado y
-            // hay que leerlo como referencia, no como medición.
-            'venta_sin_costo'     => round($ventaSinCosto, 2),
-            'venta_sin_costo_pct' => $ingresos > 0
-                ? round(($ventaSinCosto / $ingresos) * 100, 1)
-                : 0.0,
         ];
     }
 }

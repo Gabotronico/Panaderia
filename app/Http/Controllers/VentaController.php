@@ -189,13 +189,6 @@ class VentaController extends Controller
                     'producto_id'     => $producto->id,
                     'cantidad'        => $prod['cantidad'],
                     'precio_unitario' => $precio,
-                    // Se congela el costo que el producto tiene AHORA. El
-                    // producto recalcula su costo promedio en cada corrida de
-                    // producción; si el resultado se leyera del producto en
-                    // vez de guardarlo acá, una corrida cara de noviembre
-                    // cambiaría el margen de una venta de agosto. El costo
-                    // histórico no se recalcula nunca.
-                    'costo_unitario'  => $producto->costo_unitario,
                     'subtotal'        => $prod['cantidad'] * $precio,
                 ]);
 
@@ -327,17 +320,6 @@ class VentaController extends Controller
      *
      * No mueve stock a propósito: no se sabe qué se vendió. Si además se
      * cargan las ventas producto por producto, esto duplicaría los ingresos.
-     *
-     * TAMPOCO TIENE COSTO, y no se le inventa uno. Como no hay detalle, no hay
-     * producto del cual copiar el costo unitario; estimarlo con un margen
-     * promedio sería fabricar un número y meterlo en el estado de resultados
-     * como si fuera un dato. Consecuencia contable: el ingreso de esta venta
-     * entra entero al resultado y su costo no, así que el margen del período
-     * se ve más alto de lo real en la proporción que representen estas ventas.
-     * Por eso Finanzas informa aparte "venta sin costo conocido" (monto y % de
-     * los ingresos): mientras ese porcentaje sea alto, el margen bruto es una
-     * referencia, no una medición. La forma de bajarlo es cargar las ventas
-     * con detalle de productos.
      */
     public function guardarDirecta(Request $request)
     {

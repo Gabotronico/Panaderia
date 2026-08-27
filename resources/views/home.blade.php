@@ -192,16 +192,14 @@
     </div>
 
     @if(!$isCajero)
-    {{-- Salida de plata del período: compras de insumos + gastos variables.
-         Es un dato de CAJA, no de resultado — la compra de insumos mueve plata
-         al inventario y solo pesa sobre la utilidad cuando eso se produce y se
-         vende. El resultado está más abajo, en "Resultado del mes". --}}
+    {{-- Egresos directos del período: insumos + gastos variables. Los dos
+         pesan sobre la utilidad bruta, así que se muestran juntos. --}}
     <div class="col-6 col-xl-3">
         <div class="card stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); box-shadow: 0 6px 20px rgba(139,92,246,.28);">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <p class="stat-card-label">Salida de Caja</p>
+                        <p class="stat-card-label">Egresos del Período</p>
                         <div class="stat-card-value">Bs {{ number_format($totalGastoMes + $totalVariables, 2) }}</div>
                         <div class="stat-card-sub">
                             insumos Bs {{ number_format($totalGastoMes, 2) }}
@@ -289,15 +287,12 @@
                     <span class="text-success fw-semibold">Bs {{ number_format($ventasPeriodo, 2) }}</span>
                 </div>
                 {{-- Desglose de lo que se le resta a la venta, para que el
-                     resultado no salga de una caja negra. Las compras de
-                     insumos NO aparecen acá: comprar mueve plata al
-                     inventario, no es gasto del mes. Lo que resta es el costo
-                     de lo que efectivamente se vendió. --}}
+                     resultado no salga de una caja negra. --}}
                 @foreach([
-                    'Costo de lo vendido' => $operacion['costo_ventas'],
-                    'Gastos variables'    => $totalVariables,
-                    'Sueldos pagados'     => $operacion['planillas_periodo'],
-                    'Gastos fijos'        => $operacion['fijos_periodo'],
+                    'Insumos'         => $totalGastoMes,
+                    'Gastos variables'=> $totalVariables,
+                    'Sueldos pagados' => $operacion['planillas_periodo'],
+                    'Gastos fijos'    => $operacion['fijos_periodo'],
                 ] as $concepto => $monto)
                     @if($monto > 0)
                     <div class="d-flex justify-content-between" style="font-size:.78rem;">
@@ -306,31 +301,6 @@
                     </div>
                     @endif
                 @endforeach
-
-                {{-- Descuadre de caja: faltante resta, sobrante suma. --}}
-                @if(abs($operacion['descuadre_caja']) >= 0.01)
-                    @php $d = $operacion['descuadre_caja']; @endphp
-                    <div class="d-flex justify-content-between" style="font-size:.78rem;">
-                        <span class="text-muted">
-                            {{ $d < 0 ? 'Faltante de caja' : 'Sobrante de caja' }}
-                        </span>
-                        <span class="fw-semibold {{ $d < 0 ? 'text-danger' : 'text-success' }}">
-                            {{ $d < 0 ? '−' : '+' }}Bs {{ number_format(abs($d), 2) }}
-                        </span>
-                    </div>
-                @endif
-
-                {{-- Sin esta advertencia el resultado se lee como si estuviera
-                     completo, y con ventas directas no lo está: entra el
-                     ingreso y no entra su costo. --}}
-                @if($operacion['venta_sin_costo'] > 0)
-                    <div class="mt-2 text-warning" style="font-size:.7rem; line-height:1.3;">
-                        <i class="fas fa-triangle-exclamation me-1"></i>
-                        Bs {{ number_format($operacion['venta_sin_costo'], 2) }}
-                        ({{ $operacion['venta_sin_costo_pct'] }}% de la venta) sin costo conocido —
-                        la ganancia se ve mejor de lo real.
-                    </div>
-                @endif
             </div>
         </a>
     </div>
