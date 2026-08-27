@@ -1,0 +1,24 @@
+{
+  "artboards": [
+    { "file": "Actual.dc.html",   "x": 0,    "y": 0,    "w": 1440, "h": 1180, "title": "Dashboard — como está hoy" },
+    { "file": "Main.dc.html",     "x": 1580, "y": 0,    "w": 1440, "h": 1120, "title": "Dashboard — propuesta" },
+    { "file": "Finanzas.dc.html", "x": 1580, "y": 1300, "w": 1440, "h": 1180, "title": "Resumen financiero — propuesta" }
+  ],
+  "annotations": [
+    {
+      "id": "diagnostico",
+      "x": 0,
+      "y": -300,
+      "w": 1440,
+      "text": "CÓMO SE VE HOY\n\nOnce gradientes distintos entre los dos tableros — seis en el componente stat-card y cinco escritos a mano en el dashboard — y ninguno es la marca. La barra lateral es navy y oro; el contenido, un arcoíris.\n\nSin jerarquía: cinco tarjetas gritan igual de fuerte, así que ninguna manda. Y en la grilla de cuatro columnas, la quinta cae sola en una fila.\n\nEl filtro de período ocupa el mejor lugar de la pantalla con dos formularios y seis controles, para algo que se toca de vez en cuando.\n\nSe mezcla lo analítico con lo operativo: \"Ventas del Período\" sigue al filtro, \"Ventas Hoy\" no, y las dos se ven idénticas."
+    },
+    {
+      "id": "propuesta",
+      "x": 1580,
+      "y": -300,
+      "w": 1440,
+      "text": "QUÉ CAMBIA\n\nUna sola cosa domina: el resultado del mes, en navy y oro, con su desglose al lado en vez de en otra tarjeta. Es la pregunta que el dueño viene a hacerse.\n\nLos gradientes se van. Las cifras de apoyo son tarjetas blancas con un filete de 3 px que dice de qué tipo de dato se trata. El color pasa a significar algo: verde y rojo solo para la dirección de un número, oro solo para la marca.\n\nEl filtro se muda a la barra superior como un control segmentado.\n\n\"Hoy\" se separa en su propio panel, con las cosas que hay que atender — no mezclado con los números del período filtrado.\n\nTipografía: Inter para la interfaz (la que ya usa la app) y Georgia para la cifra grande, que es la que la barra lateral ya usa para OBRADOR. Números con ancho fijo para que las columnas alineen."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

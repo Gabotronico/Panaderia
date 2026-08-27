@@ -11,365 +11,264 @@
 @endif
 
 {{-- ── FILTRO DE PERÍODO ─────────────────────────────────────── --}}
+{{-- Vive en una franja de una línea, no en una tarjeta: se toca de vez en
+     cuando y no tiene por qué ocupar el lugar del dato principal. --}}
 @php
-    $mesAnterior = $periodo['inicio']->copy()->subMonth();
+    $mesAnterior  = $periodo['inicio']->copy()->subMonth();
     $mesSiguiente = $periodo['inicio']->copy()->addMonth();
     $meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    $esMesActual = $periodo['modo'] === 'mes' && $periodo['mes'] == now()->month && $periodo['anio'] == now()->year;
 @endphp
-<div class="card mb-4">
-    <div class="card-body py-3">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-            <div>
-                <span class="fw-semibold"><i class="fas fa-calendar-days me-2 text-primary"></i>Período</span>
-                <span class="badge bg-primary ms-2">{{ $periodo['etiqueta'] }}</span>
-                @if($periodo['agrupacion'] === 'mes')
-                    <span class="text-muted small ms-2">· los gráficos se agrupan por mes</span>
-                @endif
-            </div>
-            @if($periodo['modo'] !== 'mes' || $periodo['mes'] != now()->month || $periodo['anio'] != now()->year)
-                <a href="{{ route('home') }}" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-rotate-left me-1"></i>Volver al mes actual
-                </a>
-            @endif
-        </div>
+<div class="filter-bar d-flex flex-wrap align-items-center gap-2 mb-4">
+    <form method="GET" action="{{ route('home') }}" class="d-flex align-items-center gap-2">
+        <a href="{{ route('home', ['mes' => $mesAnterior->month, 'anio' => $mesAnterior->year]) }}"
+           class="btn btn-light border" title="Mes anterior"><i class="fas fa-chevron-left"></i></a>
+        <select name="mes" class="form-select" style="width:140px;">
+            @foreach($meses as $i => $nombre)
+                <option value="{{ $i + 1 }}" @selected($periodo['modo'] === 'mes' && $periodo['mes'] == $i + 1)>{{ $nombre }}</option>
+            @endforeach
+        </select>
+        <input type="number" name="anio" class="form-control text-center" style="width:92px;"
+               value="{{ $periodo['anio'] }}" min="2000" max="2999">
+        <button class="btn btn-primary">Ir</button>
+        <a href="{{ route('home', ['mes' => $mesSiguiente->month, 'anio' => $mesSiguiente->year]) }}"
+           class="btn btn-light border" title="Mes siguiente"><i class="fas fa-chevron-right"></i></a>
+    </form>
 
-        <div class="row g-3 align-items-end">
-            {{-- Por mes --}}
-            <div class="col-lg-6">
-                <label class="form-label small text-muted mb-1">Ver un mes</label>
-                <form method="GET" action="{{ route('home') }}" class="d-flex gap-2">
-                    <a href="{{ route('home', ['mes' => $mesAnterior->month, 'anio' => $mesAnterior->year]) }}"
-                       class="btn btn-outline-secondary" title="Mes anterior">
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                    <select name="mes" class="form-select">
-                        @foreach($meses as $i => $nombre)
-                            <option value="{{ $i + 1 }}" @selected($periodo['modo'] === 'mes' && $periodo['mes'] == $i + 1)>{{ $nombre }}</option>
-                        @endforeach
-                    </select>
-                    <input type="number" name="anio" class="form-control" style="max-width:6.5rem;"
-                           value="{{ $periodo['anio'] }}" min="2000" max="2999">
-                    <button class="btn btn-primary px-3">Ir</button>
-                    <a href="{{ route('home', ['mes' => $mesSiguiente->month, 'anio' => $mesSiguiente->year]) }}"
-                       class="btn btn-outline-secondary" title="Mes siguiente">
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                </form>
-            </div>
+    <span class="text-muted d-none d-lg-inline" style="font-size:.8rem;">o</span>
 
-            {{-- Por rango libre --}}
-            <div class="col-lg-6">
-                <label class="form-label small text-muted mb-1">O un rango de fechas</label>
-                <form method="GET" action="{{ route('home') }}" class="d-flex gap-2">
-                    <input type="date" name="desde" class="form-control"
-                           value="{{ $periodo['modo'] === 'rango' ? $periodo['inicio']->toDateString() : '' }}" required>
-                    <span class="align-self-center text-muted small">a</span>
-                    <input type="date" name="hasta" class="form-control"
-                           value="{{ $periodo['modo'] === 'rango' ? $periodo['fin']->toDateString() : '' }}" required>
-                    <button class="btn btn-primary px-3">Ver</button>
-                </form>
-            </div>
-        </div>
+    <form method="GET" action="{{ route('home') }}" class="d-flex align-items-center gap-2">
+        <input type="date" name="desde" class="form-control" style="width:150px;"
+               value="{{ $periodo['modo'] === 'rango' ? $periodo['inicio']->toDateString() : '' }}" required>
+        <span class="text-muted" style="font-size:.8rem;">a</span>
+        <input type="date" name="hasta" class="form-control" style="width:150px;"
+               value="{{ $periodo['modo'] === 'rango' ? $periodo['fin']->toDateString() : '' }}" required>
+        <button class="btn btn-light border">Ver</button>
+    </form>
+
+    <div class="ms-auto d-flex align-items-center gap-2">
+        @unless($esMesActual)
+            <a href="{{ route('home') }}" class="btn btn-link text-muted px-2" style="font-size:.82rem;">Ir al mes actual</a>
+        @endunless
+        <span class="badge" style="background:var(--primary);">{{ $periodo['etiqueta'] }}</span>
     </div>
 </div>
 
-{{-- ── STAT CARDS ────────────────────────────────────────────── --}}
-<div class="row g-3 mb-4">
-
-    {{-- Ventas Hoy --}}
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 6px 20px rgba(16,185,129,.28);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="stat-card-label">Ventas del Período</p>
-                        <div class="stat-card-value">Bs {{ number_format($ventasPeriodo, 2) }}</div>
-                        <div class="stat-card-sub">
-                            {{ $cantidadVentas }} {{ $cantidadVentas === 1 ? 'venta' : 'ventas' }} ·
-                            ticket Bs {{ number_format($ticketPromedio, 2) }}
-                        </div>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="fas fa-sack-dollar"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Efectivo Hoy — es la plata que se arquea en el cierre de caja --}}
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); box-shadow: 0 6px 20px rgba(20,184,166,.28);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="stat-card-label">Efectivo</p>
-                        <div class="stat-card-value">Bs {{ number_format($porPagoPeriodo['efectivo'], 2) }}</div>
-                        <div class="stat-card-sub">
-                            hoy: Bs {{ number_format($porPagoHoy['efectivo'], 2) }}
-                        </div>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- QR Hoy — no pasa por el cajón, va directo a la cuenta --}}
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); box-shadow: 0 6px 20px rgba(14,165,233,.28);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="stat-card-label">QR</p>
-                        <div class="stat-card-value">Bs {{ number_format($porPagoPeriodo['qr'], 2) }}</div>
-                        <div class="stat-card-sub">
-                            hoy: Bs {{ number_format($porPagoHoy['qr'], 2) }}
-                        </div>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="fas fa-qrcode"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Ventas de hoy: no sigue al filtro, es el dato del día en curso --}}
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); box-shadow: 0 6px 20px rgba(99,102,241,.28);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="stat-card-label">Ventas Hoy</p>
-                        <div class="stat-card-value">Bs {{ number_format($ventasHoy, 2) }}</div>
-                        <div class="stat-card-sub">{{ \Carbon\Carbon::today()->locale('es')->isoFormat('D [de] MMMM') }}</div>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="fas fa-calendar-day"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Productos con stock bajo --}}
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 6px 20px rgba(245,158,11,.28);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="stat-card-label">Productos Stock Bajo</p>
-                        <div class="stat-card-value">{{ $productosStockBajo }}</div>
-                        <div class="stat-card-sub">requieren atención</div>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="fas fa-cookie-bite"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Insumos con stock bajo --}}
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 6px 20px rgba(239,68,68,.28);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="stat-card-label">Insumos Stock Bajo</p>
-                        <div class="stat-card-value">{{ $insumosStockBajo }}</div>
-                        <div class="stat-card-sub">requieren reposición</div>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="fas fa-boxes-stacked"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @if(!$isCajero)
-    {{-- Egresos directos del período: insumos + gastos variables. Los dos
-         pesan sobre la utilidad bruta, así que se muestran juntos. --}}
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); box-shadow: 0 6px 20px rgba(139,92,246,.28);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <p class="stat-card-label">Egresos del Período</p>
-                        <div class="stat-card-value">Bs {{ number_format($totalGastoMes + $totalVariables, 2) }}</div>
-                        <div class="stat-card-sub">
-                            insumos Bs {{ number_format($totalGastoMes, 2) }}
-                            @if($totalVariables > 0)
-                                · variables Bs {{ number_format($totalVariables, 2) }}
-                            @endif
-                        </div>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="fas fa-shopping-basket"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
-</div>
-
-{{-- ── DISTRIBUCIÓN POR MEDIO DE PAGO ────────────────────────── --}}
-@if($porPagoPeriodo['total'] > 0)
+{{-- ── RESULTADO DEL PERÍODO ────────────────────────────────── --}}
+{{-- Una sola cosa domina la pantalla, y es la pregunta que el dueño viene a
+     hacerse. El desglose va al lado del número, no en otra tarjeta: es la
+     explicación de cómo se llegó a él. --}}
+@if($operacion)
 @php
-    $pctEfectivoHoy = round($porPagoPeriodo['efectivo'] / $porPagoPeriodo['total'] * 100);
-    $pctQrHoy       = 100 - $pctEfectivoHoy;
+    $u = $operacion['utilidad_mes'];
+    $conceptos = [
+        'Ventas'           => ['monto' => $ventasPeriodo,                 'resta' => false],
+        'Insumos'          => ['monto' => $totalGastoMes,                 'resta' => true],
+        'Gastos variables' => ['monto' => $totalVariables,                'resta' => true],
+        'Sueldos pagados'  => ['monto' => $operacion['planillas_periodo'],'resta' => true],
+        'Gastos fijos'     => ['monto' => $operacion['fijos_periodo'],    'resta' => true],
+    ];
 @endphp
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="mb-0"><i class="fas fa-scale-balanced me-2"></i>Cómo se cobró en el período</h6>
-            <span class="text-muted small">Bs {{ number_format($porPagoPeriodo['total'], 2) }} en total</span>
-        </div>
-        <div class="progress" style="height: 1.5rem;" role="img"
-             aria-label="Efectivo {{ $pctEfectivoHoy }}%, QR {{ $pctQrHoy }}%">
-            @if($porPagoPeriodo['efectivo'] > 0)
-            <div class="progress-bar" style="width: {{ $pctEfectivoHoy }}%; background-color: #0d9488;">
-                {{ $pctEfectivoHoy }}%
+<div class="card mb-4" style="background:var(--primary); border:none; box-shadow:var(--shadow-md);">
+    <div class="card-body p-4">
+        <div class="row g-4 align-items-center">
+            <div class="col-lg-4">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span style="width:22px; height:2px; background:var(--oro); display:inline-block;"></span>
+                    <span style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:var(--oro);">
+                        Resultado de {{ $periodo['etiqueta'] }}
+                    </span>
+                </div>
+                <div style="font-family:Georgia,serif; font-size:2.9rem; font-weight:700; line-height:1; letter-spacing:-.015em; color:#fff; font-variant-numeric:tabular-nums;">
+                    {{ $u < 0 ? '−' : '' }}Bs {{ number_format(abs($u), 2) }}
+                </div>
+                <div class="mt-2" style="font-size:.82rem; color:#9db2ca;">
+                    {{ $u >= 0 ? 'de ganancia' : 'de pérdida' }} ·
+                    <a href="{{ route('finanzas.index') }}" style="color:var(--oro-claro);">ver finanzas</a>
+                </div>
             </div>
-            @endif
-            @if($porPagoPeriodo['qr'] > 0)
-            <div class="progress-bar" style="width: {{ $pctQrHoy }}%; background-color: #0284c7;">
-                {{ $pctQrHoy }}%
+
+            <div class="col-lg-8">
+                <div class="ps-lg-4" style="border-left:1px solid rgba(255,255,255,.10);">
+                    @foreach($conceptos as $concepto => $d)
+                        @if($d['monto'] > 0)
+                        <div class="d-flex justify-content-between align-items-baseline py-1
+                                    {{ $loop->first ? 'pb-2 mb-1' : '' }}"
+                             @if($loop->first) style="border-bottom:1px solid rgba(255,255,255,.08);" @endif>
+                            <span style="font-size:.84rem; color:{{ $loop->first ? '#c7d6e6' : '#9db2ca' }};">{{ $concepto }}</span>
+                            <span style="font-size:{{ $loop->first ? '.92rem' : '.86rem' }}; font-weight:{{ $loop->first ? '600' : '400' }}; color:{{ $loop->first ? '#fff' : '#c7d6e6' }}; font-variant-numeric:tabular-nums;">
+                                {{ $d['resta'] ? '−' : '' }}Bs {{ number_format($d['monto'], 2) }}
+                            </span>
+                        </div>
+                        @endif
+                    @endforeach
+                </div>
             </div>
-            @endif
-        </div>
-        <div class="d-flex gap-4 mt-2 small">
-            <span>
-                <i class="fas fa-money-bill-wave me-1" style="color:#0d9488;"></i>
-                Efectivo <strong>Bs {{ number_format($porPagoPeriodo['efectivo'], 2) }}</strong>
-                <span class="text-muted">— se arquea en el cierre de caja</span>
-            </span>
-            <span>
-                <i class="fas fa-qrcode me-1" style="color:#0284c7;"></i>
-                QR <strong>Bs {{ number_format($porPagoPeriodo['qr'], 2) }}</strong>
-                <span class="text-muted">— va directo a la cuenta</span>
-            </span>
         </div>
     </div>
 </div>
 @endif
 
-{{-- ── PANEL DE OPERACIÓN (solo administrador) ──────────────── --}}
+{{-- ── CIFRAS DEL PERÍODO ───────────────────────────────────── --}}
+{{-- Tarjetas blancas con un filete de 3 px que dice de qué tipo de dato se
+     trata. El color significa algo; antes cada tarjeta era un gradiente
+     distinto y ninguna mandaba sobre las otras. --}}
+@php
+    $tiles = [
+        [
+            'label' => 'Ventas del período',
+            'valor' => 'Bs ' . number_format($ventasPeriodo, 2),
+            'sub'   => $cantidadVentas . ' ' . ($cantidadVentas === 1 ? 'venta' : 'ventas') . ' · ticket Bs ' . number_format($ticketPromedio, 2),
+            'color' => 'var(--primary)',
+        ],
+        [
+            'label' => 'Efectivo',
+            'valor' => 'Bs ' . number_format($porPagoPeriodo['efectivo'], 2),
+            'sub'   => 'se arquea en el cierre de caja',
+            'color' => '#0d9488',
+        ],
+        [
+            'label' => 'QR',
+            'valor' => 'Bs ' . number_format($porPagoPeriodo['qr'], 2),
+            'sub'   => 'va directo a la cuenta',
+            'color' => '#0284c7',
+        ],
+    ];
+
+    $tiles[] = $isCajero
+        ? [
+            'label' => 'Ventas hoy',
+            'valor' => 'Bs ' . number_format($ventasHoy, 2),
+            'sub'   => \Carbon\Carbon::today()->locale('es')->isoFormat('D [de] MMMM'),
+            'color' => '#4f46e5',
+        ]
+        : [
+            'label' => 'Salida de caja',
+            'valor' => 'Bs ' . number_format($totalGastoMes + $totalVariables, 2),
+            'sub'   => 'insumos + gastos variables',
+            'color' => '#b45309',
+        ];
+@endphp
+<div class="row g-3 mb-4">
+    @foreach($tiles as $t)
+    <div class="col-6 col-xl-3">
+        <div class="card h-100" style="margin-bottom:0; border-top:3px solid {{ $t['color'] }};">
+            <div class="card-body py-3">
+                <div style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:var(--text-muted);">
+                    {{ $t['label'] }}
+                </div>
+                <div class="mt-1" style="font-size:1.55rem; font-weight:700; line-height:1.1; color:var(--text-heading); font-variant-numeric:tabular-nums;">
+                    {{ $t['valor'] }}
+                </div>
+                <div class="mt-1 text-muted" style="font-size:.76rem;">{{ $t['sub'] }}</div>
+            </div>
+        </div>
+    </div>
+    @endforeach
+</div>
+
+{{-- ── DISTRIBUCIÓN POR MEDIO DE PAGO ────────────────────────── --}}
+@if($porPagoPeriodo['total'] > 0)
+@php
+    $pctEfectivo = round($porPagoPeriodo['efectivo'] / $porPagoPeriodo['total'] * 100);
+    $pctQr       = 100 - $pctEfectivo;
+@endphp
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0" style="font-size:.875rem;">Cómo se cobró en el período</h6>
+            <span class="text-muted small">Bs {{ number_format($porPagoPeriodo['total'], 2) }} en total</span>
+        </div>
+        <div class="progress" style="height: 1.4rem;" role="img"
+             aria-label="Efectivo {{ $pctEfectivo }}%, QR {{ $pctQr }}%">
+            @if($porPagoPeriodo['efectivo'] > 0)
+                <div class="progress-bar" style="width: {{ $pctEfectivo }}%; background-color: #0d9488;">{{ $pctEfectivo }}%</div>
+            @endif
+            @if($porPagoPeriodo['qr'] > 0)
+                <div class="progress-bar" style="width: {{ $pctQr }}%; background-color: #0284c7;">{{ $pctQr }}%</div>
+            @endif
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- ── HOY Y PENDIENTES (solo administrador) ─────────────────── --}}
+{{-- "Hoy" va aparte del período filtrado a propósito: mezclarlos hacía
+     difícil saber a qué fechas correspondía cada número. --}}
 @if($operacion)
 <div class="row g-3 mb-4">
 
-    {{-- Resultado del mes --}}
-    <div class="col-lg-4">
-        <a href="{{ route('finanzas.index') }}" class="card h-100 text-decoration-none"
-           style="margin-bottom:0;">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-chart-pie me-2"></i>Resultado del mes</span>
-                <i class="fas fa-arrow-right text-muted" style="font-size:.75rem;"></i>
-            </div>
-            <div class="card-body text-center d-flex flex-column justify-content-center">
-                @php $u = $operacion['utilidad_mes']; @endphp
-                <div class="fw-bold mb-1"
-                     style="font-size:1.75rem; line-height:1; color: {{ $u >= 0 ? '#16a34a' : '#dc2626' }};">
-                    {{ $u < 0 ? '−' : '' }}Bs {{ number_format(abs($u), 2) }}
-                </div>
-                <div class="text-muted" style="font-size:.8rem;">
-                    {{ $u >= 0 ? 'de ganancia' : 'de pérdida' }} en
-                    {{ $periodo['etiqueta'] }}
-                </div>
-                <hr class="my-3">
-                <div class="d-flex justify-content-between" style="font-size:.78rem;">
-                    <span class="text-muted">Ventas</span>
-                    <span class="text-success fw-semibold">Bs {{ number_format($ventasPeriodo, 2) }}</span>
-                </div>
-                {{-- Desglose de lo que se le resta a la venta, para que el
-                     resultado no salga de una caja negra. --}}
-                @foreach([
-                    'Insumos'         => $totalGastoMes,
-                    'Gastos variables'=> $totalVariables,
-                    'Sueldos pagados' => $operacion['planillas_periodo'],
-                    'Gastos fijos'    => $operacion['fijos_periodo'],
-                ] as $concepto => $monto)
-                    @if($monto > 0)
-                    <div class="d-flex justify-content-between" style="font-size:.78rem;">
-                        <span class="text-muted">{{ $concepto }}</span>
-                        <span class="text-danger fw-semibold">−Bs {{ number_format($monto, 2) }}</span>
-                    </div>
-                    @endif
-                @endforeach
-            </div>
-        </a>
-    </div>
-
-    {{-- Personal hoy --}}
-    <div class="col-lg-4">
+    {{-- Lo del día --}}
+    <div class="col-lg-6">
         <div class="card h-100" style="margin-bottom:0;">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-users me-2"></i>Personal hoy</span>
-                <a href="{{ route('empleados.index') }}" class="text-muted" style="font-size:.75rem;">Ver todos</a>
+                <span><i class="fas fa-sun me-2"></i>Hoy</span>
+                <span class="text-muted" style="font-size:.75rem;">
+                    {{ \Carbon\Carbon::today()->locale('es')->isoFormat('D [de] MMMM') }}
+                </span>
             </div>
             <div class="card-body">
-                @if($operacion['es_domingo'])
-                    <div class="text-center py-3">
-                        <div class="mb-2" style="font-size:1.6rem;">🛌</div>
-                        <div class="fw-semibold">Hoy es domingo</div>
-                        <div class="text-muted" style="font-size:.8rem;">Día no laborable</div>
-                    </div>
-                @elseif(!$operacion['asistencia_tomada'])
-                    <div class="text-center py-2">
-                        <div class="text-warning mb-2"><i class="fas fa-clipboard-list fa-2x"></i></div>
-                        <div class="fw-semibold mb-1">Falta tomar asistencia</div>
-                        <div class="text-muted mb-3" style="font-size:.8rem;">
-                            {{ $operacion['empleados_activos'] }} empleado(s) sin registrar hoy
-                        </div>
-                        <a href="{{ route('asistencias.registrar') }}" class="btn btn-warning btn-sm">
-                            <i class="fas fa-clipboard-check me-1"></i>Tomar asistencia
-                        </a>
-                    </div>
-                @else
-                    <div class="row text-center g-2 mb-3">
-                        <div class="col-4">
-                            <div class="fw-bold text-success" style="font-size:1.5rem;">
-                                {{ $operacion['presentes_hoy'] }}
-                            </div>
-                            <div class="text-muted" style="font-size:.72rem;">presentes</div>
-                        </div>
-                        <div class="col-4">
-                            <div class="fw-bold {{ $operacion['ausentes_hoy'] > 0 ? 'text-danger' : 'text-muted' }}"
-                                 style="font-size:1.5rem;">
-                                {{ $operacion['ausentes_hoy'] }}
-                            </div>
-                            <div class="text-muted" style="font-size:.72rem;">ausentes</div>
-                        </div>
-                        <div class="col-4">
-                            <div class="fw-bold text-muted" style="font-size:1.5rem;">
-                                {{ $operacion['empleados_activos'] }}
-                            </div>
-                            <div class="text-muted" style="font-size:.72rem;">en planilla</div>
-                        </div>
-                    </div>
-                    <a href="{{ route('asistencias.index') }}" class="btn btn-light border btn-sm w-100">
-                        Ver detalle del día
-                    </a>
-                @endif
+                <div style="font-size:1.7rem; font-weight:700; line-height:1; color:var(--text-heading); font-variant-numeric:tabular-nums;">
+                    Bs {{ number_format($ventasHoy, 2) }}
+                </div>
+                <div class="text-muted mt-1 mb-3" style="font-size:.78rem;">vendido en el día</div>
 
-                @if($operacion['adelantos_pend'] > 0)
-                    <div class="alert alert-warning py-2 mt-3 mb-0" style="font-size:.78rem;">
-                        <i class="fas fa-hand-holding-dollar me-1"></i>
-                        Bs {{ number_format($operacion['adelantos_pend'], 2) }} en adelantos
-                        por descontar en la próxima planilla.
-                    </div>
-                @endif
+                <div class="d-flex flex-column gap-2">
+                    {{-- Asistencia --}}
+                    @if($operacion['es_domingo'])
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#cbd5e1;"></span>
+                            <span class="text-muted flex-grow-1">Domingo — día no laborable</span>
+                        </div>
+                    @elseif(!$operacion['asistencia_tomada'])
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#b45309;"></span>
+                            <span class="flex-grow-1">Falta tomar asistencia — {{ $operacion['empleados_activos'] }} sin registrar</span>
+                            <a href="{{ route('asistencias.registrar') }}" class="fw-semibold">Tomar</a>
+                        </div>
+                    @else
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:{{ $operacion['ausentes_hoy'] > 0 ? '#b45309' : '#cbd5e1' }};"></span>
+                            <span class="flex-grow-1">
+                                {{ $operacion['presentes_hoy'] }} de {{ $operacion['empleados_activos'] }} presentes
+                                @if($operacion['ausentes_hoy'] > 0)
+                                    · {{ $operacion['ausentes_hoy'] }} ausente(s)
+                                @endif
+                            </span>
+                            <a href="{{ route('asistencias.index') }}" class="text-muted">Ver</a>
+                        </div>
+                    @endif
+
+                    {{-- Stock: estaban como dos tarjetas de gradiente propias, pero
+                         son avisos de atención, no cifras del período. --}}
+                    @if($insumosStockBajo > 0)
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#b91c1c;"></span>
+                            <span class="flex-grow-1">{{ $insumosStockBajo }} insumo(s) bajo el mínimo</span>
+                            <a href="{{ route('insumos.index') }}" class="fw-semibold">Reponer</a>
+                        </div>
+                    @endif
+                    @if($productosStockBajo > 0)
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#b45309;"></span>
+                            <span class="flex-grow-1">{{ $productosStockBajo }} producto(s) bajo el mínimo</span>
+                            <a href="{{ route('productos.index') }}" class="text-muted">Ver</a>
+                        </div>
+                    @endif
+
+                    @if($insumosStockBajo === 0 && $productosStockBajo === 0)
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#15803d;"></span>
+                            <span class="text-muted flex-grow-1">Stock de productos e insumos en orden</span>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
 
     {{-- Pendientes de pago --}}
-    <div class="col-lg-4">
+    <div class="col-lg-6">
         <div class="card h-100" style="margin-bottom:0;">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span><i class="fas fa-receipt me-2"></i>Por pagar este mes</span>
@@ -377,43 +276,48 @@
             </div>
             <div class="card-body">
                 @if($operacion['gastos_pendientes'] === 0)
-                    <div class="text-center py-3">
-                        <div class="text-success mb-2"><i class="fas fa-circle-check fa-2x"></i></div>
-                        <div class="fw-semibold">Todo al día</div>
-                        <div class="text-muted" style="font-size:.8rem;">
-                            No hay gastos pendientes este mes
-                        </div>
-                    </div>
+                    <div style="font-size:1.7rem; font-weight:700; line-height:1; color:#15803d;">Al día</div>
+                    <div class="text-muted mt-1 mb-3" style="font-size:.78rem;">No hay gastos pendientes este mes</div>
                 @else
-                    <div class="text-center mb-3">
-                        <div class="fw-bold {{ $operacion['gastos_vencidos'] > 0 ? 'text-danger' : 'text-warning' }}"
-                             style="font-size:1.75rem; line-height:1;">
-                            Bs {{ number_format($operacion['monto_por_pagar'], 2) }}
-                        </div>
-                        <div class="text-muted" style="font-size:.8rem;">
-                            {{ $operacion['gastos_pendientes'] }} gasto(s) sin pagar
-                        </div>
+                    <div style="font-size:1.7rem; font-weight:700; line-height:1; font-variant-numeric:tabular-nums;
+                                color:{{ $operacion['gastos_vencidos'] > 0 ? '#b91c1c' : '#b45309' }};">
+                        Bs {{ number_format($operacion['monto_por_pagar'], 2) }}
                     </div>
+                    <div class="text-muted mt-1 mb-3" style="font-size:.78rem;">
+                        {{ $operacion['gastos_pendientes'] }} gasto(s) sin pagar
+                    </div>
+                @endif
 
+                <div class="d-flex flex-column gap-2">
                     @if($operacion['gastos_vencidos'] > 0)
-                        <div class="alert alert-danger py-2 mb-2" style="font-size:.78rem;">
-                            <i class="fas fa-triangle-exclamation me-1"></i>
-                            <strong>{{ $operacion['gastos_vencidos'] }}</strong> ya pasaron su fecha de vencimiento.
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#b91c1c;"></span>
+                            <span class="flex-grow-1">{{ $operacion['gastos_vencidos'] }} ya pasaron su vencimiento</span>
+                            <a href="{{ route('gastos-pagos.index') }}" class="fw-semibold">Pagar</a>
                         </div>
                     @endif
-
-                    <a href="{{ route('gastos-pagos.index') }}" class="btn btn-light border btn-sm w-100">
-                        Registrar pagos
-                    </a>
-                @endif
-
-                @if($operacion['planillas_borrador'] > 0)
-                    <div class="alert alert-info py-2 mt-2 mb-0" style="font-size:.78rem;">
-                        <i class="fas fa-file-pen me-1"></i>
-                        {{ $operacion['planillas_borrador'] }} planilla(s) en borrador sin cerrar.
-                        <a href="{{ route('planillas.index') }}">Revisar</a>
-                    </div>
-                @endif
+                    @if($operacion['planillas_borrador'] > 0)
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#b45309;"></span>
+                            <span class="flex-grow-1">{{ $operacion['planillas_borrador'] }} planilla(s) en borrador sin cerrar</span>
+                            <a href="{{ route('planillas.index') }}" class="text-muted">Revisar</a>
+                        </div>
+                    @endif
+                    @if($operacion['adelantos_pend'] > 0)
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#cbd5e1;"></span>
+                            <span class="text-muted flex-grow-1">
+                                Bs {{ number_format($operacion['adelantos_pend'], 2) }} en adelantos por descontar
+                            </span>
+                        </div>
+                    @endif
+                    @if($operacion['gastos_vencidos'] === 0 && $operacion['planillas_borrador'] === 0 && $operacion['adelantos_pend'] == 0)
+                        <div class="d-flex align-items-center gap-2" style="font-size:.82rem;">
+                            <span class="rounded-circle flex-shrink-0" style="width:7px; height:7px; background:#15803d;"></span>
+                            <span class="text-muted flex-grow-1">Nada vencido ni pendiente de cerrar</span>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
