@@ -63,104 +63,68 @@
     </form>
 </div>
 
-{{-- ── RESULTADO DEL MES ─────────────────────────────────────── --}}
-{{-- El resultado y sus dos márgenes, juntos. Antes eran cuatro tarjetas que
-     repetían lo que ya dice el estado de resultados de abajo. Los avisos que
-     cambian cómo se leen estos números van acá y no como una alerta suelta
-     que se saltea. --}}
+{{-- Avisos que afectan la lectura de los números --}}
+@if($pendientes['borradores'] > 0 || $pendientes['cantidad'] > 0)
+<div class="alert alert-warning">
+    <div class="d-flex align-items-start gap-2">
+        <i class="fas fa-triangle-exclamation mt-1"></i>
+        <div>
+            <strong>Ten en cuenta al leer estos números:</strong>
+            <ul class="mb-0 mt-1 ps-3">
+                @if($pendientes['borradores'] > 0)
+                    <li>
+                        Hay {{ $pendientes['borradores'] }} planilla(s) en borrador en este período —
+                        el costo de sueldos puede cambiar al cerrarlas.
+                        <a href="{{ route('planillas.index') }}">Revisar planillas</a>
+                    </li>
+                @endif
+                @if($pendientes['cantidad'] > 0)
+                    <li>
+                        {{ $pendientes['cantidad'] }} gasto(s) de este mes por
+                        <strong>Bs {{ number_format($pendientes['gastos'], 2) }}</strong> aún sin pagar
+                        @if($pendientes['vencidos'] > 0)
+                            ({{ $pendientes['vencidos'] }} ya vencido(s))
+                        @endif
+                        — todavía no restan de la utilidad.
+                        <a href="{{ route('gastos-pagos.index', ['year'=>$year,'month'=>$month]) }}">Ver gastos</a>
+                    </li>
+                @endif
+            </ul>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- Tarjetas principales --}}
 @php
+    $dIngresos = $delta($actual['ingresos'],      $anterior['ingresos']);
+    $dEgresos  = $delta($actual['egresos_total'], $anterior['egresos_total']);
     $dUtilidad = $delta($actual['utilidad_neta'], $anterior['utilidad_neta']);
-    // La usa la fila de ventas del estado de resultados, más abajo.
-    $dIngresos = $delta($actual['ingresos'], $anterior['ingresos']);
-    $un        = $actual['utilidad_neta'];
-    $hayAvisos = $pendientes['borradores'] > 0 || $pendientes['cantidad'] > 0;
 @endphp
 
-<div class="card mb-4" style="background:var(--primary); border:none; box-shadow:var(--shadow-md);">
-    <div class="card-body p-4">
-        <div class="row g-4 align-items-center">
-
-            <div class="col-lg-4">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                    <span style="width:22px; height:2px; background:var(--oro); display:inline-block;"></span>
-                    <span style="font-size:.72rem; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:var(--oro);">
-                        Utilidad neta de {{ $nombreMes }}
-                    </span>
-                </div>
-                <div style="font-family:Georgia,serif; font-size:2.7rem; font-weight:700; line-height:1; letter-spacing:-.015em; color:#fff; font-variant-numeric:tabular-nums;">
-                    {{ $un < 0 ? '−' : '' }}Bs {{ number_format(abs($un), 2) }}
-                </div>
-                <div class="mt-2" style="font-size:.82rem; color:#9db2ca;">
-                    {{ $un >= 0 ? 'El negocio dio ganancia' : 'El negocio dio pérdida' }}
-                </div>
-            </div>
-
-            <div class="col-lg-{{ $hayAvisos ? 4 : 8 }}">
-                <div class="d-flex flex-wrap gap-4 ps-lg-4" style="border-left:1px solid rgba(255,255,255,.10);">
-                    <div>
-                        <div style="font-size:.72rem; color:#9db2ca;">Margen bruto</div>
-                        <div class="mt-1" style="font-size:1.35rem; font-weight:700; color:#fff; line-height:1; font-variant-numeric:tabular-nums;">
-                            {{ $actual['margen_bruto'] }}%
-                        </div>
-                    </div>
-                    <div>
-                        <div style="font-size:.72rem; color:#9db2ca;">Margen neto</div>
-                        <div class="mt-1" style="font-size:1.35rem; font-weight:700; color:#fff; line-height:1; font-variant-numeric:tabular-nums;">
-                            {{ $actual['margen_neto'] }}%
-                        </div>
-                    </div>
-                    <div>
-                        <div style="font-size:.72rem; color:#9db2ca;">Ingresos</div>
-                        <div class="mt-1" style="font-size:1.35rem; font-weight:700; color:#fff; line-height:1; font-variant-numeric:tabular-nums;">
-                            Bs {{ number_format($actual['ingresos'], 2) }}
-                        </div>
-                    </div>
-                    @if($dUtilidad !== null)
-                    <div>
-                        <div style="font-size:.72rem; color:#9db2ca;">Vs. mes anterior</div>
-                        <div class="mt-1 d-inline-flex align-items-center gap-1"
-                             style="font-size:.86rem; font-weight:600; padding:4px 9px; border-radius:5px;
-                                    background:{{ $dUtilidad >= 0 ? 'rgba(34,197,94,.16)' : 'rgba(239,68,68,.18)' }};
-                                    color:{{ $dUtilidad >= 0 ? '#86efac' : '#fca5a5' }};">
-                            <i class="fas fa-arrow-{{ $dUtilidad >= 0 ? 'up' : 'down' }}" style="font-size:.7rem;"></i>
-                            {{ number_format(abs($dUtilidad), 1) }}%
-                        </div>
-                    </div>
-                    @endif
-                </div>
-            </div>
-
-            @if($hayAvisos)
-            <div class="col-lg-4">
-                <div class="d-flex flex-column gap-2 ps-lg-4" style="border-left:1px solid rgba(255,255,255,.10);">
-                    @if($pendientes['borradores'] > 0)
-                        <div class="d-flex align-items-start gap-2">
-                            <span class="rounded-circle flex-shrink-0 mt-1" style="width:7px; height:7px; background:var(--oro);"></span>
-                            <span style="font-size:.79rem; color:#c7d6e6; line-height:1.45;">
-                                {{ $pendientes['borradores'] }} planilla(s) en borrador — los sueldos pueden cambiar al cerrarlas.
-                                <a href="{{ route('planillas.index') }}" style="color:var(--oro-claro);">Revisar</a>
-                            </span>
-                        </div>
-                    @endif
-                    @if($pendientes['cantidad'] > 0)
-                        <div class="d-flex align-items-start gap-2">
-                            <span class="rounded-circle flex-shrink-0 mt-1"
-                                  style="width:7px; height:7px; background:{{ $pendientes['vencidos'] > 0 ? '#fca5a5' : 'var(--oro)' }};"></span>
-                            <span style="font-size:.79rem; color:#c7d6e6; line-height:1.45;">
-                                Bs {{ number_format($pendientes['gastos'], 2) }} en gastos sin pagar
-                                @if($pendientes['vencidos'] > 0)
-                                    ({{ $pendientes['vencidos'] }} vencido(s))
-                                @endif
-                                — todavía no restan.
-                                <a href="{{ route('gastos-pagos.index', ['year'=>$year,'month'=>$month]) }}" style="color:var(--oro-claro);">Ver gastos</a>
-                            </span>
-                        </div>
-                    @endif
-                </div>
-            </div>
-            @endif
-
-        </div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <x-stat-card label="Ingresos" :value="'Bs '.number_format($actual['ingresos'], 2)"
+                     icon="arrow-trend-up" variant="success"
+                     :sub="$actual['num_ventas'].' venta(s) · ticket Bs '.number_format($actual['ticket_promedio'], 2)" />
+    </div>
+    <div class="col-6 col-lg-3">
+        <x-stat-card label="Egresos totales" :value="'Bs '.number_format($actual['egresos_total'], 2)"
+                     icon="arrow-trend-down" variant="danger"
+                     sub="Insumos + mano de obra + gastos fijos" />
+    </div>
+    <div class="col-6 col-lg-3">
+        <x-stat-card label="Utilidad neta"
+                     :value="'Bs '.number_format($actual['utilidad_neta'], 2)"
+                     icon="sack-dollar"
+                     :variant="$actual['utilidad_neta'] >= 0 ? 'primary' : 'danger'"
+                     :sub="$actual['utilidad_neta'] >= 0 ? 'El negocio dio ganancia' : 'El negocio dio pérdida'" />
+    </div>
+    <div class="col-6 col-lg-3">
+        <x-stat-card label="Margen neto" :value="$actual['margen_neto'].'%'"
+                     icon="percent"
+                     :variant="$actual['margen_neto'] >= 15 ? 'success' : ($actual['margen_neto'] >= 0 ? 'warning' : 'danger')"
+                     :sub="'Margen bruto: '.$actual['margen_bruto'].'%'" />
     </div>
 </div>
 
