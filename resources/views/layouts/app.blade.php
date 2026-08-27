@@ -724,6 +724,18 @@
                     <span>Ventas</span>
                 </a>
             </li>
+            @else
+            {{-- Quien puede vender pero no consultar el historial entra directo
+                 al formulario: sin esta entrada se quedaría sin acceso a su
+                 propia pantalla de trabajo. --}}
+            @can('crear-ventas')
+            <li>
+                <a href="{{ route('ventas.create') }}" class="{{ request()->routeIs('ventas.*') ? 'active' : '' }}">
+                    <i class="fas fa-cart-shopping"></i>
+                    <span>Nueva venta</span>
+                </a>
+            </li>
+            @endcan
             @endcan
 
             @can('ver-almacenes')

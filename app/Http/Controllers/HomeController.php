@@ -26,7 +26,11 @@ class HomeController extends Controller
         // el cajero llega acá por la redirección del login, y verse rebotado
         // con "no autorizado" al entrar al sistema no ayuda a nadie.
         if (!Auth::user()->can('ver-dashboard')) {
-            return redirect()->route('ventas.index');
+            // Al listado solo si puede verlo; el cajero va directo a registrar
+            // una venta, que es su pantalla de trabajo.
+            return Auth::user()->can('ver-ventas')
+                ? redirect()->route('ventas.index')
+                : redirect()->route('ventas.create');
         }
 
         // Si es cajero, mostrar solo su información
