@@ -16,13 +16,24 @@ class DetalleVenta extends Model
         'producto_id',
         'cantidad',
         'precio_unitario',
+        'costo_unitario',
         'subtotal',
     ];
 
     protected $casts = [
         'precio_unitario' => 'decimal:2',
+        // Costo congelado al vender: se copia del producto en el momento de
+        // la venta y no se recalcula nunca. Si mañana sube la harina, esta
+        // venta sigue mostrando lo que realmente costó.
+        'costo_unitario' => 'decimal:4',
         'subtotal' => 'decimal:2',
     ];
+
+    /** Lo que costó lo vendido en esta línea. */
+    public function getCostoTotalAttribute(): float
+    {
+        return round((float) $this->cantidad * (float) $this->costo_unitario, 2);
+    }
 
     // Relación: Un detalle pertenece a una venta
     public function venta()

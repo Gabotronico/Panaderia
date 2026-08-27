@@ -112,6 +112,8 @@ Route::middleware('auth')->group(function () {
 
     // Resumen financiero consolidado
     Route::get('finanzas', [FinanzaController::class, 'index'])->name('finanzas.index');
+    // Estado de resultados del mes como documento entregable
+    Route::get('finanzas/estado-resultados', [FinanzaController::class, 'estadoResultados'])->name('finanzas.estado-resultados');
 
     // Rutas de Gastos Fijos
     Route::resource('gastos-fijos', GastoFijoController::class)->except(['show']);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\CalculaResultado;
 use App\Models\Producto;
 use App\Models\Insumo;
 use App\Models\Venta;
@@ -15,6 +16,11 @@ use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
+    // Mismo cálculo de costo de ventas, venta sin costo y descuadre de caja
+    // que usa Finanzas. Compartir las consultas es lo que evita que los dos
+    // tableros vuelvan a mostrar utilidades distintas del mismo mes.
+    use CalculaResultado;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -159,12 +165,13 @@ class HomeController extends Controller
 
             $gastosDelMes = \App\Models\GastoPago::where('periodo', $periodoMes)->get();
 
-            // Utilidad del período filtrado: ventas − insumos − gastos
-            // variables − sueldos − gastos fijos pagados. Mismo criterio que
-            // Finanzas, para que los dos tableros no den números distintos:
-            // solo las planillas pagadas cuentan como salida de plata y se
-            // imputan al mes en que ARRANCA su período. Los límites van como
-            // 'Y-m-d' porque la columna guarda el día sin hora.
+            // Utilidad del período filtrado: ventas − costo de lo vendido −
+            // gastos variables − sueldos − gastos fijos pagados ± descuadre de
+            // caja. Mismo criterio que Finanzas, para que los dos tableros no
+            // den números distintos: solo las planillas pagadas cuentan como
+            // salida de plata y se imputan al mes en que ARRANCA su período.
+            // Los límites van como 'Y-m-d' porque la columna guarda el día sin
+            // hora.
             $planillasPeriodo = (float) \App\Models\Planilla::where('estado', 'pagada')
                 ->whereBetween('periodo_inicio', [
                     $inicio->toDateString(),
@@ -177,6 +184,26 @@ class HomeController extends Controller
             $fijosPeriodo = (float) \App\Models\GastoPago::where('estado', 'pagado')
                 ->whereBetween('periodo', [$inicio->format('Y-m'), $fin->format('Y-m')])
                 ->sum('monto_real');
+
+            // COSTO DE VENTAS, no compras. Comprar insumo mueve plata al
+            // inventario y no es un gasto del mes; lo que resta del resultado
+            // es lo que costó producir lo que efectivamente se vendió, con el
+            // costo congelado en cada detalle de venta. Las compras se siguen
+            // mostrando arriba, pero como dato de flujo, no de resultado.
+            $costoVentasPeriodo = $this->costoDeVentas($desdeHora, $hastaHora);
+
+            // Cuánta venta del período entró sin costo detrás (ventas directas
+            // y detalles con costo 0). Se muestra junto al resultado: si es
+            // alto, la utilidad se ve mejor de lo que es.
+            $sinCostoPeriodo = $this->ventasSinCostoConocido($desdeHora, $hastaHora);
+
+            // Faltante (−) o sobrante (+) de los cortes cerrados del período.
+            // Es plata que entró como venta y no aparece: sin esto el
+            // resultado la contaba como si estuviera.
+            $descuadreCaja = $this->diferenciasDeCaja(
+                $inicio->toDateString(),
+                $fin->toDateString()
+            );
 
             $operacion = [
                 'empleados_activos'  => $empleadosActivos,
@@ -194,14 +221,23 @@ class HomeController extends Controller
                 'adelantos_pend'     => (float) \App\Models\Adelanto::whereNull('planilla_id')->sum('monto'),
 
                 // La utilidad se calcula sobre el período filtrado, para que
-                // acompañe a lo que muestran las tarjetas de arriba.
+                // acompañe a lo que muestran las tarjetas de arriba. Tiene que
+                // dar EXACTAMENTE lo mismo que 'utilidad_neta' de Finanzas
+                // para el mismo mes; si alguna vez difieren, uno de los dos
+                // está mal.
                 'utilidad_mes'       => round(
-                    $ventasPeriodo - $totalGastoMes - $totalVariables
-                    - $planillasPeriodo - $fijosPeriodo,
+                    $ventasPeriodo - $costoVentasPeriodo - $totalVariables
+                    - $planillasPeriodo - $fijosPeriodo + $descuadreCaja,
                     2
                 ),
+                'costo_ventas'       => round($costoVentasPeriodo, 2),
                 'planillas_periodo'  => round($planillasPeriodo, 2),
                 'fijos_periodo'      => round($fijosPeriodo, 2),
+                'descuadre_caja'     => round($descuadreCaja, 2),
+                'venta_sin_costo'    => round($sinCostoPeriodo, 2),
+                'venta_sin_costo_pct' => $ventasPeriodo > 0
+                    ? round($sinCostoPeriodo / $ventasPeriodo * 100, 1)
+                    : 0.0,
             ];
         }
 

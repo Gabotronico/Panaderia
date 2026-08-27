@@ -87,6 +87,11 @@ class ProduccionController extends Controller
                 'user_id'       => Auth::id(),
             ]);
 
+            // Lo que costó la corrida, a precio congelado del día. Es la plata
+            // que se convierte en producto terminado: de acá sale el costo que
+            // después va a llevar cada unidad.
+            $costoCorrida = 0.0;
+
             foreach ($insumos as $id => $cantidad) {
                 $insumo = $registros[$id];
 
@@ -97,12 +102,54 @@ class ProduccionController extends Controller
                     'costo_unitario' => $insumo->costo_unitario,
                 ]);
 
+                $costoCorrida += $cantidad * (float) $insumo->costo_unitario;
+
                 $insumo->decrement('cantidad_stock', $cantidad);
             }
 
+            // Criterio de reparto: si la corrida saca varios productos
+            // distintos, el costo de los insumos se reparte PROPORCIONALMENTE
+            // A LAS UNIDADES de cada uno. No es exacto —una empanada lleva más
+            // relleno que un pan— pero el sistema no guarda receta por
+            // producto, así que no hay dato para hacer algo mejor. Es simple,
+            // reproducible y defendible ante el contador; el día que exista
+            // receta por producto se puede refinar sin tocar nada más, porque
+            // el costo ya queda congelado en la venta.
+            $unidadesTotales = array_sum($productos);
+            $costoPorUnidad  = $unidadesTotales > 0 ? $costoCorrida / $unidadesTotales : 0.0;
+
             foreach ($productos as $id => $cantidad) {
                 $produccion->productos()->attach($id, ['cantidad' => $cantidad]);
-                Producto::whereKey($id)->increment('stock', $cantidad);
+
+                // Se lee el producto dentro de la transacción para promediar
+                // contra el stock real de este instante, no contra uno leído
+                // antes de validar.
+                $producto    = Producto::whereKey($id)->first();
+                $stockPrevio = (int) $producto->stock;
+                $costoPrevio = (float) $producto->costo_unitario;
+
+                // Promedio ponderado: el pan de ayer y el de hoy se mezclan en
+                // el mostrador y no hay forma de saber cuál se vende primero,
+                // así que el costo también se mezcla.
+                //
+                //   nuevo = (stock_previo × costo_previo + unidades × costo_corrida)
+                //           / (stock_previo + unidades)
+                //
+                // Con stock previo en 0 —o en negativo por un descuadre— no hay
+                // nada que promediar: manda el costo de esta corrida. Promediar
+                // contra un stock negativo daría un costo sin sentido, incluso
+                // negativo.
+                $nuevoCosto = $stockPrevio > 0
+                    ? ($stockPrevio * $costoPrevio + $cantidad * $costoPorUnidad) / ($stockPrevio + $cantidad)
+                    : $costoPorUnidad;
+
+                // Un solo save() para stock y costo: si se hiciera increment()
+                // por un lado y update() por el otro, un fallo entre medio
+                // dejaría el stock nuevo con el costo viejo.
+                $producto->forceFill([
+                    'stock'          => $stockPrevio + (int) $cantidad,
+                    'costo_unitario' => round($nuevoCosto, 4),
+                ])->save();
             }
 
             return $produccion;
@@ -124,6 +171,20 @@ class ProduccionController extends Controller
      *
      * Se bloquea si los productos ya se vendieron: descontarlos dejaría el
      * stock en negativo y el depósito diría algo que no es cierto.
+     *
+     * EL COSTO DEL PRODUCTO NO SE REVIERTE, a propósito. Deshacer el promedio
+     * ponderado hacia atrás es incorrecto: entre esta corrida y la anulación
+     * pudo haber otras corridas que ya promediaron sobre este costo, y sobre
+     * todo pudo haber VENTAS que congelaron este costo en su detalle. Volver
+     * atrás el costo del producto no cambiaría esas ventas —está bien que no
+     * las cambie— pero dejaría el producto con un costo que no corresponde ni
+     * al de antes ni al de ahora.
+     *
+     * Lo que queda es un costo levemente contaminado por una corrida que no
+     * existió. Se corrige solo: la próxima producción vuelve a promediar y el
+     * efecto se diluye. Y como el stock producido no se vendió (si se hubiera
+     * vendido, la anulación estaría bloqueada), la corrida anulada no llegó a
+     * ensuciar ningún costo de ventas.
      */
     public function destroy(Produccion $produccion)
     {
