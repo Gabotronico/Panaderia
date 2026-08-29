@@ -106,7 +106,11 @@ function autoFin() {
     const tipo = document.getElementById('tipoPlanilla').value;
     const d = new Date(inicio + 'T00:00:00');
     if (tipo === 'semanal') {
-        d.setDate(d.getDate() + 6);
+        // La semana laboral es lunes a sábado: +5 días, no +6. Sumando 6 el
+        // período cerraba en domingo, que no se trabaja, y hacía que una
+        // semana como la del lun 26/10 al sáb 31/10 figurara terminando el
+        // 01/11 y se pagara "en noviembre".
+        d.setDate(d.getDate() + 5);
     } else {
         d.setMonth(d.getMonth() + 1);
         d.setDate(d.getDate() - 1);

@@ -20,6 +20,36 @@ class VentaController extends Controller
         $this->middleware('permission:crear-ventas')->only(['create', 'store']);
         $this->middleware('permission:editar-ventas')->only(['edit', 'update']);
         $this->middleware('permission:eliminar-ventas')->only(['destroy']);
+
+        // Sin caja abierta no se puede vender: la venta tiene que caer dentro
+        // de un turno para que después se pueda arquear contra lo que hay en
+        // el cajón. Una venta sin corte queda fuera de todo cierre.
+        $this->middleware('caja.abierta')->only([
+            'create', 'store', 'crearDirecta', 'guardarDirecta',
+        ]);
+    }
+
+    /**
+     * A dónde volver después de una operación sobre ventas.
+     *
+     * El cajero no tiene permiso para ver el listado, así que mandarlo ahí lo
+     * dejaría contra un 403 justo después de registrar bien una venta.
+     */
+    private function rutaDeVuelta(): string
+    {
+        return Auth::user()?->can('ver-ventas') ? 'ventas.index' : 'ventas.create';
+    }
+
+    /**
+     * Adónde ir después de registrar una venta: al comprobante si el usuario
+     * puede verlo, y si no de vuelta al formulario para cargar la siguiente,
+     * que es justo lo que va a querer hacer el cajero.
+     */
+    private function redirigirTrasVenta(Venta $venta)
+    {
+        return Auth::user()?->can('ver-ventas')
+            ? redirect()->route('ventas.show', $venta->id)
+            : redirect()->route('ventas.create');
     }
 
     public function index(Request $request)
@@ -54,7 +84,7 @@ class VentaController extends Controller
         $almacen = $user->almacen;
 
         if (!$user->esAdministrador() && !$almacen) {
-            return redirect()->route('ventas.index')
+            return redirect()->route($this->rutaDeVuelta())
                 ->with('error', 'No tienes un almacén asignado. Contacta al administrador.');
         }
 
@@ -206,7 +236,7 @@ class VentaController extends Controller
 
             DB::commit();
 
-            return redirect()->route('ventas.show', $venta->id)
+            return $this->redirigirTrasVenta($venta)
                 ->with('success', 'Venta registrada exitosamente.');
 
         } catch (\Exception $e) {
@@ -237,7 +267,7 @@ class VentaController extends Controller
         }
 
         if ($venta->estado === 'cancelada') {
-            return redirect()->route('ventas.index')
+            return redirect()->route($this->rutaDeVuelta())
                 ->with('error', 'No se puede editar una venta cancelada.');
         }
 
@@ -274,7 +304,7 @@ class VentaController extends Controller
             'estado'        => $request->estado,
         ]);
 
-        return redirect()->route('ventas.show', $venta->id)
+        return $this->redirigirTrasVenta($venta)
             ->with('success', 'Venta actualizada exitosamente.');
     }
 
@@ -285,9 +315,9 @@ class VentaController extends Controller
                 $detalle->producto->increment('stock', $detalle->cantidad);
             }
             $venta->delete();
-            return redirect()->route('ventas.index')->with('success', 'Venta eliminada.');
+            return redirect()->route($this->rutaDeVuelta())->with('success', 'Venta eliminada.');
         } catch (\Exception $e) {
-            return redirect()->route('ventas.index')->with('error', 'Error al eliminar la venta.');
+            return redirect()->route($this->rutaDeVuelta())->with('error', 'Error al eliminar la venta.');
         }
     }
 
@@ -304,7 +334,7 @@ class VentaController extends Controller
             : null;
 
         if (!$user->esAdministrador() && !$almacen) {
-            return redirect()->route('ventas.index')
+            return redirect()->route($this->rutaDeVuelta())
                 ->with('error', 'No tienes un almacén asignado. Contacta al administrador.');
         }
 
@@ -347,7 +377,7 @@ class VentaController extends Controller
             ?? (isset($datos['almacen_id']) ? Almacen::find($datos['almacen_id']) : null);
 
         if (!$user->esAdministrador() && !$almacen) {
-            return redirect()->route('ventas.index')
+            return redirect()->route($this->rutaDeVuelta())
                 ->with('error', 'No tienes un almacén asignado. Contacta al administrador.');
         }
 
@@ -403,7 +433,7 @@ class VentaController extends Controller
 
         $total = number_format($efectivo + $qr, 2);
 
-        return redirect()->route('ventas.index')
+        return redirect()->route($this->rutaDeVuelta())
             ->with('success', "Venta directa registrada por Bs {$total} ({$detalle}). No se descontó stock.");
     }
 }

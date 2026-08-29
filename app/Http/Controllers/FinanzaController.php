@@ -67,10 +67,11 @@ class FinanzaController extends Controller
             'gastos'     => (float) $sinPagar->sum('monto_estimado'),
             'cantidad'   => $sinPagar->count(),
             'vencidos'   => $sinPagar->where('estado', 'vencido')->count(),
-            // Mismo criterio que el gasto: la planilla pertenece al mes en que
-            // arranca su período.
+            // Una planilla en borrador todavía no tiene fecha de pago, así que
+            // se la anticipa por el cierre del período: es el sábado en que se
+            // va a pagar, el mismo día que después definirá su mes contable.
             'borradores' => Planilla::where('estado', 'borrador')
-                                ->whereBetween('periodo_inicio', [$inicio->toDateString(), $fin->toDateString()])
+                                ->whereBetween('periodo_fin', [$inicio->toDateString(), $fin->toDateString()])
                                 ->count(),
         ];
 
@@ -124,13 +125,14 @@ class FinanzaController extends Controller
         $costosDirectos = $compras + $gastosVariables;
 
         // ── GASTOS OPERATIVOS ───────────────────────────────────────
-        // La planilla se imputa al mes en que ARRANCA su período: una semana
-        // que va del 27/07 al 01/08 se trabajó casi toda en julio, así que
-        // cargarla a agosto por terminar ahí distorsionaba los dos meses.
+        // La planilla se imputa al mes en que SE PAGÓ, no al que arranca ni al
+        // que termina el período: criterio de caja, el sueldo pesa el día que
+        // la plata sale del cajón. Así una semana de lunes 31/08 a sábado
+        // 05/09 es costo de septiembre, que es cuando se cobró.
         // Y solo pesa como gasto cuando ya se pagó: mientras está en borrador
         // o cerrada es un cálculo, no plata que salió de la caja.
         $planillas = (float) Planilla::where('estado', 'pagada')
-            ->whereBetween('periodo_inicio', [$desde, $hasta])
+            ->whereBetween('fecha_pago', [$desde, $hasta])
             ->sum('total_general');
 
         // Se imputa al período al que corresponde el gasto, no a la fecha en que

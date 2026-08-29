@@ -26,7 +26,11 @@ class HomeController extends Controller
         // el cajero llega acá por la redirección del login, y verse rebotado
         // con "no autorizado" al entrar al sistema no ayuda a nadie.
         if (!Auth::user()->can('ver-dashboard')) {
-            return redirect()->route('ventas.index');
+            // Al listado solo si puede verlo; el cajero va directo a registrar
+            // una venta, que es su pantalla de trabajo.
+            return Auth::user()->can('ver-ventas')
+                ? redirect()->route('ventas.index')
+                : redirect()->route('ventas.create');
         }
 
         // Si es cajero, mostrar solo su información
@@ -163,10 +167,10 @@ class HomeController extends Controller
             // variables − sueldos − gastos fijos pagados. Mismo criterio que
             // Finanzas, para que los dos tableros no den números distintos:
             // solo las planillas pagadas cuentan como salida de plata y se
-            // imputan al mes en que ARRANCA su período. Los límites van como
-            // 'Y-m-d' porque la columna guarda el día sin hora.
+            // imputan al mes en que SE PAGARON. Los límites van como 'Y-m-d'
+            // porque la columna guarda el día sin hora.
             $planillasPeriodo = (float) \App\Models\Planilla::where('estado', 'pagada')
-                ->whereBetween('periodo_inicio', [
+                ->whereBetween('fecha_pago', [
                     $inicio->toDateString(),
                     $fin->toDateString(),
                 ])->sum('total_general');

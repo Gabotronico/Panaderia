@@ -49,6 +49,21 @@ class CorteCaja extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * La caja que el usuario tiene abierta, si tiene alguna.
+     *
+     * No se limita al día de hoy a propósito: se puede abrir una caja con
+     * fecha pasada para cargar en diferido lo vendido, por ejemplo, el
+     * domingo, y esa caja tiene que seguir aceptando ventas.
+     */
+    public static function abiertaDe(int $userId): ?self
+    {
+        return static::where('user_id', $userId)
+            ->where('estado', 'abierto')
+            ->orderByDesc('fecha_corte')
+            ->first();
+    }
+
     /** Usuario que realizó el cierre — puede no ser el dueño del turno. */
     public function cerradoPor()
     {

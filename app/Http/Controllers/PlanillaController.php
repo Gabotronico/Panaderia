@@ -7,6 +7,7 @@ use App\Models\Empleado;
 use App\Models\Planilla;
 use App\Models\PlanillaEmpleado;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -129,13 +130,48 @@ class PlanillaController extends Controller
         return redirect()->route('planillas.show', $planilla)->with('success', 'Planilla cerrada.');
     }
 
-    public function pagar(Planilla $planilla)
+    /**
+     * Marca la planilla como pagada y registra QUÉ DÍA salió la plata.
+     *
+     * La fecha de pago es la que define en qué mes pesa el sueldo, no el
+     * período trabajado. Una semana de lunes 31/08 a sábado 05/09 se paga el
+     * sábado, así que es costo de septiembre aunque haya empezado en agosto.
+     *
+     * Por defecto se propone el cierre del período (el sábado de pago), pero
+     * el administrador puede corregirlo si la plata salió otro día.
+     */
+    public function pagar(Request $request, Planilla $planilla)
     {
         if ($planilla->estado !== 'cerrada') {
             return redirect()->back()->with('error', 'La planilla debe estar cerrada antes de marcarla como pagada.');
         }
-        $planilla->update(['estado' => 'pagada']);
-        return redirect()->route('planillas.show', $planilla)->with('success', 'Planilla marcada como pagada.');
+
+        $request->validate([
+            'fecha_pago' => [
+                'nullable',
+                'date',
+                'after_or_equal:' . $planilla->periodo_inicio->toDateString(),
+                'before_or_equal:' . now()->toDateString(),
+            ],
+        ], [
+            'fecha_pago.after_or_equal'  => 'El pago no puede ser anterior al inicio del período ('
+                                            . $planilla->periodo_inicio->format('d/m/Y') . ').',
+            'fecha_pago.before_or_equal' => 'No se puede registrar un pago con fecha futura.',
+        ]);
+
+        $fechaPago = $request->filled('fecha_pago')
+            ? Carbon::parse($request->fecha_pago)
+            : $planilla->fecha_pago_sugerida;
+
+        $planilla->update([
+            'estado'     => 'pagada',
+            'fecha_pago' => $fechaPago->toDateString(),
+        ]);
+
+        return redirect()->route('planillas.show', $planilla)->with('success',
+            'Planilla marcada como pagada el ' . $fechaPago->format('d/m/Y')
+            . '. El gasto se imputa a ' . ucfirst($fechaPago->translatedFormat('F \d\e Y')) . '.'
+        );
     }
 
     /**
