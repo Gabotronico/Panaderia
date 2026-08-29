@@ -743,12 +743,21 @@ class GenerarDocumentacion extends Command
             ['planillas.tipo',                        'mensual | semanal',           'Modalidad que agrupa'],
             ['planillas.periodo_inicio / fin',        'date',                        'Rango de días que cubre'],
             ['planillas.estado',                      'borrador | cerrada | pagada', 'Etapa del proceso'],
+            ['planillas.fecha_pago',                  'date',                        'Día en que se entregaron los sueldos'],
             ['planillas.total_general',               'decimal(12,2)',               'Suma a pagar'],
             ['planilla_empleado.dias_trabajados',     'entero',                      'Días presentes más tardanzas'],
             ['planilla_empleado.salario_bruto',       'decimal(10,2)',               'Ganado antes de descuentos'],
             ['planilla_empleado.adelantos_descontados','decimal(10,2)',              'Adelantos aplicados'],
             ['planilla_empleado.total_neto',          'decimal(10,2)',               'Monto final a entregar'],
         ]);
+
+        $this->nota('En qué mes pesa el sueldo',
+            'El costo de una planilla se imputa al mes de su «fecha_pago», no al del período ' .
+            'trabajado. Es un criterio de caja: el sueldo pesa el día que la plata sale del ' .
+            'cajón. Importa cuando una semana cruza dos meses: la del lunes 31 de agosto al ' .
+            'sábado 5 de septiembre se paga ese sábado, así que es costo de septiembre aunque ' .
+            'haya empezado en agosto. Solo las planillas pagadas entran al resumen financiero: ' .
+            'mientras están en borrador o cerradas son un cálculo, no un egreso.');
 
         $this->seccion->addTitle('adelantos', 3);
         $this->tablaCampos([

@@ -17,10 +17,29 @@
             </form>
             @endif
             @if($planilla->estado === 'cerrada')
+            {{-- Se pregunta el día de pago en lugar de asumir hoy porque esa
+                 fecha es la que decide en qué mes pesa el sueldo en Finanzas.
+                 Viene propuesto el cierre del período, que es el sábado de pago. --}}
             <form action="{{ route('planillas.pagar', $planilla) }}" method="POST"
                   onsubmit="return confirm('¿Marcar planilla como PAGADA?')">
                 @csrf
-                <button class="btn btn-success"><i class="fas fa-money-bill-wave me-1"></i>Marcar Pagada</button>
+                <div class="input-group">
+                    <span class="input-group-text" title="Día en que salió la plata">
+                        <i class="fas fa-calendar-day"></i>
+                    </span>
+                    <input type="date" name="fecha_pago"
+                           class="form-control @error('fecha_pago') is-invalid @enderror"
+                           style="max-width:10.5rem;"
+                           value="{{ old('fecha_pago', $planilla->fecha_pago_sugerida->format('Y-m-d')) }}"
+                           min="{{ $planilla->periodo_inicio->format('Y-m-d') }}"
+                           max="{{ now()->format('Y-m-d') }}" required>
+                    <button class="btn btn-success">
+                        <i class="fas fa-money-bill-wave me-1"></i>Marcar Pagada
+                    </button>
+                    @error('fecha_pago')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                </div>
             </form>
             @endif
             <a href="{{ route('planillas.pdf', $planilla) }}" class="btn btn-danger" target="_blank">
@@ -110,6 +129,13 @@
                     $el = ['borrador'=>'Borrador','cerrada'=>'Cerrada','pagada'=>'Pagada'];
                 @endphp
                 <span class="badge bg-{{ $eb[$planilla->estado] }} fs-6">{{ $el[$planilla->estado] }}</span>
+                @if($planilla->estado === 'pagada' && $planilla->fecha_pago)
+                    {{-- El mes de esta fecha es el que carga el gasto en Finanzas. --}}
+                    <div class="text-muted mt-1" style="font-size:.72rem;">
+                        Pagada el {{ $planilla->fecha_pago->format('d/m/Y') }}
+                        &middot; cuenta en {{ ucfirst($planilla->fecha_pago->translatedFormat('F')) }}
+                    </div>
+                @endif
             </div>
         </div>
     </div>

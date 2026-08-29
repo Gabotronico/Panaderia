@@ -167,10 +167,10 @@ class HomeController extends Controller
             // variables − sueldos − gastos fijos pagados. Mismo criterio que
             // Finanzas, para que los dos tableros no den números distintos:
             // solo las planillas pagadas cuentan como salida de plata y se
-            // imputan al mes en que ARRANCA su período. Los límites van como
-            // 'Y-m-d' porque la columna guarda el día sin hora.
+            // imputan al mes en que SE PAGARON. Los límites van como 'Y-m-d'
+            // porque la columna guarda el día sin hora.
             $planillasPeriodo = (float) \App\Models\Planilla::where('estado', 'pagada')
-                ->whereBetween('periodo_inicio', [
+                ->whereBetween('fecha_pago', [
                     $inicio->toDateString(),
                     $fin->toDateString(),
                 ])->sum('total_general');
