@@ -28,3 +28,5 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/nativephp/electron/dist
+.tmp-asar-restore-*
