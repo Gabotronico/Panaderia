@@ -29,10 +29,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/setup', [SetupController::class, 'store'])->name('setup.store');
 });
 
-// Ruta pública
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+// Ruta pública. Route::redirect en lugar de closure para que route:cache funcione.
+Route::redirect('/', '/login');
 
 // Rutas que requieren autenticación
 Route::middleware('auth')->group(function () {

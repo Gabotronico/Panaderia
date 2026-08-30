@@ -36,6 +36,16 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             'post_max_size' => '520M',
             'upload_max_filesize' => '512M',
             'max_execution_time' => '300',
+
+            'opcache.enable' => '1',
+            'opcache.enable_cli' => '1',
+            'opcache.memory_consumption' => '192',
+            'opcache.max_accelerated_files' => '20000',
+            // En producción el código empaquetado nunca cambia: sin la revalidación
+            // por petición se evita un stat() por cada archivo incluido.
+            // En desarrollo (APP_ENV=local vía `native:run`) se mantiene en 1 para ver los cambios.
+            'opcache.validate_timestamps' => env('APP_ENV') === 'production' ? '0' : '1',
+            'opcache.revalidate_freq' => '2',
         ];
     }
 }
