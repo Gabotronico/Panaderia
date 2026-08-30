@@ -49,8 +49,11 @@ class SQLiteCompatibilityTest extends TestCase
         ]));
         $this->assertFalse(Schema::hasColumn('empleados', 'factor_hora_extra'));
         $this->assertFalse(Schema::hasColumn('asistencias', 'horas_extra'));
-        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'horas_extra'));
-        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'monto_horas_extra'));
+        // Las horas extra vuelven como carga manual (2026_08_17): el monto lo
+        // decide el administrador y por eso existe detalle_horas_extra.
+        $this->assertTrue(Schema::hasColumns('planilla_empleado', [
+            'horas_extra', 'monto_horas_extra', 'detalle_horas_extra',
+        ]));
         $this->assertFalse(Schema::hasColumn('planilla_empleado', 'descuento_tardanzas'));
 
         $this->assertSame(0, DB::table('cortes_caja')->sum('ventas_qr'));
@@ -71,7 +74,14 @@ class SQLiteCompatibilityTest extends TestCase
         $latenessDiscountRemoval = require database_path(
             'migrations/2026_07_31_100001_remove_descuento_tardanzas_from_planilla_empleado.php'
         );
+        $manualOvertime = require database_path(
+            'migrations/2026_08_17_100001_add_horas_extra_manuales_to_planilla_empleado.php'
+        );
 
+        // Se retrocede en orden inverso al cronológico: primero la migración
+        // más nueva. Si no, el down() de la remoción re-crearía columnas que
+        // la migración de horas extra manuales aún tiene.
+        $manualOvertime->down();
         $latenessDiscountRemoval->down();
         $overtimeRemoval->down();
         $scheduleMigration->down();
@@ -84,6 +94,7 @@ class SQLiteCompatibilityTest extends TestCase
         $this->assertTrue(Schema::hasColumns('planilla_empleado', [
             'horas_extra', 'monto_horas_extra', 'descuento_tardanzas',
         ]));
+        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'detalle_horas_extra'));
 
         $user = User::factory()->create();
         $register = CorteCaja::create([
@@ -103,6 +114,7 @@ class SQLiteCompatibilityTest extends TestCase
         $scheduleMigration->up();
         $overtimeRemoval->up();
         $latenessDiscountRemoval->up();
+        $manualOvertime->up();
 
         $this->assertTrue(Schema::hasColumns('cortes_caja', [
             'ventas_efectivo', 'ventas_qr', 'total_qr', 'diferencia_qr',
@@ -112,8 +124,9 @@ class SQLiteCompatibilityTest extends TestCase
         ]));
         $this->assertFalse(Schema::hasColumn('empleados', 'factor_hora_extra'));
         $this->assertFalse(Schema::hasColumn('asistencias', 'horas_extra'));
-        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'horas_extra'));
-        $this->assertFalse(Schema::hasColumn('planilla_empleado', 'monto_horas_extra'));
+        $this->assertTrue(Schema::hasColumns('planilla_empleado', [
+            'horas_extra', 'monto_horas_extra', 'detalle_horas_extra',
+        ]));
         $this->assertFalse(Schema::hasColumn('planilla_empleado', 'descuento_tardanzas'));
         $this->assertSame(
             75.0,
@@ -132,6 +145,16 @@ class SQLiteCompatibilityTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('Administrador');
         $this->actingAs($user);
+
+        // ventas.directa exige caja abierta: sin turno la ruta redirige a
+        // cortes.create y el recorrido terminaría en 302.
+        CorteCaja::create([
+            'user_id' => $user->id,
+            'fecha_corte' => now()->toDateString(),
+            'hora_apertura' => '08:00:00',
+            'monto_inicial' => 100,
+            'estado' => 'abierto',
+        ]);
 
         $period = [
             'fecha_inicio' => '2026-07-01',
