@@ -9,8 +9,20 @@ final class LegacyDesktopDataMigrator
 {
     private const LEGACY_DIRECTORY = 'panaderia-escritorio';
 
+    /**
+     * bootstrap/app.php se evalúa en cada petición; el chequeo ya no tiene
+     * nada que hacer después de la primera vez en la vida del proceso.
+     */
+    private static bool $revisado = false;
+
     public static function migrate(): void
     {
+        if (self::$revisado) {
+            return;
+        }
+
+        self::$revisado = true;
+
         if (! filter_var(getenv('NATIVEPHP_RUNNING') ?: false, FILTER_VALIDATE_BOOL)) {
             return;
         }

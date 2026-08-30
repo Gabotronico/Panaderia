@@ -9,7 +9,6 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,10 +29,8 @@ class AppServiceProvider extends ServiceProvider
         $this->prepareDesktopRuntime();
 
         try {
-            if (Schema::hasTable('app_settings')) {
-                config([
-                    'app.name' => AppSetting::read('business_name', config('app.name')),
-                ]);
+            if (($nombreNegocio = AppSetting::nombreEnCache()) !== null) {
+                config(['app.name' => $nombreNegocio]);
             }
         } catch (\Throwable) {
             // La base puede no existir todavía durante la instalación inicial.
@@ -49,11 +46,20 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
+    /**
+     * Los directorios no desaparecen mientras el proceso vive, y el proceso
+     * PHP de la app de escritorio atiende todas las peticiones de la sesión:
+     * basta con crearlos en la primera petición.
+     */
+    private static bool $directoriosPreparados = false;
+
     private function prepareDesktopRuntime(): void
     {
-        if (! config('nativephp-internal.running')) {
+        if (self::$directoriosPreparados || ! config('nativephp-internal.running')) {
             return;
         }
+
+        self::$directoriosPreparados = true;
 
         $directories = [
             storage_path('framework/cache/data'),
