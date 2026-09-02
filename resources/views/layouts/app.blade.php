@@ -727,12 +727,20 @@
             @else
             {{-- Quien puede vender pero no consultar el historial entra directo
                  al formulario: sin esta entrada se quedaría sin acceso a su
-                 propia pantalla de trabajo. --}}
+                 propia pantalla de trabajo. Se agregan las dos vías de venta
+                 porque la Directa solo tenía botón dentro del listado, que es
+                 justo la pantalla que este usuario no puede abrir. --}}
             @can('crear-ventas')
             <li>
-                <a href="{{ route('ventas.create') }}" class="{{ request()->routeIs('ventas.*') ? 'active' : '' }}">
+                <a href="{{ route('ventas.create') }}" class="{{ request()->routeIs('ventas.create') ? 'active' : '' }}">
                     <i class="fas fa-cart-shopping"></i>
                     <span>Nueva venta</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('ventas.directa') }}" class="{{ request()->routeIs('ventas.directa') ? 'active' : '' }}">
+                    <i class="fas fa-cash-register"></i>
+                    <span>Venta directa</span>
                 </a>
             </li>
             @endcan

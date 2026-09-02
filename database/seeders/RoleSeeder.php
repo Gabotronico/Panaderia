@@ -87,10 +87,14 @@ class RoleSeeder extends Seeder
         $cajeroRole = Role::firstOrCreate(['name' => 'Cajero']);
         // El cajero no ve el dashboard: son cifras de todo el negocio, no de
         // su turno. Al entrar cae directo en Ventas.
+        //
+        // Sin ver-ventas a propósito: registra ventas pero no consulta el
+        // historial (ver migración quitar_ver_ventas_al_cajero). Si esta
+        // lista lo volviera a incluir, una reinstalación o un reseed
+        // deshacía esa restricción sin que nadie lo pidiera.
         $cajeroRole->syncPermissions([
             'ver-categorias',
             'ver-productos',
-            'ver-ventas',
             'crear-ventas',
             'ver-cortes',
             'crear-cortes',

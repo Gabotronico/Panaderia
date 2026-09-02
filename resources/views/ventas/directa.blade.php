@@ -4,7 +4,9 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h4 class="mb-0"><i class="fas fa-cash-register me-2"></i>Registrar Venta Directa</h4>
-    <a href="{{ route('ventas.index') }}" class="btn btn-secondary">
+    {{-- Quien no puede ver el listado (el cajero) vuelve al formulario de venta
+         normal en su lugar, para no toparse con un 403. --}}
+    <a href="{{ auth()->user()->can('ver-ventas') ? route('ventas.index') : route('ventas.create') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left me-2"></i>Volver
     </a>
 </div>

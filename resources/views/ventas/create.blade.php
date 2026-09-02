@@ -203,7 +203,9 @@
                         <button type="submit" class="btn btn-success btn-lg" id="btn-finalizar" disabled>
                             <i class="fas fa-check me-2"></i>Finalizar Venta
                         </button>
-                        <a href="{{ route('ventas.index') }}" class="btn btn-secondary">
+                        {{-- Quien no puede ver el listado (el cajero) no tiene a
+                             dónde volver más que quedarse en el formulario. --}}
+                        <a href="{{ auth()->user()->can('ver-ventas') ? route('ventas.index') : route('ventas.create') }}" class="btn btn-secondary">
                             <i class="fas fa-times me-2"></i>Cancelar
                         </a>
                     </div>
