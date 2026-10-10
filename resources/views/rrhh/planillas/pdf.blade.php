@@ -352,7 +352,7 @@ body {
     </thead>
     <tbody>
         @forelse($planilla->detalles as $i => $det)
-        @php $diasEf = $det->dias_trabajados + ($det->dias_medio * 0.5); @endphp
+        @php $diasEf = $det->dias_efectivos; @endphp
         <tr>
             <td class="emp-num">{{ $i + 1 }}</td>
             <td class="izq">
@@ -367,7 +367,7 @@ body {
             <td class="c {{ $det->dias_tardanza > 0 ? 'n-tarde' : 'n-cero' }}">{{ $det->dias_tardanza ?: '—' }}</td>
             <td class="c {{ $det->dias_medio > 0 ? 'n-medio' : 'n-cero' }}">{{ $det->dias_medio ?: '—' }}</td>
             <td class="c {{ $det->dias_ausentes > 0 ? 'n-aus' : 'n-cero' }}">{{ $det->dias_ausentes ?: '—' }}</td>
-            <td class="c" style="font-weight:bold;">{{ number_format($diasEf, 1) }}</td>
+            <td class="c" style="font-weight:bold;">{{ number_format($diasEf, 2) }}</td>
 
             <td class="d">Bs {{ number_format($det->salario_bruto, 2) }}</td>
             @if($hayExtras)

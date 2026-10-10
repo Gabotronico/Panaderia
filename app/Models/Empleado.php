@@ -180,11 +180,17 @@ class Empleado extends Model
     /** Duración de la jornada según su horario; sin horario, la estándar. */
     public function getJornadaHorasAttribute(): float
     {
+        return round($this->jornada_minutos / 60, 2);
+    }
+
+    /** La jornada en minutos, sin el redondeo de jornada_horas. */
+    public function getJornadaMinutosAttribute(): int
+    {
         if (!$this->tiene_horario) {
-            return (float) config('nomina.horas_jornada');
+            return (int) round(config('nomina.horas_jornada') * 60);
         }
 
-        return round($this->minutosEntreHoras($this->hora_entrada, $this->hora_salida) / 60, 2);
+        return $this->minutosEntreHoras($this->hora_entrada, $this->hora_salida);
     }
 
     /**
@@ -195,13 +201,17 @@ class Empleado extends Model
      */
     public function calcularTardanza(?string $horaMarcada): int
     {
+        return max(0, $this->minutosDeAtraso($horaMarcada) - $this->tolerancia_minutos);
+    }
+
+    /** Minutos de atraso respecto a la entrada programada, sin tolerancia. */
+    public function minutosDeAtraso(?string $horaMarcada): int
+    {
         if (!$this->tiene_horario || !$horaMarcada) {
             return 0;
         }
 
-        $desfase = $this->desfaseMinutos($this->hora_entrada, $horaMarcada);
-
-        return max(0, $desfase - $this->tolerancia_minutos);
+        return max(0, $this->desfaseMinutos($this->hora_entrada, $horaMarcada));
     }
 
     /**

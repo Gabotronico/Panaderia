@@ -63,6 +63,14 @@ class Asistencia extends Model
      */
     public function getHorasTrabajadasAttribute(): ?float
     {
+        $minutos = $this->minutosTrabajados();
+
+        return $minutos === null ? null : round($minutos / 60, 2);
+    }
+
+    /** Minutos entre la entrada y la salida marcadas; null si falta alguna. */
+    public function minutosTrabajados(): ?int
+    {
         if (! $this->hora_entrada || ! $this->hora_salida) {
             return null;
         }
@@ -75,7 +83,40 @@ class Asistencia extends Model
             $salida->addDay();
         }
 
-        return round($entrada->diffInMinutes($salida) / 60, 2);
+        return (int) $entrada->diffInMinutes($salida);
+    }
+
+    /**
+     * Qué parte del día se le paga al empleado (0 a 1).
+     *
+     * Con entrada y salida marcadas manda el reloj: si cumplió su jornada se
+     * paga el día completo; si trabajó menos, solo las horas trabajadas.
+     * La tolerancia de entrada no se descuenta, igual que no cuenta como
+     * tardanza: con 10 minutos de tolerancia, llegar 5 tarde sigue siendo un
+     * día completo y llegar 20 tarde descuenta 10. Perdona solo el atraso al
+     * llegar, no el irse antes. Lo trabajado de más no suma: las horas extra
+     * las carga a mano el administrador.
+     *
+     * Sin alguno de los dos marcajes no hay cómo medir lo trabajado y se
+     * paga por estado: presente o tardanza, el día; medio día, la mitad.
+     */
+    public function fraccionDiaPagada(Empleado $empleado): float
+    {
+        if (! \in_array($this->estado, self::ESTADOS_TRABAJADOS, true)) {
+            return 0.0;
+        }
+
+        $trabajados = $this->minutosTrabajados();
+
+        if ($trabajados === null) {
+            return $this->estado === 'medio_dia' ? 0.5 : 1.0;
+        }
+
+        $jornada = $empleado->jornada_minutos;
+        $perdonados = min($empleado->tolerancia_minutos, $empleado->minutosDeAtraso($this->hora_entrada));
+        $faltante = max(0, $jornada - $trabajados - $perdonados);
+
+        return round(($jornada - $faltante) / $jornada, 4);
     }
 
     /** Diferencia contra la jornada estándar: positiva = de más, negativa = de menos. */

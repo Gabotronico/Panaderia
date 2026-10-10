@@ -179,7 +179,7 @@
                         </td>
                         <td><span class="badge bg-info">{{ $det->empleado->cargo->nombre }}</span></td>
                         <td class="text-end">Bs {{ number_format($det->empleado->salario_base, 2) }}</td>
-                        <td class="text-center">{{ $det->dias_trabajados + $det->dias_medio }}</td>
+                        <td class="text-center">{{ rtrim(rtrim(number_format($det->dias_efectivos, 2), '0'), '.') }}</td>
                         <td class="text-center">
                             @if($det->dias_ausentes > 0)
                                 <span class="badge bg-danger">{{ $det->dias_ausentes }}</span>
