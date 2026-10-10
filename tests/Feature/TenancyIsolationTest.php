@@ -93,6 +93,26 @@ class TenancyIsolationTest extends TestCase
         $this->get('http://localhost/')->assertOk();
     }
 
+    /**
+     * El panel central trabaja dentro de una panadería en medio de su propia
+     * petición. StartSession guarda al final con el driver vigente del
+     * gestor: si entrar o salir de la panadería lo descartaba, se guardaba
+     * una sesión vacía y el siguiente formulario del panel fallaba con 419.
+     */
+    public function test_working_inside_a_bakery_keeps_the_running_session(): void
+    {
+        $luna = $this->crearPanaderia('luna', 'Panadería Luna', 'ana@luna.test');
+
+        $sesion = app('session')->driver();
+        $sesion->start();
+        $sesion->put('dato', 'del panel');
+
+        $luna->run(fn () => User::query()->count());
+
+        $this->assertSame($sesion, app('session')->driver());
+        $this->assertSame('del panel', app('session')->driver()->get('dato'));
+    }
+
     /** En producción el dominio central es un subdominio: obrador.incgroupbo.com. */
     public function test_bakeries_work_under_a_multi_level_central_domain(): void
     {

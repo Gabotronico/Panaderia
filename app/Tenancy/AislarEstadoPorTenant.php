@@ -74,8 +74,15 @@ class AislarEstadoPorTenant implements TenancyBootstrapper
         $this->app['cache']->forgetDriver();
         $this->app->forgetInstance('cache.store');
 
-        $this->app['session']->forgetDrivers();
-        $this->app->forgetInstance('session.store');
+        // Solo una sesión que todavía no arrancó: si ya arrancó, es la de la
+        // petición en curso (el panel central trabajando sobre una panadería)
+        // y StartSession la guarda al final con el driver vigente del gestor.
+        // Descartarla hacía que se guardara una sesión vacía en su lugar, y el
+        // siguiente formulario del panel fallaba con 419.
+        if (! $this->haySesionIniciada()) {
+            $this->app['session']->forgetDrivers();
+            $this->app->forgetInstance('session.store');
+        }
 
         AppSetting::olvidarNombre();
 
@@ -83,5 +90,16 @@ class AislarEstadoPorTenant implements TenancyBootstrapper
         $registrar->initializeCache();
         $registrar->cacheKey = $clavePermisos;
         $registrar->clearPermissionsCollection();
+    }
+
+    private function haySesionIniciada(): bool
+    {
+        foreach ($this->app['session']->getDrivers() as $sesion) {
+            if ($sesion->isStarted()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
