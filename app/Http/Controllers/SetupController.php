@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AppSetting;
 use App\Models\User;
-use Database\Seeders\CategoriaSeeder;
-use Database\Seeders\RoleSeeder;
+use App\Support\InstalacionInicial;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 
@@ -35,23 +32,12 @@ class SetupController extends Controller
             'password' => ['required', 'confirmed', Password::min(10)->mixedCase()->numbers()],
         ]);
 
-        $user = DB::transaction(function () use ($validated): User {
-            app(RoleSeeder::class)->run();
-            app(CategoriaSeeder::class)->run();
-
-            AppSetting::write('business_name', $validated['business_name']);
-            AppSetting::write('installed_at', now()->toIso8601String());
-
-            $user = User::query()->create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'password' => $validated['password'],
-            ]);
-
-            $user->assignRole('Administrador');
-
-            return $user;
-        });
+        $user = InstalacionInicial::ejecutar(
+            $validated['business_name'],
+            $validated['name'],
+            $validated['email'],
+            $validated['password'],
+        );
 
         config(['app.name' => $validated['business_name']]);
         Auth::login($user);

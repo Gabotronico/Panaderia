@@ -39,7 +39,7 @@ class ClosedRegisterPermissionMigrationTest extends TestCase
         ]);
 
         $migration = require database_path(
-            'migrations/2026_07_31_200001_add_closed_register_permissions.php'
+            'migrations/tenant/2026_07_31_200001_add_closed_register_permissions.php'
         );
 
         // Simula una base creada antes de que existieran estos permisos.

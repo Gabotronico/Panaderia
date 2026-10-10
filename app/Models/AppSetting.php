@@ -8,11 +8,10 @@ use Illuminate\Support\Facades\Schema;
 class AppSetting extends Model
 {
     /**
-     * Memoización por proceso para el nombre del negocio: el provider lo
-     * consulta en el arranque de cada petición y sin caché serían dos viajes
-     * a la base (chequeo de tabla + lectura) en cada clic. El proceso PHP
-     * vive mientras la app esté abierta, así que basta con invalidar al
-     * escribir. write() se encarga de eso.
+     * Memoización por proceso para el nombre del negocio: se consulta al
+     * identificar la panadería de cada petición y sin caché serían dos viajes
+     * a la base (chequeo de tabla + lectura). Se invalida al escribir y al
+     * cambiar de panadería (ver App\Tenancy\AislarEstadoPorTenant).
      */
     private static bool $nombreLeido = false;
 
@@ -42,12 +41,18 @@ class AppSetting extends Model
         return self::$nombreLeido ? self::$nombreGuardado : null;
     }
 
+    public static function olvidarNombre(): void
+    {
+        self::$nombreLeido = false;
+        self::$nombreGuardado = null;
+    }
+
     public static function write(string $key, ?string $value): void
     {
         static::query()->updateOrCreate(['key' => $key], ['value' => $value]);
 
         if ($key === 'business_name') {
-            self::$nombreLeido = false;
+            self::olvidarNombre();
         }
     }
 }

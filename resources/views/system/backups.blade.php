@@ -23,10 +23,6 @@
                 <dl class="row small mb-4">
                     <dt class="col-6 text-muted fw-normal">Tamaño de la base</dt>
                     <dd class="col-6 text-end fw-semibold">{{ number_format($databaseSize / 1024, 1) }} KB</dd>
-                    <dt class="col-6 text-muted fw-normal">Última modificación</dt>
-                    <dd class="col-6 text-end fw-semibold">
-                        {{ $lastModified?->format('d/m/Y H:i') ?? 'Sin información' }}
-                    </dd>
                 </dl>
 
                 <a href="{{ route('system.backups.download') }}" class="btn btn-primary w-100">
@@ -45,7 +41,7 @@
                     </div>
                     <div>
                         <h5 class="mb-1">Restaurar respaldo</h5>
-                        <p class="text-muted mb-0">Reemplaza los datos actuales con los contenidos en un respaldo anterior.</p>
+                        <p class="text-muted mb-0">Reemplaza los datos actuales con los de un respaldo, también uno generado por la aplicación de escritorio.</p>
                     </div>
                 </div>
 
@@ -77,7 +73,7 @@
 
 <div class="alert alert-info mt-4 mb-0">
     <i class="fas fa-circle-info me-2"></i>
-    Guarde al menos una copia fuera de esta PC, por ejemplo en una memoria USB o almacenamiento en la nube.
+    Descargue un respaldo con regularidad y guárdelo fuera del sistema, por ejemplo en una memoria USB o almacenamiento en la nube.
     Antes de restaurar, el sistema conserva automáticamente una copia de seguridad de la base actual.
 </div>
 @endsection

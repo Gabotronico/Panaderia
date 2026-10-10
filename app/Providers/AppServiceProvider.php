@@ -2,7 +2,6 @@
 
 namespace App\Providers;
 
-use App\Models\AppSetting;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
@@ -28,13 +27,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->prepareDesktopRuntime();
 
-        try {
-            if (($nombreNegocio = AppSetting::nombreEnCache()) !== null) {
-                config(['app.name' => $nombreNegocio]);
-            }
-        } catch (\Throwable) {
-            // La base puede no existir todavía durante la instalación inicial.
-        }
+        // El nombre del negocio se aplica al identificar la panadería, no
+        // acá: en el arranque todavía no se sabe de qué base leerlo.
 
         Paginator::useBootstrapFive();
 
