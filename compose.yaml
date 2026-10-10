@@ -1,0 +1,63 @@
+# Obrador en producción (VPS de Contabo).
+#
+#   cp .env.produccion.example .env.produccion   # completar
+#   docker compose up -d --build
+#   docker compose exec app php artisan obrador:superadmin-crear tu@correo.com
+#
+# Ver documentacion/despliegue-docker.md.
+
+name: obrador
+
+services:
+  app:
+    build: .
+    image: obrador-app
+    restart: unless-stopped
+    env_file: .env.produccion
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Imágenes de productos, respaldos y logs de cada panadería.
+      - storage:/var/www/html/storage
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  db:
+    image: mariadb:11.4.13-noble
+    restart: unless-stopped
+    env_file: .env.produccion
+    volumes:
+      - db:/var/lib/mysql
+      - ./docker/mariadb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    env_file: .env.produccion
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  storage:
+  db:
+  caddy_data:
+  caddy_config:

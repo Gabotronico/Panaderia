@@ -1,0 +1,26 @@
+# HTTPS para el dominio central, los subdominios de las panaderías y sus
+# dominios propios, sin certificados comodín ni acceso a la API del DNS: Caddy
+# pide un certificado a Let's Encrypt la primera vez que llega un dominio
+# nuevo, pero solo si la aplicación confirma que es de Obrador
+# (PermisoCertificadoController).
+{
+	email {$ACME_EMAIL}
+
+	on_demand_tls {
+		ask http://app:8080/interno/tls-permitido
+	}
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+
+	encode zstd gzip
+
+	reverse_proxy app:8080
+}
+
+http:// {
+	redir https://{host}{uri} permanent
+}
