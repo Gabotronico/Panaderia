@@ -131,7 +131,7 @@
                         <label for="imagen" class="form-label">Imagen del Producto</label>
                         @if($producto->imagen)
                             <div class="mb-2">
-                                <img src="{{ asset("storage/{$producto->imagen}") }}"
+                                <img src="{{ route('local-storage.show', $producto->imagen) }}"
                                      alt="{{ $producto->nombre }}" 
                                      class="img-thumbnail" 
                                      style="max-width: 200px;"

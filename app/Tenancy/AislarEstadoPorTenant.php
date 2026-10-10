@@ -24,6 +24,11 @@ use Stancl\Tenancy\Contracts\Tenant;
  *   así que compartir esa caché le daría a un usuario permisos de otra
  *   panadería.
  * - El nombre del negocio se memoriza por proceso en AppSetting.
+ * - Las URLs y la cookie de sesión. Las panaderías viven bajo su id
+ *   (obrador.incgroupbo.com/luna): route() necesita ese id como valor por
+ *   defecto de {tenant}, y cada panadería su propia cookie, limitada a su
+ *   ruta; si compartieran la del dominio, entrar a una cerraría la sesión
+ *   de otra.
  * - El guard por defecto. En el panel central es "superadmin" (lo fija el
  *   middleware auth:superadmin), y spatie crea roles y permisos con el guard
  *   por defecto: dados de alta desde el panel, los roles de la panadería
@@ -35,6 +40,9 @@ class AislarEstadoPorTenant implements TenancyBootstrapper
 
     private ?string $guardOriginal = null;
 
+    /** @var array{cookie: string, path: string}|null */
+    private ?array $cookieOriginal = null;
+
     public function __construct(private Application $app)
     {
     }
@@ -45,7 +53,18 @@ class AislarEstadoPorTenant implements TenancyBootstrapper
         $this->guardOriginal ??= config('auth.defaults.guard');
         config(['auth.defaults.guard' => 'web']);
 
-        $this->reiniciar('spatie.permission.cache.tenant.'.$tenant->getTenantKey());
+        $id = $tenant->getTenantKey();
+        $this->app['url']->defaults(['tenant' => $id]);
+
+        $this->cookieOriginal ??= ['cookie' => config('session.cookie'), 'path' => config('session.path')];
+        if (! $this->haySesionIniciada()) {
+            config([
+                'session.cookie' => $this->cookieOriginal['cookie'].'-'.$id,
+                'session.path' => '/'.$id,
+            ]);
+        }
+
+        $this->reiniciar('spatie.permission.cache.tenant.'.$id);
 
         try {
             if (($nombre = AppSetting::nombreEnCache()) !== null) {
@@ -58,6 +77,15 @@ class AislarEstadoPorTenant implements TenancyBootstrapper
 
     public function revert(): void
     {
+        $this->app['url']->defaults(['tenant' => null]);
+
+        if ($this->cookieOriginal !== null && ! $this->haySesionIniciada()) {
+            config([
+                'session.cookie' => $this->cookieOriginal['cookie'],
+                'session.path' => $this->cookieOriginal['path'],
+            ]);
+        }
+
         $this->reiniciar(config('permission.cache.key'));
 
         if ($this->nombreOriginal !== null) {

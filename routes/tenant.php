@@ -25,27 +25,31 @@ use App\Http\Controllers\SetupController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
-use Stancl\Tenancy\Middleware\InitializeTenancyByDomainOrSubdomain;
-use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
+use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
 /*
-| Rutas de cada panadería. La panadería se identifica por el subdominio
-| (luna.obrador.com) o por un dominio propio registrado en la tabla domains;
-| desde ahí en adelante toda la petición trabaja sobre su base de datos.
+| Rutas de cada panadería, bajo su id: obrador.incgroupbo.com/luna/...
+| La panadería se identifica por ese primer segmento y desde ahí toda la
+| petición trabaja sobre su base de datos. Al iniciarla se fija el id como
+| valor por defecto de {tenant} (AislarEstadoPorTenant), así que route()
+| arma las URLs sin pasarlo a mano.
+|
+| Se registran después de las del dominio central (routes/web.php): /panel,
+| /interno y /up les ganan, y esos ids están reservados (AltaPanaderia).
 */
 
 Route::middleware([
     'web',
-    InitializeTenancyByDomainOrSubdomain::class,
-    PreventAccessFromCentralDomains::class,
-])->group(function () {
+    InitializeTenancyByPath::class,
+])->prefix('{tenant}')->where(['tenant' => '[a-z0-9]([a-z0-9-]*[a-z0-9])?'])->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/setup', [SetupController::class, 'create'])->name('setup.create');
         Route::post('/setup', [SetupController::class, 'store'])->name('setup.store');
     });
 
-    // Ruta pública. Route::redirect en lugar de closure para que route:cache funcione.
-    Route::redirect('/', '/login');
+    // Ruta pública. No es Route::redirect: su destino sería /login, fuera
+    // de la panadería.
+    Route::get('/', fn () => redirect()->route('login'));
 
     // Rutas que requieren autenticación
     Route::middleware('auth')->group(function () {

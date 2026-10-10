@@ -64,7 +64,8 @@ class CentralPanelTest extends TestCase
         $this->assertAuthenticatedAs($this->superAdmin, 'superadmin');
 
         $this->get('http://localhost/panel/panaderias')->assertOk();
-        $this->get('http://luna.localhost/panel/login')->assertNotFound();
+        // Desde otro dominio que apunte al servidor, /panel no existe.
+        $this->get('http://otro-dominio.com/panel/login')->assertNotFound();
     }
 
     public function test_a_super_admin_creates_a_bakery_with_its_administrator(): void
@@ -73,7 +74,6 @@ class CentralPanelTest extends TestCase
             ->post('http://localhost/panel/panaderias', [
                 'negocio' => 'Panadería Luna',
                 'id' => 'luna',
-                'dominios_texto' => 'panaderialuna.com',
                 'modo' => 'administrador',
                 'nombre' => 'Ana',
                 'email' => 'ana@luna.test',
@@ -84,7 +84,6 @@ class CentralPanelTest extends TestCase
 
         $tenant = Tenant::query()->findOrFail('luna');
         $this->assertSame('Panadería Luna', $tenant->negocio);
-        $this->assertEqualsCanonicalizing(['luna', 'panaderialuna.com'], $tenant->domains->pluck('domain')->all());
 
         $tenant->run(function () {
             $ana = User::query()->where('email', 'ana@luna.test')->firstOrFail();
@@ -98,7 +97,7 @@ class CentralPanelTest extends TestCase
     {
         $this->actingAs($this->superAdmin, 'superadmin');
 
-        foreach (['panel', 'Con Espacios', '-luna'] as $id) {
+        foreach (['panel', 'build', 'Con Espacios', '-luna'] as $id) {
             $this->post('http://localhost/panel/panaderias', [
                 'negocio' => 'X', 'id' => $id, 'modo' => 'administrador',
                 'nombre' => 'Ana', 'email' => 'ana@x.test',
@@ -112,7 +111,7 @@ class CentralPanelTest extends TestCase
     public function test_a_bakery_can_be_created_from_a_backup_and_its_admin_reset(): void
     {
         // Un respaldo de otra panadería, con su propio administrador.
-        $origen = AltaPanaderia::crear('origen', 'Origen', [], [
+        $origen = AltaPanaderia::crear('origen', 'Origen', [
             'nombre' => 'Dueña', 'email' => 'duena@origen.test', 'password' => 'ClaveSegura2026',
         ]);
         $zip = $origen->run(fn () => Respaldo::exportar());
@@ -143,25 +142,6 @@ class CentralPanelTest extends TestCase
         });
 
         File::delete($zip);
-    }
-
-    public function test_https_certificates_are_only_allowed_for_known_domains(): void
-    {
-        AltaPanaderia::crear('luna', 'Luna', ['panaderialuna.com']);
-
-        $permitido = fn (string $dominio) => $this->get('http://app:8080/interno/tls-permitido?domain='.$dominio)->status();
-
-        $this->assertSame(200, $permitido('localhost'));
-        $this->assertSame(200, $permitido('luna.localhost'));
-        $this->assertSame(200, $permitido('panaderialuna.com'));
-        $this->assertSame(404, $permitido('nadie.localhost'));
-        $this->assertSame(404, $permitido('a.luna.localhost'));
-        $this->assertSame(404, $permitido('ajeno.com'));
-
-        // Desde afuera (llega por Caddy con la IP pública) no responde.
-        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.9'])
-            ->get('http://app:8080/interno/tls-permitido?domain=luna.localhost')
-            ->assertNotFound();
     }
 
     public function test_deleting_a_bakery_requires_typing_its_id(): void

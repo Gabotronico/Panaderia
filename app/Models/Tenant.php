@@ -33,15 +33,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
-     * Dirección de la panadería vista desde el dominio central de la
-     * petición: luna.obrador.com desde obrador.com. Desde una IP (entorno
-     * local) no hay subdominios posibles y se usa localhost.
+     * Dirección de la panadería en el dominio de la petición:
+     * obrador.incgroupbo.com/luna.
      */
     public function urlDesde(Request $request): string
     {
-        $host = filter_var($request->getHost(), FILTER_VALIDATE_IP) !== false ? 'localhost' : $request->getHost();
-        $puerto = \in_array($request->getPort(), [80, 443], true) ? '' : ':'.$request->getPort();
-
-        return $request->getScheme().'://'.$this->getTenantKey().'.'.$host.$puerto;
+        return $request->getSchemeAndHttpHost().'/'.$this->getTenantKey();
     }
 }

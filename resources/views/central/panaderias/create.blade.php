@@ -5,7 +5,7 @@
 @section('content')
 @php
     $modo = old('modo', 'administrador');
-    $base = filter_var(request()->getHost(), FILTER_VALIDATE_IP) !== false ? 'localhost' : request()->getHost();
+    $base = request()->getHttpHost();
 @endphp
 
 <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
@@ -32,27 +32,17 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="id" class="form-label fw-semibold">Id / subdominio</label>
+                    <label for="id" class="form-label fw-semibold">Id (dirección de la panadería)</label>
                     <div class="input-group">
+                        <span class="input-group-text">{{ $base }}/</span>
                         <input id="id" name="id" value="{{ old('id') }}" required maxlength="40"
                                pattern="[a-z0-9]([a-z0-9\-]*[a-z0-9])?"
                                class="form-control @error('id') is-invalid @enderror" placeholder="luna">
-                        <span class="input-group-text">.{{ $base }}</span>
                         @error('id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-text">Minúsculas, números y guiones. No se puede cambiar después.</div>
                 </div>
 
-                <div class="mb-0">
-                    <label for="dominios_texto" class="form-label fw-semibold">
-                        Dominios propios <span class="text-muted fw-normal">(opcional)</span>
-                    </label>
-                    <input id="dominios_texto" name="dominios_texto" value="{{ old('dominios_texto') }}"
-                           class="form-control @error('dominios.*') is-invalid @enderror"
-                           placeholder="panaderialuna.com">
-                    @error('dominios.*')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    <div class="form-text">Separados por coma. El dominio tiene que apuntar a este servidor.</div>
-                </div>
             </div>
         </div>
     </div>

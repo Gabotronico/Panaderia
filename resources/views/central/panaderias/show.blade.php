@@ -8,7 +8,7 @@
         <h1 class="h4 titulo mb-1">{{ $panaderia->negocio ?? $panaderia->getTenantKey() }}</h1>
         <p class="text-muted mb-0">
             <code class="id">{{ $panaderia->getTenantKey() }}</code>
-            · {{ $panaderia->domains->pluck('domain')->implode(', ') }}
+            · {{ $panaderia->urlDesde(request()) }}
             · alta {{ $panaderia->created_at?->format('d/m/Y') }}
         </p>
     </div>
@@ -105,7 +105,7 @@
             <div class="card-body p-4">
                 <h2 class="h6 text-danger mb-1"><i class="fas fa-trash me-2"></i>Eliminar panadería</h2>
                 <p class="small text-muted">
-                    Borra su base de datos, sus archivos y su subdominio. No se puede deshacer:
+                    Borra su base de datos y sus archivos. No se puede deshacer:
                     descargá antes un respaldo desde la panadería.
                 </p>
 

@@ -15,8 +15,8 @@ return [
     'domain_model' => Domain::class,
 
     /**
-     * Dominios que no pertenecen a ninguna panadería. Cada panadería vive en
-     * un subdominio de alguno de ellos: luna.obrador.com, luna.localhost.
+     * Dominios del sistema: portada y panel /panel. Las panaderías viven bajo
+     * su id en cualquiera de ellos: obrador.incgroupbo.com/luna.
      */
     'central_domains' => array_values(array_filter(array_map(
         'trim',

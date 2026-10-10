@@ -49,7 +49,7 @@ abstract class TestCase extends BaseTestCase
 
     /**
      * Da de alta la panadería "prueba" sobre la base del test y la deja
-     * iniciada, con las URLs apuntando a su subdominio. Se quita el
+     * iniciada, con las URLs bajo su ruta (/prueba). Se quita el
      * bootstrapper de base de datos para que la panadería use la misma base
      * en memoria que el test: el aislamiento real entre bases se prueba
      * aparte (TenancyIsolationTest).
@@ -65,7 +65,8 @@ abstract class TestCase extends BaseTestCase
         $tenant = Tenant::withoutEvents(fn () => Tenant::query()->create(['id' => 'prueba']));
         $tenant->domains()->create(['domain' => 'prueba']);
 
-        URL::forceRootUrl('http://prueba.localhost');
+        // Al iniciarla, route() arma las URLs bajo /prueba.
+        URL::forceRootUrl('http://localhost');
         tenancy()->initialize($tenant);
 
         return $tenant;

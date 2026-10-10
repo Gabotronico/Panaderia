@@ -31,18 +31,13 @@ class PanaderiaController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $request->merge([
-            'id' => strtolower(trim((string) $request->input('id'))),
-            'dominios' => $this->dominios($request->input('dominios_texto')),
-        ]);
+        $request->merge(['id' => strtolower(trim((string) $request->input('id')))]);
 
         $admin = AltaPanaderia::reglasAdministrador();
 
         $validado = $request->validate([
             'id' => AltaPanaderia::reglasId(),
             'negocio' => ['required', 'string', 'min:2', 'max:100'],
-            'dominios' => ['array'],
-            'dominios.*' => AltaPanaderia::reglasDominio(),
             'modo' => ['required', 'in:administrador,respaldo'],
             'nombre' => ['exclude_unless:modo,administrador', ...$admin['nombre']],
             'email' => ['exclude_unless:modo,administrador', ...$admin['email']],
@@ -60,7 +55,6 @@ class PanaderiaController extends Controller
             $tenant = AltaPanaderia::crear(
                 $validado['id'],
                 $validado['negocio'],
-                $validado['dominios'],
                 $esRespaldo ? null : [
                     'nombre' => $validado['nombre'],
                     'email' => $validado['email'],
@@ -143,14 +137,5 @@ class PanaderiaController extends Controller
 
         return redirect()->route('central.panaderias.index')
             ->with('success', "Se eliminó la panadería «{$id}» con todos sus datos.");
-    }
-
-    /** @return list<string> */
-    private function dominios(?string $texto): array
-    {
-        return array_values(array_unique(array_filter(array_map(
-            fn (string $dominio) => strtolower(trim($dominio)),
-            preg_split('/[\s,]+/', (string) $texto) ?: []
-        ))));
     }
 }

@@ -13,9 +13,8 @@ use Illuminate\Support\Facades\Validator;
 class CrearTenant extends Command
 {
     protected $signature = 'obrador:tenant-crear
-        {id : Slug de la panadería; también es su subdominio y nombra su base (obrador_<id>)}
+        {id : Slug de la panadería; es su ruta (obrador.incgroupbo.com/<id>) y nombra su base (obrador_<id>)}
         {--negocio= : Nombre del negocio que muestra la aplicación}
-        {--dominio=* : Dominios propios adicionales (panaderialuna.com)}
         {--admin-nombre= : Nombre del primer administrador}
         {--admin-email= : Correo del primer administrador}
         {--admin-password= : Contraseña del primer administrador (si se omite, se pide)}
@@ -25,15 +24,9 @@ class CrearTenant extends Command
 
     public function handle(): int
     {
-        $datos = [
-            'id' => strtolower((string) $this->argument('id')),
-            'dominios' => array_values(array_unique(array_map('strtolower', (array) $this->option('dominio')))),
-        ];
+        $datos = ['id' => strtolower((string) $this->argument('id'))];
 
-        $validador = Validator::make($datos, [
-            'id' => AltaPanaderia::reglasId(),
-            'dominios.*' => AltaPanaderia::reglasDominio(),
-        ], AltaPanaderia::mensajes());
+        $validador = Validator::make($datos, ['id' => AltaPanaderia::reglasId()], AltaPanaderia::mensajes());
 
         if ($validador->fails()) {
             return $this->fallar($validador->errors()->all());
@@ -58,7 +51,7 @@ class CrearTenant extends Command
         $this->info("Creando la base de \"{$datos['id']}\" y aplicando migraciones...");
 
         try {
-            $tenant = AltaPanaderia::crear($datos['id'], (string) $negocio, $datos['dominios'], $administrador);
+            $tenant = AltaPanaderia::crear($datos['id'], (string) $negocio, $administrador);
         } catch (\Throwable $exception) {
             return $this->fallar(['No se pudo completar el alta: '.$exception->getMessage()]);
         }

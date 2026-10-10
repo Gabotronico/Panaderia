@@ -7,8 +7,9 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * El panel de superadministración solo existe en el dominio central: desde el
- * subdominio de una panadería, /panel no es una página.
+ * El panel de superadministración solo existe en los dominios del sistema
+ * (CENTRAL_DOMAINS): desde cualquier otro host que apunte al servidor, /panel
+ * no es una página.
  */
 class SoloDominioCentral
 {

@@ -16,14 +16,13 @@ Datos persistentes (volúmenes de Docker): `obrador_db` (bases) y `obrador_stora
 
 ## 1. DNS
 
-En la zona de `incgroupbo.com`, dos registros **A** hacia la IP del VPS (66.94.116.41):
+Un solo registro **A** en la zona de `incgroupbo.com`, hacia la IP del VPS (66.94.116.41):
 
 | Nombre | Para qué |
 |---|---|
-| `obrador` | `obrador.incgroupbo.com`: portada y panel `/panel` |
-| `*.obrador` | Comodín: `luna.obrador.incgroupbo.com`, `sol.obrador.incgroupbo.com`, … |
+| `obrador` | `obrador.incgroupbo.com`: portada, panel `/panel` y todas las panaderías (`/luna`, `/sol`, …) |
 
-Si el DNS está en Cloudflare, ambos en **DNS only** (nube gris): Caddy valida los certificados por HTTP.
+Cada panadería vive bajo su id en ese mismo dominio, así que dar de alta una nueva no requiere tocar el DNS.
 
 ## 2. Primer despliegue
 
@@ -53,7 +52,7 @@ docker compose exec app php artisan obrador:superadmin-crear tu@correo.com
 
 ## 3. Publicar con el Caddy del sistema
 
-Agregar a `/etc/caddy/Caddyfile` el contenido de `docker/caddy/obrador-compartido.caddy`. El bloque de opciones globales (`{ on_demand_tls … }`) tiene que quedar **al principio** del archivo; el sitio `obrador.incgroupbo.com, *.obrador.incgroupbo.com` puede ir al final.
+Agregar al final de `/etc/caddy/Caddyfile` el bloque de `docker/caddy/obrador-compartido.caddy` (el sitio `obrador.incgroupbo.com`).
 
 ```bash
 cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak-$(date +%Y%m%d-%H%M)
@@ -62,16 +61,16 @@ caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 systemctl reload caddy
 ```
 
-`reload` aplica los cambios sin cortar los otros sitios. Entrar a `https://obrador.incgroupbo.com/panel`. El primer acceso a cada subdominio tarda unos segundos, mientras Caddy obtiene su certificado.
+`reload` aplica los cambios sin cortar los otros sitios. Entrar a `https://obrador.incgroupbo.com/panel`; el primer acceso tarda unos segundos, mientras Caddy obtiene el certificado.
 
 ## 4. Dar de alta panaderías
 
 Desde **https://obrador.incgroupbo.com/panel → Nueva panadería** hay dos opciones:
 
-- **Con un administrador nuevo:** nombre, id (será `id.obrador.incgroupbo.com`), y correo y contraseña del administrador.
+- **Con un administrador nuevo:** nombre, id (su dirección será `obrador.incgroupbo.com/id`), y correo y contraseña del administrador.
 - **Con los datos de un respaldo:** el `.zip` que genera la aplicación de escritorio (Sistema → Respaldos). Trae ventas, inventario, planillas y usuarios. Si el cliente no recuerda su contraseña, en el detalle de la panadería se usa **Crear o restablecer administrador**.
 
-Un dominio propio (`panaderialuna.com`) se agrega al crear la panadería. Su dueño tiene que apuntarlo con un registro A a la IP del VPS, y en el servidor compartido hay que sumarlo al bloque de Obrador en el Caddyfile.
+Los ids `panel`, `build`, `storage`, `up` y algunos más están reservados: son rutas del sistema.
 
 ## 5. Actualizar a una versión nueva
 
@@ -117,8 +116,7 @@ Para importar un `.zip` por consola, primero hay que copiarlo dentro del contene
 ## VPS dedicado a Obrador
 
 Sin otro proxy en los puertos 80/443, Obrador puede traer su propio Caddy
-(`docker/caddy/Caddyfile`), que además acepta dominios propios de las
-panaderías sin tocar su configuración:
+(`docker/caddy/Caddyfile`), que publica el dominio de `CENTRAL_DOMAINS`:
 
 ```bash
 # en .env.produccion, además: ACME_EMAIL=correo para Let's Encrypt

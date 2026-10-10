@@ -14,7 +14,7 @@
                     <!-- Imagen -->
                     <div class="col-md-4 text-center mb-4">
                         @if($producto->imagen)
-                            <img src="{{ asset('storage/' . $producto->imagen) }}"
+                            <img src="{{ route('local-storage.show', $producto->imagen) }}"
                                  alt="{{ $producto->nombre }}"
                                  class="img-thumbnail"
                                  style="max-width: 100%;">

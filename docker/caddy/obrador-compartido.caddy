@@ -1,26 +1,9 @@
 # Bloque para el Caddy del sistema de un servidor compartido
 # (/etc/caddy/Caddyfile del VPS de INC Group). La app escucha en
-# 127.0.0.1:8094 (compose.yaml).
-#
-# Los subdominios de las panaderías (luna.obrador.incgroupbo.com) obtienen su
-# certificado la primera vez que alguien entra, solo si la app confirma que
-# la panadería existe (PermisoCertificadoController). Así no hace falta un
-# certificado comodín ni acceso a la API del DNS.
-#
-# on_demand_tls va en el bloque de opciones globales, que tiene que ser el
-# primero del Caddyfile. Solo afecta a los sitios con "tls { on_demand }".
+# 127.0.0.1:8094 (compose.yaml). Todas las panaderías viven bajo este mismo
+# dominio (obrador.incgroupbo.com/luna), así que alcanza con un certificado.
 
-{
-	on_demand_tls {
-		ask http://127.0.0.1:8094/interno/tls-permitido
-	}
-}
-
-obrador.incgroupbo.com, *.obrador.incgroupbo.com {
-	tls {
-		on_demand
-	}
-
+obrador.incgroupbo.com {
 	# Respaldos de hasta 512 MB (BackupController).
 	request_body {
 		max_size 520MB

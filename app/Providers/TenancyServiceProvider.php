@@ -102,11 +102,9 @@ class TenancyServiceProvider extends ServiceProvider
         $this->bootEvents();
         $this->mapRoutes();
 
-        // Un subdominio que no corresponde a ninguna panadería es una página
-        // inexistente, no un error del servidor. InitializeTenancyByDomainOrSubdomain
-        // delega en estos dos, cada uno con su propio $onFail.
-        Middleware\InitializeTenancyBySubdomain::$onFail = fn () => abort(404);
-        Middleware\InitializeTenancyByDomain::$onFail = fn () => abort(404);
+        // /nadie/login: un id que no corresponde a ninguna panadería es una
+        // página inexistente, no un error del servidor.
+        Middleware\InitializeTenancyByPath::$onFail = fn () => abort(404);
 
         $this->makeTenancyMiddlewareHighestPriority();
     }

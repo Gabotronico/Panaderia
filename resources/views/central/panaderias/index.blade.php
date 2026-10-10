@@ -6,7 +6,7 @@
 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
     <div>
         <h1 class="h4 titulo mb-1"><i class="fas fa-store me-2"></i>Panaderías</h1>
-        <p class="text-muted mb-0">Cada panadería tiene su propia base de datos y su propio subdominio.</p>
+        <p class="text-muted mb-0">Cada panadería tiene su propia base de datos y su propia dirección.</p>
     </div>
     <a href="{{ route('central.panaderias.create') }}" class="btn btn-primary">
         <i class="fas fa-plus me-1"></i>Nueva panadería
@@ -26,7 +26,7 @@
                     <tr>
                         <th>Panadería</th>
                         <th>Id</th>
-                        <th class="d-none d-md-table-cell">Dominios</th>
+                        <th class="d-none d-md-table-cell">Dirección</th>
                         <th class="d-none d-lg-table-cell">Alta</th>
                         <th class="text-end">Acciones</th>
                     </tr>
@@ -37,7 +37,7 @@
                             <td class="fw-semibold">{{ $panaderia->negocio ?? $panaderia->getTenantKey() }}</td>
                             <td><code class="id">{{ $panaderia->getTenantKey() }}</code></td>
                             <td class="d-none d-md-table-cell small text-muted">
-                                {{ $panaderia->domains->pluck('domain')->implode(', ') }}
+                                {{ $panaderia->urlDesde(request()) }}
                             </td>
                             <td class="d-none d-lg-table-cell small text-muted">
                                 {{ $panaderia->created_at?->format('d/m/Y') }}

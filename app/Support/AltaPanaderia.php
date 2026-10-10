@@ -19,10 +19,17 @@ use Stancl\Tenancy\Database\Models\Domain;
  */
 final class AltaPanaderia
 {
-    /** Subdominios que no se le dan a una panadería. */
-    public const RESERVADOS = ['www', 'admin', 'panel', 'api', 'app', 'mail', 'smtp', 'ftp', 'obrador', 'soporte'];
+    /**
+     * Ids que no se le dan a una panadería: el id es el primer segmento de
+     * sus URLs (obrador.incgroupbo.com/luna), y estos ya son rutas del
+     * dominio central (/panel, /up) o carpetas de public/ (/build).
+     */
+    public const RESERVADOS = [
+        'panel', 'up', 'build', 'storage', 'vendor', 'api', 'admin',
+        'login', 'logout', 'setup', 'www', 'obrador', 'soporte',
+    ];
 
-    /** Reglas del id: también es el subdominio y nombra la base (obrador_<id>). */
+    /** Reglas del id: es la ruta de la panadería y nombra su base (obrador_<id>). */
     public static function reglasId(): array
     {
         return [
@@ -33,14 +40,6 @@ final class AltaPanaderia
             'regex:/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/',
             Rule::notIn(self::RESERVADOS),
             Rule::unique(Tenant::class, 'id'),
-            Rule::unique(Domain::class, 'domain'),
-        ];
-    }
-
-    public static function reglasDominio(): array
-    {
-        return [
-            'regex:/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/',
             Rule::unique(Domain::class, 'domain'),
         ];
     }
@@ -61,8 +60,6 @@ final class AltaPanaderia
             'id.regex' => 'El id solo admite minúsculas, números y guiones (no al inicio ni al final).',
             'id.not_in' => 'Ese id está reservado.',
             'id.unique' => 'Ya hay una panadería con ese id.',
-            'dominios.*.regex' => 'El dominio :input no es válido.',
-            'dominios.*.unique' => 'El dominio :input ya está registrado.',
         ];
     }
 
@@ -71,13 +68,11 @@ final class AltaPanaderia
      * administrador nuevo, con los datos de un respaldo, o vacía si no se
      * pasa ninguno. Si algo falla se borra entera, base incluida.
      *
-     * @param  list<string>  $dominios  dominios propios además del subdominio
      * @param  array{nombre: string, email: string, password: string}|null  $administrador
      */
     public static function crear(
         string $id,
         string $negocio,
-        array $dominios = [],
         ?array $administrador = null,
         ?string $respaldo = null,
     ): Tenant {
@@ -86,10 +81,9 @@ final class AltaPanaderia
         $tenant = Tenant::query()->create(['id' => $id, 'negocio' => $negocio]);
 
         try {
+            // Las panaderías se identifican por la ruta, no por dominio; el
+            // registro reserva el id en la tabla de dominios de stancl.
             $tenant->domains()->create(['domain' => $id]);
-            foreach ($dominios as $dominio) {
-                $tenant->domains()->create(['domain' => $dominio]);
-            }
 
             if ($respaldo !== null) {
                 $tenant->run(function () use ($respaldo, $negocio) {

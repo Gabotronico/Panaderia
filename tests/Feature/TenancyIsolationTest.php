@@ -62,35 +62,58 @@ class TenancyIsolationTest extends TestCase
         });
     }
 
-    public function test_each_subdomain_serves_its_own_bakery(): void
+    public function test_each_path_serves_its_own_bakery(): void
     {
         $this->crearPanaderia('luna', 'Panadería Luna', 'ana@luna.test');
         $this->crearPanaderia('sol', 'Panadería Sol', 'beto@sol.test');
 
-        $this->get('http://luna.localhost/login')->assertOk()->assertSee('Panadería Luna');
-        $this->get('http://sol.localhost/login')->assertOk()->assertSee('Panadería Sol');
+        $this->get('http://localhost/luna/login')->assertOk()->assertSee('Panadería Luna');
+        $this->get('http://localhost/sol/login')->assertOk()->assertSee('Panadería Sol');
 
         // Las credenciales de una panadería no existen en la otra.
-        $this->from('http://sol.localhost/login')
-            ->post('http://sol.localhost/login', [
+        $this->from('http://localhost/sol/login')
+            ->post('http://localhost/sol/login', [
                 'email' => 'ana@luna.test',
                 'password' => 'ClaveSegura2026',
             ])
             ->assertSessionHasErrors('email');
         $this->assertGuest();
 
-        $this->post('http://luna.localhost/login', [
+        // Y las URLs que arma la aplicación quedan dentro de la panadería.
+        $this->post('http://localhost/luna/login', [
             'email' => 'ana@luna.test',
             'password' => 'ClaveSegura2026',
-        ])->assertRedirect('http://luna.localhost/home');
+        ])->assertRedirect('http://localhost/luna/home');
         $this->assertAuthenticated();
+
+        $this->get('http://localhost/luna/')->assertRedirect('http://localhost/luna/login');
     }
 
-    public function test_unknown_subdomains_and_the_central_domain_do_not_serve_bakeries(): void
+    public function test_unknown_bakeries_and_system_paths_do_not_serve_bakeries(): void
     {
-        $this->get('http://nadie.localhost/login')->assertNotFound();
+        $this->get('http://localhost/nadie/login')->assertNotFound();
         $this->get('http://localhost/login')->assertNotFound();
         $this->get('http://localhost/')->assertOk();
+        $this->get('http://localhost/panel/login')->assertOk();
+    }
+
+    /**
+     * Todas las panaderías comparten dominio: cada una necesita su propia
+     * cookie de sesión, limitada a su ruta, para que entrar a una no cierre
+     * la sesión de otra en el mismo navegador.
+     */
+    public function test_each_bakery_has_its_own_session_cookie(): void
+    {
+        $this->crearPanaderia('luna', 'Panadería Luna', 'ana@luna.test');
+        $this->crearPanaderia('sol', 'Panadería Sol', 'beto@sol.test');
+
+        $cookie = config('session.cookie');
+
+        $luna = $this->get('http://localhost/luna/login')->getCookie($cookie.'-luna', false);
+        $sol = $this->get('http://localhost/sol/login')->getCookie($cookie.'-sol', false);
+
+        $this->assertSame('/luna', $luna?->getPath());
+        $this->assertSame('/sol', $sol?->getPath());
     }
 
     /**
@@ -111,17 +134,6 @@ class TenancyIsolationTest extends TestCase
 
         $this->assertSame($sesion, app('session')->driver());
         $this->assertSame('del panel', app('session')->driver()->get('dato'));
-    }
-
-    /** En producción el dominio central es un subdominio: obrador.incgroupbo.com. */
-    public function test_bakeries_work_under_a_multi_level_central_domain(): void
-    {
-        config(['tenancy.central_domains' => ['obrador.incgroupbo.com']]);
-        $this->crearPanaderia('luna', 'Panadería Luna', 'ana@luna.test');
-
-        $this->get('http://luna.obrador.incgroupbo.com/login')->assertOk()->assertSee('Panadería Luna');
-        $this->get('http://otra.obrador.incgroupbo.com/login')->assertNotFound();
-        $this->get('http://obrador.incgroupbo.com/login')->assertNotFound();
     }
 
     private function crearPanaderia(string $id, string $negocio, string $email): Tenant
