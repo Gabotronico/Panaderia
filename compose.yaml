@@ -1,8 +1,14 @@
-# Obrador en producción (VPS de Contabo).
+# Obrador en producción.
 #
-#   cp .env.produccion.example .env.produccion   # completar
+# Servidor compartido con un Caddy del sistema (VPS de INC Group): la app
+# queda en 127.0.0.1:8094 y el Caddy existente la publica con HTTPS
+# (docker/caddy/obrador-compartido.caddy).
+#
 #   docker compose up -d --build
-#   docker compose exec app php artisan obrador:superadmin-crear tu@correo.com
+#
+# VPS dedicado a Obrador, con su propio Caddy en 80/443:
+#
+#   docker compose -f compose.yaml -f compose.caddy.yaml up -d --build
 #
 # Ver documentacion/despliegue-docker.md.
 
@@ -17,6 +23,9 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      # Solo local: lo publica el proxy HTTPS, nunca directo a internet.
+      - "127.0.0.1:8094:8080"
     volumes:
       # Imágenes de productos, respaldos y logs de cada panadería.
       - storage:/var/www/html/storage
@@ -41,23 +50,6 @@ services:
       retries: 10
       start_period: 30s
 
-  caddy:
-    image: caddy:2.10.2-alpine
-    restart: unless-stopped
-    env_file: .env.produccion
-    depends_on:
-      - app
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
 volumes:
   storage:
   db:
-  caddy_data:
-  caddy_config:

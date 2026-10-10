@@ -93,6 +93,17 @@ class TenancyIsolationTest extends TestCase
         $this->get('http://localhost/')->assertOk();
     }
 
+    /** En producción el dominio central es un subdominio: obrador.incgroupbo.com. */
+    public function test_bakeries_work_under_a_multi_level_central_domain(): void
+    {
+        config(['tenancy.central_domains' => ['obrador.incgroupbo.com']]);
+        $this->crearPanaderia('luna', 'Panadería Luna', 'ana@luna.test');
+
+        $this->get('http://luna.obrador.incgroupbo.com/login')->assertOk()->assertSee('Panadería Luna');
+        $this->get('http://otra.obrador.incgroupbo.com/login')->assertNotFound();
+        $this->get('http://obrador.incgroupbo.com/login')->assertNotFound();
+    }
+
     private function crearPanaderia(string $id, string $negocio, string $email): Tenant
     {
         $tenant = Tenant::query()->create(['id' => $id]);

@@ -1,43 +1,35 @@
-# Despliegue de Obrador en Contabo con Docker
+# Despliegue de Obrador con Docker
 
-Tres contenedores, definidos en `compose.yaml`:
+Obrador corre en dos contenedores, definidos en `compose.yaml`:
 
 | Servicio | Qué hace |
 |---|---|
-| `caddy` | Recibe el tráfico en 80/443 y obtiene solo los certificados HTTPS de Let's Encrypt para el dominio principal, cada subdominio de panadería y sus dominios propios. |
-| `app` | Laravel con PHP 8.3 + nginx. Al arrancar migra la base central y la de cada panadería. |
+| `app` | Laravel con PHP 8.3 + nginx, en `127.0.0.1:8094`. Al arrancar migra la base central y la de cada panadería. |
 | `db` | MariaDB 11.4. Una base central (`obrador_central`) y una por panadería (`obrador_<id>`). |
 
-Datos persistentes (volúmenes de Docker): `db` (bases), `storage` (imágenes, respaldos) y `caddy_data` (certificados).
+El HTTPS lo pone un Caddy delante:
 
-## 1. Requisitos
+- **Servidor compartido** (el VPS de INC Group): el Caddy del sistema, que ya publica los otros proyectos. Es el caso de producción, descrito abajo.
+- **VPS dedicado a Obrador**: un Caddy propio en contenedor, sumando `compose.caddy.yaml` (ver al final).
 
-- VPS de Contabo con Ubuntu 24.04 (con 4 GB de RAM alcanza para varias panaderías).
-- Un dominio, por ejemplo `obrador.com`, con dos registros **A** apuntando a la IP del VPS:
-  - `obrador.com`
-  - `*.obrador.com` (comodín: cubre `luna.obrador.com`, `sol.obrador.com`, …)
-- Si el DNS está en Cloudflare, ambos registros en **DNS only** (nube gris). Caddy valida los certificados por HTTP, y el proxy de Cloudflare lo interfiere.
+Datos persistentes (volúmenes de Docker): `obrador_db` (bases) y `obrador_storage` (imágenes, respaldos).
 
-## 2. Preparar el servidor
+## 1. DNS
 
-```bash
-# Docker y el plugin compose
-curl -fsSL https://get.docker.com | sh
+En la zona de `incgroupbo.com`, dos registros **A** hacia la IP del VPS (66.94.116.41):
 
-# Firewall: SSH, HTTP y HTTPS
-ufw allow 22/tcp
-ufw allow 80/tcp
-ufw allow 443/tcp
-ufw allow 443/udp
-ufw enable
-```
+| Nombre | Para qué |
+|---|---|
+| `obrador` | `obrador.incgroupbo.com`: portada y panel `/panel` |
+| `*.obrador` | Comodín: `luna.obrador.incgroupbo.com`, `sol.obrador.incgroupbo.com`, … |
 
-## 3. Primer despliegue
+Si el DNS está en Cloudflare, ambos en **DNS only** (nube gris): Caddy valida los certificados por HTTP.
+
+## 2. Primer despliegue
 
 ```bash
-git clone <url-del-repo> /opt/obrador
+git clone -b feature/multitenant https://github.com/Gabotronico/Panaderia.git /opt/obrador
 cd /opt/obrador
-git checkout feature/multitenant
 
 cp .env.produccion.example .env.produccion
 nano .env.produccion
@@ -45,19 +37,13 @@ nano .env.produccion
 
 Completar en `.env.produccion`:
 
-- `APP_URL=https://obrador.com` y `CENTRAL_DOMAINS=obrador.com`
-- `ACME_EMAIL`: correo para los avisos de Let's Encrypt
+- `APP_URL=https://obrador.incgroupbo.com` y `CENTRAL_DOMAINS=obrador.incgroupbo.com`
 - `DB_PASSWORD` y `MARIADB_PASSWORD`: la **misma** contraseña
 - `MARIADB_ROOT_PASSWORD`: otra contraseña, distinta
+- `APP_KEY`: generarla con
+  `docker compose build app && docker compose run --rm --no-deps --entrypoint php app artisan key:generate --show`
 
-Generar `APP_KEY` y pegarla en `.env.produccion`:
-
-```bash
-docker compose build app
-docker compose run --rm --no-deps --entrypoint php app artisan key:generate --show
-```
-
-Levantar todo y crear el primer superadministrador:
+Levantar y crear el primer superadministrador:
 
 ```bash
 docker compose up -d --build
@@ -65,16 +51,27 @@ docker compose logs -f app        # esperar "ready to handle connections", salir
 docker compose exec app php artisan obrador:superadmin-crear tu@correo.com
 ```
 
-Entrar a `https://obrador.com/panel`. El primer acceso a cada dominio tarda unos segundos, mientras Caddy obtiene el certificado.
+## 3. Publicar con el Caddy del sistema
+
+Agregar a `/etc/caddy/Caddyfile` el contenido de `docker/caddy/obrador-compartido.caddy`. El bloque de opciones globales (`{ on_demand_tls … }`) tiene que quedar **al principio** del archivo; el sitio `obrador.incgroupbo.com, *.obrador.incgroupbo.com` puede ir al final.
+
+```bash
+cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak-$(date +%Y%m%d-%H%M)
+nano /etc/caddy/Caddyfile
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+systemctl reload caddy
+```
+
+`reload` aplica los cambios sin cortar los otros sitios. Entrar a `https://obrador.incgroupbo.com/panel`. El primer acceso a cada subdominio tarda unos segundos, mientras Caddy obtiene su certificado.
 
 ## 4. Dar de alta panaderías
 
-Desde **https://obrador.com/panel → Nueva panadería** hay dos opciones:
+Desde **https://obrador.incgroupbo.com/panel → Nueva panadería** hay dos opciones:
 
-- **Con un administrador nuevo:** nombre, id (será `id.obrador.com`), y correo y contraseña del administrador.
+- **Con un administrador nuevo:** nombre, id (será `id.obrador.incgroupbo.com`), y correo y contraseña del administrador.
 - **Con los datos de un respaldo:** el `.zip` que genera la aplicación de escritorio (Sistema → Respaldos). Trae ventas, inventario, planillas y usuarios. Si el cliente no recuerda su contraseña, en el detalle de la panadería se usa **Crear o restablecer administrador**.
 
-Un dominio propio (`panaderialuna.com`) se agrega al crear la panadería. Su dueño tiene que apuntarlo con un registro A a la IP del VPS.
+Un dominio propio (`panaderialuna.com`) se agrega al crear la panadería. Su dueño tiene que apuntarlo con un registro A a la IP del VPS, y en el servidor compartido hay que sumarlo al bloque de Obrador en el Caddyfile.
 
 ## 5. Actualizar a una versión nueva
 
@@ -116,3 +113,16 @@ docker compose exec app php artisan obrador:tenant-importar luna /ruta/respaldo.
 
 Para importar un `.zip` por consola, primero hay que copiarlo dentro del contenedor:
 `docker compose cp respaldo.zip app:/tmp/respaldo.zip`.
+
+## VPS dedicado a Obrador
+
+Sin otro proxy en los puertos 80/443, Obrador puede traer su propio Caddy
+(`docker/caddy/Caddyfile`), que además acepta dominios propios de las
+panaderías sin tocar su configuración:
+
+```bash
+# en .env.produccion, además: ACME_EMAIL=correo para Let's Encrypt
+docker compose -f compose.yaml -f compose.caddy.yaml up -d --build
+```
+
+Para cualquier otro comando de compose en este modo hay que repetir los dos `-f`.
