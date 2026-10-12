@@ -25,7 +25,7 @@ final class AltaPanaderia
      * dominio central (/panel, /up) o carpetas de public/ (/build).
      */
     public const RESERVADOS = [
-        'panel', 'up', 'build', 'storage', 'vendor', 'api', 'admin',
+        'panel', 'up', 'build', 'images', 'storage', 'vendor', 'api', 'admin',
         'login', 'logout', 'setup', 'www', 'obrador', 'soporte',
     ];
 

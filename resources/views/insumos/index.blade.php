@@ -23,7 +23,8 @@
                 <i class="fas fa-list me-2"></i>Listado de Insumos
             </div>
             <div class="card-body">
-                <form method="GET" action="{{ route('insumos.index') }}" class="mb-3">
+                {{-- Busca solo mientras se escribe (resources/js/app.js). --}}
+                <form method="GET" action="{{ route('insumos.index') }}" class="mb-3" data-busqueda-en-vivo>
                     <div class="input-group" style="max-width: 380px;">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input type="text"
@@ -32,16 +33,15 @@
                                placeholder="Buscar por nombre..."
                                value="{{ $buscar ?? '' }}"
                                autocomplete="off">
-                        @if($buscar)
-                            <a href="{{ route('insumos.index') }}" class="btn btn-outline-secondary" title="Limpiar">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        @else
-                            <button type="submit" class="btn btn-primary">Buscar</button>
-                        @endif
+                        <a href="{{ route('insumos.index') }}" title="Limpiar" aria-label="Limpiar la búsqueda"
+                           data-refrescar="limpiar" data-busqueda-limpiar
+                           @class(['btn btn-outline-secondary', 'd-none' => ! $buscar])>
+                            <i class="fas fa-times"></i>
+                        </a>
                     </div>
                 </form>
 
+                <div data-refrescar="resultados">
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
@@ -141,6 +141,7 @@
 
                 <div class="d-flex justify-content-center mt-3">
                     {{ $insumos->links() }}
+                </div>
                 </div>
             </div>
         </div>
