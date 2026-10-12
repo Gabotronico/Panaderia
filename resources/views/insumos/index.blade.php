@@ -283,7 +283,7 @@ function abrirCompra(id, nombre, unidad, precio) {
     document.getElementById('compra_precio').value = precio;
     document.getElementById('compra_cantidad').value = '';
     document.getElementById('compra_total').textContent = 'Bs 0.00';
-    document.getElementById('formCompra').action = '/insumos/' + id + '/comprar';
+    document.getElementById('formCompra').action = @json(route('insumos.comprar', '__ID__')).replace('__ID__', id);
     new bootstrap.Modal(document.getElementById('modalCompra')).show();
 }
 
@@ -301,7 +301,7 @@ function abrirMerma(id, nombre, unidad, stockActual) {
     document.getElementById('merma_cantidad').value          = '';
     document.getElementById('merma_cantidad').max            = stockActual;
     document.getElementById('merma_error_stock').classList.add('d-none');
-    document.getElementById('formMerma').action              = '/insumos/' + id + '/merma';
+    document.getElementById('formMerma').action              = @json(route('insumos.merma', '__ID__')).replace('__ID__', id);
 
     document.getElementById('merma_cantidad').oninput = function() {
         const val = parseFloat(this.value) || 0;

@@ -206,7 +206,7 @@
 @push('scripts')
 <script>
 function abrirTransferencia(id, nombre, stock) {
-    document.getElementById('formTransferir').action = '/productos/' + id + '/transferir-almacen';
+    document.getElementById('formTransferir').action = @json(route('productos.transferirAlmacen', '__ID__')).replace('__ID__', id);
     new bootstrap.Modal(document.getElementById('modalTransferir')).show();
 }
 </script>

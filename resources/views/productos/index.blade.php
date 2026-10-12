@@ -313,7 +313,7 @@ function abrirTransferencia(id, nombre, stock) {
     document.getElementById('modal_stock_disponible').textContent = stock;
     document.getElementById('modal_cantidad').max                 = stock;
     document.getElementById('modal_cantidad').value               = '';
-    document.getElementById('formTransferir').action              = '/productos/' + id + '/transferir-almacen';
+    document.getElementById('formTransferir').action              = @json(route('productos.transferirAlmacen', '__ID__')).replace('__ID__', id);
     new bootstrap.Modal(document.getElementById('modalTransferir')).show();
 }
 

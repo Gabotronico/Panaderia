@@ -347,7 +347,7 @@ document.getElementById('modalPagar').addEventListener('show.bs.modal', e => {
     document.getElementById('pagarNombre').textContent   = b.dataset.nombre;
     document.getElementById('pagarEstimado').textContent = parseFloat(b.dataset.estimado).toFixed(2);
     document.getElementById('pagarMonto').value          = b.dataset.estimado;
-    document.getElementById('formPagar').action          = `/gastos-pagos/${b.dataset.id}/pagar`;
+    document.getElementById('formPagar').action          = @json(route('gastos-pagos.pagar', '__ID__')).replace('__ID__', b.dataset.id);
 });
 
 document.getElementById('modalAjustar').addEventListener('show.bs.modal', e => {
@@ -355,7 +355,7 @@ document.getElementById('modalAjustar').addEventListener('show.bs.modal', e => {
     document.getElementById('ajustarNombre').textContent = b.dataset.nombre;
     document.getElementById('ajustarMonto').value        = b.dataset.estimado;
     document.getElementById('ajustarVence').value        = b.dataset.vence;
-    document.getElementById('formAjustar').action        = `/gastos-pagos/${b.dataset.id}/ajustar`;
+    document.getElementById('formAjustar').action        = @json(route('gastos-pagos.ajustar', '__ID__')).replace('__ID__', b.dataset.id);
 });
 </script>
 @endpush
