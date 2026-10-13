@@ -21,39 +21,33 @@ class GastoPagoController extends Controller
 
         $gastosFijos = GastoFijo::orderBy('categoria')->orderBy('nombre')->get();
 
-        $pagosAnio = GastoPago::where('periodo', 'like', $year . '-%')
-            ->get()
-            ->groupBy('gasto_fijo_id');
+        $pagosAnio = GastoPago::where('periodo', 'like', $year . '-%')->get();
+        $mesDe = fn (GastoPago $p) => (int) explode('-', $p->periodo)[1];
 
-        // Matriz: gasto_fijo_id → mes (1-12) → GastoPago|null
+        // Matriz: gasto_fijo_id → mes (1-12) → resumen del mes. Un gasto
+        // semanal tiene varios pagos en el mes; la celda los muestra juntos.
         $matriz = [];
         foreach ($gastosFijos as $gasto) {
-            $porMes = $pagosAnio->get($gasto->id, collect())
-                ->keyBy(fn($p) => (int) explode('-', $p->periodo)[1]);
-            $matriz[$gasto->id] = $porMes;
+            $matriz[$gasto->id] = $pagosAnio->where('gasto_fijo_id', $gasto->id)
+                ->groupBy($mesDe)
+                ->map(fn ($pagosDelMes) => $this->resumirMes($pagosDelMes));
         }
+
+        $pagados = $pagosAnio->where('estado', 'pagado');
 
         // Totales por mes (solo pagados)
         $totalesMes = [];
         for ($m = 1; $m <= 12; $m++) {
-            $totalesMes[$m] = $gastosFijos->sum(function ($gasto) use ($matriz, $m) {
-                $pago = $matriz[$gasto->id]->get($m);
-                return ($pago && $pago->estado === 'pagado') ? (float) $pago->monto_real : 0;
-            });
+            $totalesMes[$m] = (float) $pagados->filter(fn ($p) => $mesDe($p) === $m)->sum('monto_real');
         }
 
         // Totales por gasto fijo (suma anual pagada)
-        $totalesGasto = $gastosFijos->mapWithKeys(function ($gasto) use ($matriz) {
-            $total = collect($matriz[$gasto->id])->filter(fn($p) => $p->estado === 'pagado')->sum('monto_real');
-            return [$gasto->id => $total];
-        });
+        $totalesGasto = $gastosFijos->mapWithKeys(fn ($gasto) => [
+            $gasto->id => (float) $pagados->where('gasto_fijo_id', $gasto->id)->sum('monto_real'),
+        ]);
 
         $totalAnio      = array_sum($totalesMes);
-        $pendienteAnio  = $gastosFijos->sum(function ($gasto) use ($matriz) {
-            return collect($matriz[$gasto->id])
-                ->whereIn('estado', ['pendiente', 'vencido'])
-                ->sum('monto_estimado');
-        });
+        $pendienteAnio  = (float) $pagosAnio->whereIn('estado', ['pendiente', 'vencido'])->sum('monto_estimado');
 
         return view('gastos.pagos.anual', compact(
             'gastosFijos', 'matriz', 'totalesMes', 'totalesGasto',
@@ -104,30 +98,57 @@ class GastoPagoController extends Controller
         $gastos  = GastoFijo::where('activo', true)->get();
         $creados = 0;
 
+        $hoy = now()->toDateString();
+
         foreach ($gastos as $gasto) {
-            if (!$gasto->seVenceEnMes($year, $month)) {
-                continue;
-            }
+            // Uno por mes, o uno por semana si el gasto es semanal.
+            foreach ($gasto->vencimientosEnMes($year, $month) as $fechaVence) {
+                $fecha = $fechaVence->toDateString();
 
-            // El día de vencimiento no puede exceder el último día del mes
-            $ultimoDia   = Carbon::createFromDate($year, $month, 1)->daysInMonth;
-            $diaVence    = min($gasto->dia_vencimiento, $ultimoDia);
-            $fechaVence  = Carbon::createFromDate($year, $month, $diaVence);
+                // Un gasto semanal se distingue por la fecha; los demás, por
+                // el mes: si ya se le ajustó el vencimiento a mano, generar
+                // de nuevo no tiene que duplicarlo.
+                $clave = $gasto->esSemanal()
+                    ? ['gasto_fijo_id' => $gasto->id, 'fecha_vencimiento' => $fecha]
+                    : ['gasto_fijo_id' => $gasto->id, 'periodo' => $periodo];
 
-            GastoPago::firstOrCreate(
-                ['gasto_fijo_id' => $gasto->id, 'periodo' => $periodo],
-                [
-                    'fecha_vencimiento' => $fechaVence->toDateString(),
+                $pago = GastoPago::firstOrCreate($clave, [
+                    'periodo'           => $periodo,
+                    'fecha_vencimiento' => $fecha,
                     'monto_estimado'    => $gasto->monto_estimado,
-                    'estado'            => $fechaVence->isPast() ? 'vencido' : 'pendiente',
-                ]
-            );
+                    'estado'            => $fecha < $hoy ? 'vencido' : 'pendiente',
+                ]);
 
-            $creados++;
+                if ($pago->wasRecentlyCreated) {
+                    $creados++;
+                }
+            }
         }
 
         return redirect()->route('gastos-pagos.index', compact('year', 'month'))
             ->with('success', "Se generaron {$creados} gasto(s) para " . Carbon::createFromDate($year, $month, 1)->locale('es')->isoFormat('MMMM [de] YYYY') . '.');
+    }
+
+    /**
+     * Resume los pagos de un gasto en un mes para la matriz anual. Con uno
+     * solo es ese pago; con varios (gasto semanal) el mes está "pagado"
+     * recién cuando lo están todos, y "vencido" si alguno se pasó de fecha.
+     */
+    private function resumirMes($pagosDelMes): object
+    {
+        $pagados = $pagosDelMes->where('estado', 'pagado');
+
+        return (object) [
+            'estado' => match (true) {
+                $pagados->count() === $pagosDelMes->count() => 'pagado',
+                $pagosDelMes->contains('estado', 'vencido') => 'vencido',
+                default                                     => 'pendiente',
+            },
+            'monto_real'     => (float) $pagados->sum('monto_real'),
+            'monto_estimado' => (float) $pagosDelMes->sum('monto_estimado'),
+            'cantidad'       => $pagosDelMes->count(),
+            'pagados'        => $pagados->count(),
+        ];
     }
 
     public function pagar(Request $request, GastoPago $gastoPago)

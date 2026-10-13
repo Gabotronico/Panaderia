@@ -15,8 +15,8 @@
 <x-alerts />
 
 @php
-    $categorias = ['alquiler'=>'danger','servicios'=>'primary','mantenimiento'=>'warning','impuestos'=>'dark','otro'=>'secondary'];
-    $frecLabels = ['mensual'=>'Mensual','bimestral'=>'Bimestral','trimestral'=>'Trimestral','semestral'=>'Semestral','anual'=>'Anual'];
+    $categorias = ['alquiler'=>'danger','servicios'=>'primary','personal'=>'info','mantenimiento'=>'warning','impuestos'=>'dark','otro'=>'secondary'];
+    $frecLabels = \App\Models\GastoFijo::FRECUENCIAS;
     $meses = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 @endphp
 
@@ -53,11 +53,13 @@
                         <td class="text-end fw-bold">Bs {{ number_format($g->monto_estimado, 2) }}</td>
                         <td>
                             {{ $frecLabels[$g->frecuencia] ?? $g->frecuencia }}
-                            @if($g->frecuencia !== 'mensual')
+                            @if($g->esSemanal())
+                                <br><small class="text-muted">Bs {{ number_format($g->estimadoEnMes(now()->year, now()->month), 2) }} este mes</small>
+                            @elseif($g->frecuencia !== 'mensual')
                                 <br><small class="text-muted">desde {{ $meses[$g->mes_inicio] }}</small>
                             @endif
                         </td>
-                        <td class="text-center">Día {{ $g->dia_vencimiento }}</td>
+                        <td class="text-center">{{ $g->vencimiento_texto }}</td>
                         <td>{{ $g->proveedor ?? '—' }}</td>
                         <td class="text-center">
                             @if($g->activo)
@@ -94,9 +96,11 @@
                 @if($gastos->where('activo', true)->count())
                 <tfoot class="table-light fw-bold">
                     <tr>
-                        <td colspan="2">Total estimado mensual (activos):</td>
+                        {{-- Mensuales y semanales: lo que se repite todos los
+                             meses. Los semanales cuentan por sus 4 o 5 semanas. --}}
+                        <td colspan="2">Total estimado de este mes (mensuales y semanales activos):</td>
                         <td class="text-end">
-                            Bs {{ number_format($gastos->where('activo', true)->where('frecuencia', 'mensual')->sum('monto_estimado'), 2) }}
+                            Bs {{ number_format($gastos->where('activo', true)->whereIn('frecuencia', ['mensual', 'semanal'])->sum(fn ($g) => $g->estimadoEnMes(now()->year, now()->month)), 2) }}
                         </td>
                         <td colspan="5"></td>
                     </tr>

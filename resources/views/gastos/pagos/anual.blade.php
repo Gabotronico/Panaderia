@@ -4,8 +4,8 @@
 
 @php
     $meses     = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    $catBadge  = ['alquiler'=>'danger','servicios'=>'primary','mantenimiento'=>'warning text-dark','impuestos'=>'dark','otro'=>'secondary'];
-    $catLabel  = ['alquiler'=>'Alquiler','servicios'=>'Servicios','mantenimiento'=>'Mantenim.','impuestos'=>'Impuestos','otro'=>'Otro'];
+    $catBadge  = ['alquiler'=>'danger','servicios'=>'primary','personal'=>'info text-dark','mantenimiento'=>'warning text-dark','impuestos'=>'dark','otro'=>'secondary'];
+    $catLabel  = ['alquiler'=>'Alquiler','servicios'=>'Servicios','personal'=>'Personal','mantenimiento'=>'Mantenim.','impuestos'=>'Impuestos','otro'=>'Otro'];
     $prevYear  = $year - 1;
     $nextYear  = $year + 1;
 @endphp
@@ -294,8 +294,12 @@
                                         Pend.
                                     </span>
                                 @endif
+                                {{-- Gasto semanal: cuántas semanas del mes van pagadas. --}}
+                                @if(($pago->cantidad ?? 1) > 1)
+                                    <small class="text-muted d-block" style="font-size:.62rem;">{{ $pago->pagados }}/{{ $pago->cantidad }} sem.</small>
+                                @endif
                             @elseif($aplica)
-                                <span class="text-muted" title="No generado — estimado Bs {{ number_format($gasto->monto_estimado, 2) }}">
+                                <span class="text-muted" title="No generado — estimado Bs {{ number_format($gasto->estimadoEnMes($year, $m), 2) }}">
                                     <i class="fas fa-minus" style="font-size:.6rem;"></i>
                                 </span>
                             @else

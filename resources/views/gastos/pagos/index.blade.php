@@ -6,7 +6,7 @@
     $mesesNombres = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     $nombreMes    = $mesesNombres[(int) $month] ?? '';
     $estadoBadge  = ['pendiente'=>'warning text-dark','pagado'=>'success','vencido'=>'danger'];
-    $catBadge     = ['alquiler'=>'danger','servicios'=>'primary','mantenimiento'=>'warning text-dark','impuestos'=>'dark','otro'=>'secondary'];
+    $catBadge     = ['alquiler'=>'danger','servicios'=>'primary','personal'=>'info text-dark','mantenimiento'=>'warning text-dark','impuestos'=>'dark','otro'=>'secondary'];
     $prevMonth    = \Carbon\Carbon::createFromDate($year, $month, 1)->subMonth();
     $nextMonth    = \Carbon\Carbon::createFromDate($year, $month, 1)->addMonth();
 @endphp
@@ -148,7 +148,12 @@
                     @endphp
                     <tr class="{{ $p->estado === 'vencido' ? 'table-danger' : '' }}">
                         <td>
-                            <div class="fw-semibold text-dark">{{ $p->gastoFijo->nombre }}</div>
+                            <div class="fw-semibold text-dark">
+                                {{ $p->gastoFijo->nombre }}
+                                @if($p->gastoFijo->esSemanal())
+                                    <span class="badge bg-light text-secondary border fw-normal ms-1">semanal</span>
+                                @endif
+                            </div>
                             @if($p->gastoFijo->proveedor)
                                 <small class="text-muted">{{ $p->gastoFijo->proveedor }}</small>
                             @endif

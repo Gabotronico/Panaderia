@@ -179,9 +179,11 @@
                         <tr>
                             <td class="ps-4 text-muted">
                                 <i class="fas fa-minus text-danger me-2"></i>Gastos variables
-                                <div class="text-muted" style="font-size:.7rem; padding-left:1.65rem;">
-                                    Transporte, fletes, reparaciones puntuales
-                                </div>
+                                @if($variablesPorCategoria->isEmpty())
+                                    <div class="text-muted" style="font-size:.7rem; padding-left:1.65rem;">
+                                        Transporte, fletes, reparaciones puntuales
+                                    </div>
+                                @endif
                             </td>
                             <td class="text-end">Bs {{ number_format($actual['gastos_variables'], 2) }}</td>
                             <td class="text-end">
@@ -194,6 +196,21 @@
                                 {{ $actual['ingresos'] > 0 ? round($actual['gastos_variables'] / $actual['ingresos'] * 100, 1) : 0 }}%
                             </td>
                         </tr>
+                        {{-- En qué se fueron: una fila por categoría. Son parte
+                             del renglón de arriba, no restan otra vez. --}}
+                        @foreach($variablesPorCategoria as $cat)
+                            <tr class="fila-detalle">
+                                <td class="text-muted" style="padding-left:3.4rem;">
+                                    {{ $cat->etiqueta_categoria }}
+                                    <span class="text-muted">· {{ $cat->cantidad }} {{ $cat->cantidad == 1 ? 'gasto' : 'gastos' }}</span>
+                                </td>
+                                <td class="text-end text-muted">Bs {{ number_format($cat->total, 2) }}</td>
+                                <td></td>
+                                <td class="text-end text-muted">
+                                    {{ $actual['ingresos'] > 0 ? round($cat->total / $actual['ingresos'] * 100, 1) : 0 }}%
+                                </td>
+                            </tr>
+                        @endforeach
 
                         {{-- La merma es informativa: el insumo perdido ya se pagó
                              al comprarlo, así que no vuelve a restar acá. Se
@@ -331,6 +348,32 @@
                         @endforeach
                         </tbody>
                     </table>
+
+                    @if($variablesPorCategoria->isNotEmpty())
+                        <div class="d-flex justify-content-between align-items-baseline mt-4">
+                            <div class="section-title mb-0">Gastos variables por categoría</div>
+                            <a href="{{ route('gastos-variables.index', ['mes' => $month, 'anio' => $year]) }}"
+                               class="small text-decoration-none">Ver detalle</a>
+                        </div>
+                        <table class="table table-sm mb-0 mt-2">
+                            <tbody>
+                            @foreach($variablesPorCategoria as $cat)
+                                @php $parte = $actual['gastos_variables'] > 0 ? $cat->total / $actual['gastos_variables'] * 100 : 0; @endphp
+                                <tr>
+                                    <td>
+                                        {{ $cat->etiqueta_categoria }}
+                                        <span class="text-muted small">· {{ $cat->cantidad }}</span>
+                                        <div class="barra-categoria" aria-hidden="true">
+                                            <span style="width: {{ $parte }}%;"></span>
+                                        </div>
+                                    </td>
+                                    <td class="text-end fw-semibold align-middle">Bs {{ number_format($cat->total, 2) }}</td>
+                                    <td class="text-end text-muted align-middle" style="width:52px;">{{ round($parte) }}%</td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    @endif
 
                     @if($gastosPorCategoria->isNotEmpty())
                         <div class="section-title mt-4">Gastos fijos por categoría</div>
@@ -488,6 +531,9 @@
         background: #f1f5f9;
     }
     .stacked-seg { transition: opacity .15s; }
+    .fila-detalle td { font-size: .8rem; padding-top: .3rem; padding-bottom: .3rem; border-bottom-style: dashed; }
+    .barra-categoria { height: 5px; margin-top: .3rem; border-radius: 3px; background: #f1f5f9; overflow: hidden; }
+    .barra-categoria span { display: block; height: 100%; border-radius: 3px; background: #ef4444; }
     .stacked-seg:hover { opacity: .82; }
 
     .legend-dot {
