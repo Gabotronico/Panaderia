@@ -12,7 +12,9 @@ COPY resources ./resources
 RUN npm run build
 
 # ── Aplicación: PHP-FPM + nginx (escucha en 8080) ──────────────────────────
-FROM serversideup/php:8.3-fpm-nginx-bookworm-v3.6.0
+# PHP 8.3.36 o posterior: corrige PHP2Shell (CVE-2026-109618 y -109619). La
+# rama v3 de esta imagen dejó de recibir actualizaciones y quedó en 8.3.24.
+FROM serversideup/php:8.3-fpm-nginx-bookworm-v4.5.3
 
 USER root
 # gd: imágenes dentro de los PDF de dompdf. intl: formatos de Laravel.
