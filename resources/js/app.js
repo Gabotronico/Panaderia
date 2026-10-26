@@ -104,6 +104,13 @@ document.addEventListener('submit', (event) => {
         return;
     }
 
+    // Un formulario que abre en otra pestaña (los reportes) no saca de esta
+    // página: el aviso de carga quedaría fijo para siempre.
+    const destino = event.submitter?.getAttribute('formtarget') || event.target.getAttribute('target');
+    if (destino && destino !== '_self') {
+        return;
+    }
+
     if (event.submitter) {
         setTimeout(() => {
             event.submitter.disabled = true;

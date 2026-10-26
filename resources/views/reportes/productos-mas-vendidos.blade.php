@@ -7,11 +7,17 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
             <h4><i class="fas fa-trophy me-2"></i>Productos Más Vendidos</h4>
-            <a href="{{ route('reportes.productos-mas-vendidos', ['fecha_inicio' => $request->fecha_inicio, 'fecha_fin' => $request->fecha_fin, 'tipo' => 'pdf']) }}" 
+            <div class="d-flex gap-2">
+            <a href="{{ route('reportes.productos-mas-vendidos', ['fecha_inicio' => $request->fecha_inicio, 'fecha_fin' => $request->fecha_fin, 'tipo' => 'pdf']) }}" download 
                class="btn btn-danger" 
                target="_blank">
                 <i class="fas fa-file-pdf me-2"></i>Descargar PDF
             </a>
+            <a href="{{ route('reportes.productos-mas-vendidos', ['fecha_inicio' => $request->fecha_inicio, 'fecha_fin' => $request->fecha_fin, 'tipo' => 'excel']) }}" download
+               class="btn btn-success">
+                <i class="fas fa-file-excel me-2"></i>Descargar Excel
+            </a>
+            </div>
         </div>
     </div>
 </div>

@@ -40,6 +40,9 @@
                         <button type="submit" name="tipo" value="pdf" class="btn btn-outline-danger">
                             <i class="fas fa-file-pdf me-2"></i>Descargar PDF
                         </button>
+                        <button type="submit" name="tipo" value="excel" class="btn btn-outline-success">
+                            <i class="fas fa-file-excel me-2"></i>Descargar Excel
+                        </button>
                     </div>
                 </form>
             </div>
@@ -75,6 +78,9 @@
                         <button type="submit" name="tipo" value="pdf" class="btn btn-outline-danger">
                             <i class="fas fa-file-pdf me-2"></i>Descargar PDF
                         </button>
+                        <button type="submit" name="tipo" value="excel" class="btn btn-outline-success">
+                            <i class="fas fa-file-excel me-2"></i>Descargar Excel
+                        </button>
                     </div>
                 </form>
             </div>
@@ -98,6 +104,9 @@
                 <div class="d-grid">
                     <a href="{{ route('reportes.inventario') }}" class="btn btn-success" target="_blank">
                         <i class="fas fa-eye me-2"></i>Ver Reporte
+                    </a>
+                    <a href="{{ route('reportes.inventario', ['tipo' => 'excel']) }}" download class="btn btn-outline-success mt-2">
+                        <i class="fas fa-file-excel me-2"></i>Descargar Excel
                     </a>
                 </div>
             </div>
@@ -132,6 +141,9 @@
                         </button>
                         <button type="submit" name="tipo" value="pdf" class="btn btn-outline-danger">
                             <i class="fas fa-file-pdf me-2"></i>Descargar PDF
+                        </button>
+                        <button type="submit" name="tipo" value="excel" class="btn btn-outline-success">
+                            <i class="fas fa-file-excel me-2"></i>Descargar Excel
                         </button>
                     </div>
                 </form>
