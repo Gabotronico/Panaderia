@@ -86,6 +86,11 @@ final class Actualizaciones
             'instalada' => self::instalada(),
             'hay_actualizacion' => self::hayNueva($ultima),
             'ultima' => $ultima,
+            'releases' => sprintf(
+                'https://github.com/%s/%s/releases',
+                (string) config('actualizaciones.owner'),
+                (string) config('actualizaciones.repo'),
+            ),
         ];
     }
 

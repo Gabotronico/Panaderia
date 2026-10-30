@@ -49,6 +49,10 @@
                         <div class="actualizador-notas" id="actualizador-notas"></div>
                         <div class="d-flex flex-wrap justify-content-end gap-2 mt-4">
                             <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Ahora no</button>
+                            <a id="actualizador-releases" class="btn btn-light border" hidden
+                               href="#" target="_blank" rel="noopener">
+                                <i class="fas fa-box-archive me-1"></i>Ver releases
+                            </a>
                             <a id="actualizador-descarga-web" class="btn btn-primary" hidden
                                href="#" rel="noopener">
                                 <i class="fas fa-download me-1"></i>Descargar para Windows

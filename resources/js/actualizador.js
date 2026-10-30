@@ -91,14 +91,16 @@ export default function iniciarActualizador() {
     function pintarBoton() {
         const descarga = estado?.descarga ?? { estado: 'inactiva' };
 
-        if (!estado || !estado.ultima) {
-            boton.hidden = true;
-            return;
-        }
-
+        // En el navegador el botón es la puerta de entrada a la descarga: se
+        // muestra siempre, aunque todavía no haya una versión publicada.
         if (!escritorio) {
             etiqueta.textContent = 'Descargar';
             boton.hidden = false;
+            return;
+        }
+
+        if (!estado || !estado.ultima) {
+            boton.hidden = true;
             return;
         }
 
@@ -125,7 +127,30 @@ export default function iniciarActualizador() {
 
     function pintarInfo() {
         const ultima = estado?.ultima;
-        if (!ultima) return;
+
+        const enlace = document.getElementById('actualizador-descarga-web');
+        const releases = document.getElementById('actualizador-releases');
+        const descargar = document.getElementById('actualizador-descargar');
+
+        releases.hidden = true;
+
+        if (!ultima) {
+            document.getElementById('actualizador-titulo').textContent = 'Descargar Obrador';
+            document.getElementById('actualizador-version').textContent = 'Todavía no hay una versión publicada';
+            document.getElementById('actualizador-fecha').textContent = '';
+            document.getElementById('actualizador-notas').textContent =
+                'Cuando se publique la primera versión, el instalador va a estar disponible desde acá.';
+
+            enlace.hidden = true;
+            descargar.hidden = true;
+
+            if (estado?.releases) {
+                releases.href = estado.releases;
+                releases.hidden = false;
+            }
+
+            return;
+        }
 
         document.getElementById('actualizador-titulo').textContent = 'Nueva versión disponible';
         document.getElementById('actualizador-version').textContent = `Versión ${ultima.version}`;
@@ -136,9 +161,6 @@ export default function iniciarActualizador() {
         document.getElementById('actualizador-fecha').textContent = detalles;
 
         document.getElementById('actualizador-notas').textContent = ultima.notas || 'Sin detalles de la versión.';
-
-        const enlace = document.getElementById('actualizador-descarga-web');
-        const descargar = document.getElementById('actualizador-descargar');
 
         if (escritorio) {
             enlace.hidden = true;

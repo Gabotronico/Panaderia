@@ -108,7 +108,10 @@ class ActualizacionTest extends TestCase
             ->getJson('/prueba/sistema/actualizaciones')
             ->assertOk()
             ->assertJsonPath('ultima', null)
-            ->assertJsonPath('hay_actualizacion', false);
+            ->assertJsonPath('hay_actualizacion', false)
+            // Sin release, la web igual muestra el botón: el modal cae en el
+            // enlace a la página de releases.
+            ->assertJsonPath('releases', 'https://github.com/dueno/releases/releases');
     }
 
     public function test_en_el_navegador_no_se_puede_descargar_ni_instalar(): void
