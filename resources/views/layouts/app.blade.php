@@ -892,6 +892,8 @@
         <header class="topbar">
             <h5 class="topbar-title">@yield('page-title', 'Dashboard')</h5>
 
+            @include('partials.actualizador')
+
             <div class="dropdown">
                 <a class="topbar-user-btn dropdown-toggle" href="#" data-bs-toggle="dropdown">
                     <div class="topbar-avatar">{{ strtoupper(substr(Auth::user()->name, 0, 2)) }}</div>

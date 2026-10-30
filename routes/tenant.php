@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ActualizacionController;
 use App\Http\Controllers\AdelantoController;
 use App\Http\Controllers\AlmacenController;
 use App\Http\Controllers\AsistenciaController;
@@ -155,6 +156,15 @@ Route::middleware([
         });
 
         Route::prefix('sistema')->name('system.')->group(function () {
+            // Descarga y actualización de la app de escritorio.
+            Route::prefix('actualizaciones')->name('updates.')->group(function () {
+                Route::get('/', [ActualizacionController::class, 'estado'])->name('estado');
+                Route::post('comprobar', [ActualizacionController::class, 'comprobar'])->name('comprobar');
+                Route::post('descargar', [ActualizacionController::class, 'descargar'])->name('descargar');
+                Route::get('progreso', [ActualizacionController::class, 'progreso'])->name('progreso');
+                Route::post('instalar', [ActualizacionController::class, 'instalar'])->name('instalar');
+            });
+
             Route::view('/acerca-de', 'system.about')->name('about');
             Route::get('/respaldos', [BackupController::class, 'index'])->name('backups.index');
             Route::get('/respaldos/descargar', [BackupController::class, 'download'])->name('backups.download');

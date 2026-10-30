@@ -12,6 +12,7 @@ import '@fontsource/inter/latin-800.css';
 // Manuscrita de los lemas de la pantalla de ingreso.
 import '@fontsource/kaushan-script/latin-400.css';
 import Chart from 'chart.js/auto';
+import iniciarActualizador from './actualizador';
 
 window.bootstrap = bootstrap;
 window.Chart = Chart;
@@ -229,3 +230,6 @@ document.querySelectorAll('form[data-busqueda-en-vivo]').forEach((form) => {
         buscar();
     });
 });
+
+// Botón de descarga/actualización del encabezado (web y escritorio).
+iniciarActualizador();

@@ -144,6 +144,13 @@ docker compose -f compose.local.yaml restart vite
 **Un puerto está ocupado.** 8094 (app), 5173 (Vite) y 3308 (base). Apagá lo que
 lo esté usando o cambiá el puerto del host en `compose.local.yaml`.
 
+**Los cambios de JS/CSS no aparecen.** Vite, con el código montado desde
+Windows, a veces no detecta los archivos nuevos. Reiniciá el contenedor:
+
+```bash
+docker compose -f compose.local.yaml restart vite
+```
+
 **No entra ninguna contraseña.** Corré otra vez el script de preparación:
 vuelve a fijar las contraseñas de las cuentas de prueba.
 
