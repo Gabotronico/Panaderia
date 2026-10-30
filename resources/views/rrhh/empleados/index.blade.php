@@ -42,7 +42,8 @@
 </div>
 
 {{-- Filtros --}}
-<form method="GET" action="{{ route('empleados.index') }}" class="filter-bar">
+{{-- Filtra solo mientras se escribe o al cambiar una lista (resources/js/app.js). --}}
+<form method="GET" action="{{ route('empleados.index') }}" class="filter-bar" data-busqueda-en-vivo>
     <div class="row g-2 align-items-center">
         <div class="col-sm-5 col-md-4">
             <div class="input-group">
@@ -69,15 +70,12 @@
                 <option value="todos"     @selected($estado === 'todos')>Todos</option>
             </select>
         </div>
-        <div class="col-auto d-flex gap-2">
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-filter me-1"></i>Filtrar
-            </button>
+        <div class="col-auto d-flex gap-2" data-refrescar="acciones">
             @if($buscar || $cargo || $estado !== 'activos')
-                <a href="{{ route('empleados.index') }}" class="btn btn-light border">Limpiar</a>
+                <a href="{{ route('empleados.index') }}" class="btn btn-light border" data-busqueda-limpiar>Limpiar</a>
             @endif
         </div>
-        <div class="col-auto ms-auto text-muted" style="font-size:.82rem;">
+        <div class="col-auto ms-auto text-muted" style="font-size:.82rem;" data-refrescar="total">
             {{ $empleados->total() }} empleado(s)
             @if($estado === 'activos' && $totalInactivos > 0)
                 <a href="{{ route('empleados.index', ['estado' => 'inactivos']) }}"
@@ -89,7 +87,7 @@
     </div>
 </form>
 
-<div class="card">
+<div class="card" data-refrescar="resultados">
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover mb-0">

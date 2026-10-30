@@ -35,7 +35,7 @@ class DesktopReliabilityTest extends TestCase
 
     public function test_html_pages_are_not_cached_by_the_desktop_webview(): void
     {
-        $response = $this->get('/setup');
+        $response = $this->get(route('setup.create'));
 
         $response->assertOk();
         $cacheControl = (string) $response->headers->get('Cache-Control');

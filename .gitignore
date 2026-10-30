@@ -24,9 +24,12 @@
 /public/storage
 /storage/*.key
 /storage/pail
+/storage/tenant*/
 /vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
 /nativephp/electron/dist
 .tmp-asar-restore-*
+
+/.env.produccion

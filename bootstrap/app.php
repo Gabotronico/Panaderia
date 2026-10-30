@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -30,6 +31,20 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EsAdministrador::class,
             'caja.abierta' => \App\Http\Middleware\RequiereCajaAbierta::class,
         ]);
+
+        // En el servidor la app corre detrás de un proxy (nginx del
+        // contenedor, Cloudflare): sin esto no ve que la petición vino por
+        // HTTPS y arma los enlaces y redirecciones con http://.
+        $middleware->trustProxies(at: '*');
+
+        // Cada lado tiene su propio login: el panel del dominio central y el
+        // de cada panadería.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->routeIs('central.*')
+            ? route('central.login')
+            : route('login'));
+        $middleware->redirectUsersTo(fn (Request $request) => $request->routeIs('central.*')
+            ? route('central.panaderias.index')
+            : route('dashboard'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $exceptions->respond(function (Response $response) {
@@ -55,17 +70,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 ]);
             }
 
-            try {
-                $target = \App\Models\User::query()->exists()
-                    ? 'login'
-                    : 'setup.create';
-            } catch (\Throwable) {
-                $target = 'setup.create';
+            if (! tenancy()->initialized) {
+                $target = 'central.login';
+            } else {
+                try {
+                    $target = \App\Models\User::query()->exists()
+                        ? 'login'
+                        : 'setup.create';
+                } catch (\Throwable) {
+                    $target = 'setup.create';
+                }
             }
 
             return redirect()->route($target)->with(
                 'error',
-                'La sesión local se reinició. Por favor, inténtelo nuevamente.'
+                'La sesión se reinició. Por favor, inténtelo nuevamente.'
             );
         });
     })->create();

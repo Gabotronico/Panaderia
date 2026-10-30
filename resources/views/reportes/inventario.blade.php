@@ -7,9 +7,14 @@
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
             <h4><i class="fas fa-boxes me-2"></i>Reporte de Inventario</h4>
-            <button onclick="window.print()" class="btn btn-primary">
-                <i class="fas fa-print me-2"></i>Imprimir
-            </button>
+            <div class="d-flex gap-2">
+                <a href="{{ route('reportes.inventario', ['tipo' => 'excel']) }}" download class="btn btn-success">
+                    <i class="fas fa-file-excel me-2"></i>Descargar Excel
+                </a>
+                <button onclick="window.print()" class="btn btn-primary">
+                    <i class="fas fa-print me-2"></i>Imprimir
+                </button>
+            </div>
         </div>
     </div>
 </div>

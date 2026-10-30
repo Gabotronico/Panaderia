@@ -1,0 +1,55 @@
+# Obrador en producción.
+#
+# Servidor compartido con un Caddy del sistema (VPS de INC Group): la app
+# queda en 127.0.0.1:8094 y el Caddy existente la publica con HTTPS
+# (docker/caddy/obrador-compartido.caddy).
+#
+#   docker compose up -d --build
+#
+# VPS dedicado a Obrador, con su propio Caddy en 80/443:
+#
+#   docker compose -f compose.yaml -f compose.caddy.yaml up -d --build
+#
+# Ver documentacion/despliegue-docker.md.
+
+name: obrador
+
+services:
+  app:
+    build: .
+    image: obrador-app
+    restart: unless-stopped
+    env_file: .env.produccion
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Solo local: lo publica el proxy HTTPS, nunca directo a internet.
+      - "127.0.0.1:8094:8080"
+    volumes:
+      # Imágenes de productos, respaldos y logs de cada panadería.
+      - storage:/var/www/html/storage
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  db:
+    image: mariadb:11.4.13-noble
+    restart: unless-stopped
+    env_file: .env.produccion
+    volumes:
+      - db:/var/lib/mysql
+      - ./docker/mariadb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  storage:
+  db:

@@ -21,7 +21,7 @@
     <div class="col-md-6">
         <label class="form-label fw-bold">Categoría <span class="text-danger">*</span></label>
         <select name="categoria" class="form-select @error('categoria') is-invalid @enderror">
-            @foreach(['alquiler'=>'Alquiler','servicios'=>'Servicios (luz, agua, gas, internet)','mantenimiento'=>'Mantenimiento','impuestos'=>'Impuestos / tasas','otro'=>'Otro'] as $val => $lbl)
+            @foreach(['alquiler'=>'Alquiler','servicios'=>'Servicios (luz, agua, gas, internet)','personal'=>'Personal y beneficios (bono de alimentación, transporte)','mantenimiento'=>'Mantenimiento','impuestos'=>'Impuestos / tasas','otro'=>'Otro'] as $val => $lbl)
             <option value="{{ $val }}" @selected(old('categoria', $g?->categoria) === $val)>{{ $lbl }}</option>
             @endforeach
         </select>
@@ -29,7 +29,10 @@
     </div>
 
     <div class="col-md-6">
-        <label class="form-label fw-bold">Monto estimado (Bs) <span class="text-danger">*</span></label>
+        <label class="form-label fw-bold">
+            Monto estimado (Bs) <span class="text-danger">*</span>
+            <span class="text-muted fw-normal d-none" data-solo-semanal>— por semana</span>
+        </label>
         <div class="input-group">
             <span class="input-group-text">Bs</span>
             <input type="number" name="monto_estimado" class="form-control @error('monto_estimado') is-invalid @enderror"
@@ -41,15 +44,27 @@
     <div class="col-md-6">
         <label class="form-label fw-bold">Frecuencia <span class="text-danger">*</span></label>
         <select name="frecuencia" id="frecuencia" class="form-select @error('frecuencia') is-invalid @enderror"
-                onchange="toggleMesInicio()">
-            @foreach(['mensual'=>'Mensual','bimestral'=>'Bimestral (cada 2 meses)','trimestral'=>'Trimestral (cada 3 meses)','semestral'=>'Semestral (cada 6 meses)','anual'=>'Anual'] as $val => $lbl)
+                onchange="ajustarFrecuencia()">
+            @foreach(['semanal'=>'Semanal (cada semana)','mensual'=>'Mensual','bimestral'=>'Bimestral (cada 2 meses)','trimestral'=>'Trimestral (cada 3 meses)','semestral'=>'Semestral (cada 6 meses)','anual'=>'Anual'] as $val => $lbl)
             <option value="{{ $val }}" @selected(old('frecuencia', $g?->frecuencia ?? 'mensual') === $val)>{{ $lbl }}</option>
             @endforeach
         </select>
         @error('frecuencia')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
 
-    <div class="col-md-6">
+    {{-- Un gasto semanal vence un día de la semana; los demás, un día del mes. --}}
+    <div class="col-md-6" id="diaSemanaWrap">
+        <label class="form-label fw-bold">Día de pago <span class="text-danger">*</span></label>
+        <select name="dia_semana" class="form-select @error('dia_semana') is-invalid @enderror">
+            @foreach(\App\Models\GastoFijo::DIAS_SEMANA as $num => $nom)
+            <option value="{{ $num }}" @selected(old('dia_semana', $g?->dia_semana ?? 6) == $num)>Cada {{ mb_strtolower($nom) }}</option>
+            @endforeach
+        </select>
+        <small class="text-muted">Se genera un pago por cada semana del mes (4 o 5).</small>
+        @error('dia_semana')<div class="invalid-feedback">{{ $message }}</div>@enderror
+    </div>
+
+    <div class="col-md-6" id="diaMesWrap">
         <label class="form-label fw-bold">Día de vencimiento <span class="text-danger">*</span></label>
         <div class="input-group">
             <input type="number" name="dia_vencimiento" class="form-control @error('dia_vencimiento') is-invalid @enderror"
@@ -85,10 +100,16 @@
 
 @push('scripts')
 <script>
-function toggleMesInicio() {
+// Muestra solo los campos que aplican a la frecuencia elegida.
+function ajustarFrecuencia() {
     const frec = document.getElementById('frecuencia').value;
-    document.getElementById('mesInicioWrap').style.display = frec === 'mensual' ? 'none' : 'block';
+    const semanal = frec === 'semanal';
+
+    document.getElementById('diaSemanaWrap').style.display = semanal ? 'block' : 'none';
+    document.getElementById('diaMesWrap').style.display = semanal ? 'none' : 'block';
+    document.getElementById('mesInicioWrap').style.display = (semanal || frec === 'mensual') ? 'none' : 'block';
+    document.querySelectorAll('[data-solo-semanal]').forEach(el => el.classList.toggle('d-none', !semanal));
 }
-toggleMesInicio();
+ajustarFrecuencia();
 </script>
 @endpush

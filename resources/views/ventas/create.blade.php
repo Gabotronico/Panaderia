@@ -60,7 +60,7 @@
                                  onclick="agregarProducto({{ $producto->id }}, '{{ addslashes($producto->nombre) }}', {{ $producto->precio_venta }}, {{ $producto->stock_almacen }})">
                                 <div class="card-body text-center">
                                     @if($producto->imagen)
-                                        <img src="{{ asset('storage/' . $producto->imagen) }}"
+                                        <img src="{{ route('local-storage.show', $producto->imagen) }}"
                                              alt="{{ $producto->nombre }}"
                                              class="img-fluid mb-2 rounded"
                                              style="max-height: 100px; object-fit: cover;">

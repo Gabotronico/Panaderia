@@ -10,6 +10,7 @@ use App\Models\CorteCaja;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\Reportes\ReporteExcel;
 
 class ReporteController extends Controller
 {
@@ -89,6 +90,10 @@ class ReporteController extends Controller
             'request'
         );
 
+        if ($request->tipo === 'excel') {
+            return ReporteExcel::ventas($datos);
+        }
+
         if ($request->tipo === 'pdf') {
             $pdf = Pdf::loadView('reportes.ventas-pdf', $datos)->setPaper('a4', 'portrait');
 
@@ -126,6 +131,10 @@ class ReporteController extends Controller
             ->orderBy('total_vendido', 'desc')
             ->get();
 
+        if ($request->tipo === 'excel') {
+            return ReporteExcel::productosMasVendidos($productos, $request);
+        }
+
         if ($request->tipo === 'pdf') {
             $pdf = Pdf::loadView('reportes.productos-mas-vendidos-pdf', compact('productos', 'request'));
             return $pdf->download('reporte-productos-mas-vendidos.pdf');
@@ -135,7 +144,7 @@ class ReporteController extends Controller
     }
 
     // Reporte de Inventario
-    public function inventario()
+    public function inventario(Request $request)
     {
         $productos = Producto::with('categoria')
             ->where('activo', true)
@@ -154,6 +163,10 @@ class ReporteController extends Controller
             return $insumo->cantidad_stock <= $insumo->stock_minimo;
         });
 
+        if ($request->tipo === 'excel') {
+            return ReporteExcel::inventario(compact('productos', 'insumos', 'productosStockBajo', 'insumosStockBajo'));
+        }
+
         return view('reportes.inventario', compact(
             'productos',
             'insumos',
@@ -171,7 +184,7 @@ class ReporteController extends Controller
           ]);
 
     // Obtener cortes en el rango de fechas
-    $cortes = CorteCaja::with('user')
+    $cortes = CorteCaja::with('user', 'cerradoPor')
         ->whereBetween('fecha_corte', [$request->fecha_inicio, $request->fecha_fin])
         ->orderBy('fecha_corte', 'desc')
         ->get();
@@ -202,6 +215,20 @@ class ReporteController extends Controller
         } else {
             $cortesConFaltante++;
         }
+    }
+
+    if ($request->tipo === 'excel') {
+        return ReporteExcel::cortesCaja(compact(
+            'cortes',
+            'request',
+            'totalInicial',
+            'totalVentas',
+            'totalEfectivo',
+            'totalQr',
+            'cortesCuadrados',
+            'cortesConSobrante',
+            'cortesConFaltante'
+        ));
     }
 
     // Si es PDF

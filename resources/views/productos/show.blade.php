@@ -14,7 +14,7 @@
                     <!-- Imagen -->
                     <div class="col-md-4 text-center mb-4">
                         @if($producto->imagen)
-                            <img src="{{ asset('storage/' . $producto->imagen) }}"
+                            <img src="{{ route('local-storage.show', $producto->imagen) }}"
                                  alt="{{ $producto->nombre }}"
                                  class="img-thumbnail"
                                  style="max-width: 100%;">
@@ -206,7 +206,7 @@
 @push('scripts')
 <script>
 function abrirTransferencia(id, nombre, stock) {
-    document.getElementById('formTransferir').action = '/productos/' + id + '/transferir-almacen';
+    document.getElementById('formTransferir').action = @json(route('productos.transferirAlmacen', '__ID__')).replace('__ID__', id);
     new bootstrap.Modal(document.getElementById('modalTransferir')).show();
 }
 </script>

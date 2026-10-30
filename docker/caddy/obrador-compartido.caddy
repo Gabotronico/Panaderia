@@ -1,0 +1,18 @@
+# Bloque para el Caddy del sistema de un servidor compartido
+# (/etc/caddy/Caddyfile del VPS de INC Group). La app escucha en
+# 127.0.0.1:8094 (compose.yaml). Todas las panaderías viven bajo este mismo
+# dominio (obrador.incgroupbo.com/luna), así que alcanza con un certificado.
+
+obrador.incgroupbo.com {
+	# Respaldos de hasta 512 MB (BackupController).
+	request_body {
+		max_size 520MB
+	}
+
+	reverse_proxy 127.0.0.1:8094
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+	}
+}

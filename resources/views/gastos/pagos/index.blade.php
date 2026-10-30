@@ -6,7 +6,7 @@
     $mesesNombres = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
     $nombreMes    = $mesesNombres[(int) $month] ?? '';
     $estadoBadge  = ['pendiente'=>'warning text-dark','pagado'=>'success','vencido'=>'danger'];
-    $catBadge     = ['alquiler'=>'danger','servicios'=>'primary','mantenimiento'=>'warning text-dark','impuestos'=>'dark','otro'=>'secondary'];
+    $catBadge     = ['alquiler'=>'danger','servicios'=>'primary','personal'=>'info text-dark','mantenimiento'=>'warning text-dark','impuestos'=>'dark','otro'=>'secondary'];
     $prevMonth    = \Carbon\Carbon::createFromDate($year, $month, 1)->subMonth();
     $nextMonth    = \Carbon\Carbon::createFromDate($year, $month, 1)->addMonth();
 @endphp
@@ -148,7 +148,12 @@
                     @endphp
                     <tr class="{{ $p->estado === 'vencido' ? 'table-danger' : '' }}">
                         <td>
-                            <div class="fw-semibold text-dark">{{ $p->gastoFijo->nombre }}</div>
+                            <div class="fw-semibold text-dark">
+                                {{ $p->gastoFijo->nombre }}
+                                @if($p->gastoFijo->esSemanal())
+                                    <span class="badge bg-light text-secondary border fw-normal ms-1">semanal</span>
+                                @endif
+                            </div>
                             @if($p->gastoFijo->proveedor)
                                 <small class="text-muted">{{ $p->gastoFijo->proveedor }}</small>
                             @endif
@@ -347,7 +352,7 @@ document.getElementById('modalPagar').addEventListener('show.bs.modal', e => {
     document.getElementById('pagarNombre').textContent   = b.dataset.nombre;
     document.getElementById('pagarEstimado').textContent = parseFloat(b.dataset.estimado).toFixed(2);
     document.getElementById('pagarMonto').value          = b.dataset.estimado;
-    document.getElementById('formPagar').action          = `/gastos-pagos/${b.dataset.id}/pagar`;
+    document.getElementById('formPagar').action          = @json(route('gastos-pagos.pagar', '__ID__')).replace('__ID__', b.dataset.id);
 });
 
 document.getElementById('modalAjustar').addEventListener('show.bs.modal', e => {
@@ -355,7 +360,7 @@ document.getElementById('modalAjustar').addEventListener('show.bs.modal', e => {
     document.getElementById('ajustarNombre').textContent = b.dataset.nombre;
     document.getElementById('ajustarMonto').value        = b.dataset.estimado;
     document.getElementById('ajustarVence').value        = b.dataset.vence;
-    document.getElementById('formAjustar').action        = `/gastos-pagos/${b.dataset.id}/ajustar`;
+    document.getElementById('formAjustar').action        = @json(route('gastos-pagos.ajustar', '__ID__')).replace('__ID__', b.dataset.id);
 });
 </script>
 @endpush

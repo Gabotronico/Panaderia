@@ -191,7 +191,7 @@ function abrirRetorno(productoId, nombre, stock) {
     document.getElementById('retorno_cantidad').max = stock;
     document.getElementById('retorno_cantidad').value = '';
     document.getElementById('formRetornar').action =
-        '/almacenes/{{ $almacen->id }}/producto/' + productoId + '/retornar';
+        @json(route('almacenes.retornarBodega', [$almacen->id, '__ID__'])).replace('__ID__', productoId);
     new bootstrap.Modal(document.getElementById('modalRetornar')).show();
 }
 </script>

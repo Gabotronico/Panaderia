@@ -26,9 +26,13 @@
         <a href="{{ route('reportes.index') }}" class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-2"></i>Reportes
         </a>
-        <a href="{{ route('reportes.ventas', ['fecha_inicio' => $request->fecha_inicio, 'fecha_fin' => $request->fecha_fin, 'tipo' => 'pdf']) }}"
+        <a href="{{ route('reportes.ventas', ['fecha_inicio' => $request->fecha_inicio, 'fecha_fin' => $request->fecha_fin, 'tipo' => 'pdf']) }}" download
            class="btn btn-danger">
             <i class="fas fa-file-pdf me-2"></i>Descargar PDF
+        </a>
+        <a href="{{ route('reportes.ventas', ['fecha_inicio' => $request->fecha_inicio, 'fecha_fin' => $request->fecha_fin, 'tipo' => 'excel']) }}" download
+           class="btn btn-success">
+            <i class="fas fa-file-excel me-2"></i>Descargar Excel
         </a>
     </div>
 </div>

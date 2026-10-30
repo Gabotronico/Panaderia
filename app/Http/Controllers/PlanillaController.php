@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Adelanto;
+use App\Models\Asistencia;
 use App\Models\Empleado;
 use App\Models\Planilla;
 use App\Models\PlanillaEmpleado;
@@ -79,6 +80,7 @@ class PlanillaController extends Controller
                     'dias_ausentes'         => $detalle['dias_ausentes'],
                     'dias_tardanza'         => $detalle['dias_tardanza'],
                     'dias_medio'            => $detalle['dias_medio'],
+                    'dias_pagados'          => $detalle['dias_pagados'],
                     'adelantos_descontados' => $detalle['adelantos'],
                     'salario_bruto'         => $detalle['salario_bruto'],
                     'total_neto'            => $detalle['total_neto'],
@@ -288,11 +290,13 @@ class PlanillaController extends Controller
         $diasAusente     = $asistencias->where('estado', 'ausente')->count();
         $diasMedio       = $asistencias->where('estado', 'medio_dia')->count();
 
-        // Los minutos de tardanza se siguen registrando en asistencias, pero ya
-        // no descuentan del sueldo: el día tarde cuenta como día trabajado.
-
-        // Días efectivos = presentes + tardanzas + medios×0.5
-        $diasEfectivos = $diasPresente + $diasTardanza + ($diasMedio * 0.5);
+        // Cada día aporta la parte que se le paga: completo si cumplió su
+        // jornada, solo las horas trabajadas si no. Los días sin marcaje de
+        // entrada y salida se pagan por estado. Ver Asistencia::fraccionDiaPagada().
+        $diasEfectivos = round(
+            $asistencias->sum(fn (Asistencia $a) => $a->fraccionDiaPagada($empleado)),
+            4
+        );
 
         // El sueldo sale del tipo de pago del empleado, no de la duración del
         // período. Si cumplió el ciclo completo se le paga el salario tal como
@@ -338,6 +342,7 @@ class PlanillaController extends Controller
             'dias_ausentes'        => $diasAusente,
             'dias_tardanza'        => $diasTardanza,
             'dias_medio'           => $diasMedio,
+            'dias_pagados'         => round($diasEfectivos, 2),
             'adelantos'            => $descontado,
             'adelantos_liquidados' => $liquidados,
             'saldo_arrastrado'     => $saldoArrastrado,

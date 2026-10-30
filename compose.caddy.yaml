@@ -1,0 +1,24 @@
+# Caddy propio para un VPS dedicado a Obrador (sin otro proxy en 80/443).
+# Se suma a compose.yaml:
+#
+#   docker compose -f compose.yaml -f compose.caddy.yaml up -d --build
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    env_file: .env.produccion
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -63,19 +63,19 @@ class SQLiteCompatibilityTest extends TestCase
     public function test_latest_migrations_upgrade_existing_sqlite_data_and_can_roll_back(): void
     {
         $qrMigration = require database_path(
-            'migrations/2026_07_29_100001_add_qr_to_cortes_caja_table.php'
+            'migrations/tenant/2026_07_29_100001_add_qr_to_cortes_caja_table.php'
         );
         $scheduleMigration = require database_path(
-            'migrations/2026_07_29_200001_add_horario_to_empleados_table.php'
+            'migrations/tenant/2026_07_29_200001_add_horario_to_empleados_table.php'
         );
         $overtimeRemoval = require database_path(
-            'migrations/2026_07_30_100001_remove_horas_extra_from_nomina.php'
+            'migrations/tenant/2026_07_30_100001_remove_horas_extra_from_nomina.php'
         );
         $latenessDiscountRemoval = require database_path(
-            'migrations/2026_07_31_100001_remove_descuento_tardanzas_from_planilla_empleado.php'
+            'migrations/tenant/2026_07_31_100001_remove_descuento_tardanzas_from_planilla_empleado.php'
         );
         $manualOvertime = require database_path(
-            'migrations/2026_08_17_100001_add_horas_extra_manuales_to_planilla_empleado.php'
+            'migrations/tenant/2026_08_17_100001_add_horas_extra_manuales_to_planilla_empleado.php'
         );
 
         // Se retrocede en orden inverso al cronológico: primero la migración

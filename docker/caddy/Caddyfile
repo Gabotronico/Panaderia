@@ -1,0 +1,13 @@
+# Caddy propio para un VPS dedicado a Obrador (compose.caddy.yaml). Todas las
+# panaderías viven bajo el dominio del sistema (CENTRAL_DOMAINS en
+# .env.produccion), así que alcanza con su certificado, que Caddy obtiene y
+# renueva solo.
+{
+	email {$ACME_EMAIL}
+}
+
+{$CENTRAL_DOMAINS} {
+	encode zstd gzip
+
+	reverse_proxy app:8080
+}

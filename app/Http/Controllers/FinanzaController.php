@@ -58,6 +58,15 @@ class FinanzaController extends Controller
             ->orderByDesc('total')
             ->get();
 
+        // Desglose de los gastos variables del mes por categoría: en qué se
+        // fue la plata de los gastos ocasionales (transporte, limpieza...).
+        $variablesPorCategoria = GastoVariable::query()
+            ->enPeriodo($inicio, $fin)
+            ->groupBy('categoria')
+            ->select('categoria', DB::raw('SUM(monto) as total'), DB::raw('COUNT(*) as cantidad'))
+            ->orderByDesc('total')
+            ->get();
+
         // Compromisos del período que aún no se han pagado
         $sinPagar = GastoPago::whereIn('estado', ['pendiente', 'vencido'])
             ->where('periodo', $periodo)
@@ -76,7 +85,7 @@ class FinanzaController extends Controller
         ];
 
         return view('finanzas.index', compact(
-            'actual', 'anterior', 'tendencia', 'gastosPorCategoria', 'pendientes',
+            'actual', 'anterior', 'tendencia', 'gastosPorCategoria', 'variablesPorCategoria', 'pendientes',
             'year', 'month', 'inicio', 'fin'
         ));
     }

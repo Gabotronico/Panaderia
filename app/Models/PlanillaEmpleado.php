@@ -10,13 +10,14 @@ class PlanillaEmpleado extends Model
 
     protected $fillable = [
         'planilla_id', 'empleado_id',
-        'dias_trabajados', 'dias_ausentes', 'dias_tardanza', 'dias_medio',
+        'dias_trabajados', 'dias_ausentes', 'dias_tardanza', 'dias_medio', 'dias_pagados',
         'horas_extra', 'monto_horas_extra', 'detalle_horas_extra',
         'adelantos_descontados',
         'salario_bruto', 'total_neto',
     ];
 
     protected $casts = [
+        'dias_pagados'          => 'decimal:2',
         'horas_extra'           => 'decimal:2',
         'monto_horas_extra'     => 'decimal:2',
         'adelantos_descontados' => 'decimal:2',
@@ -41,6 +42,17 @@ class PlanillaEmpleado extends Model
             - (float) $this->adelantos_descontados,
             2
         );
+    }
+
+    /**
+     * Días pagados en la planilla. Las generadas antes de pagar por horas no
+     * los guardaron: para ellas vale el cálculo por estado de entonces.
+     */
+    public function getDiasEfectivosAttribute(): float
+    {
+        return $this->dias_pagados !== null
+            ? (float) $this->dias_pagados
+            : $this->dias_trabajados + $this->dias_medio * 0.5;
     }
 
     public function planilla()

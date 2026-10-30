@@ -15,7 +15,8 @@ class EnsureApplicationIsInstalled
     {
         // Con sesión iniciada hay usuarios por definición; evitar las dos
         // consultas de abajo le quita latencia a cada clic de la jornada.
-        if ($request->routeIs('setup.*') || Auth::check() || ! Schema::hasTable('users')) {
+        // En el dominio central no hay panadería que configurar.
+        if (! tenancy()->initialized || $request->routeIs('setup.*') || Auth::check() || ! Schema::hasTable('users')) {
             return $next($request);
         }
 

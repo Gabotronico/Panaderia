@@ -96,7 +96,7 @@
                             data-categoria="{{ $producto->categoria_id }}">
                             <td>
                                 @if($producto->imagen)
-                                    <img src="{{ asset('storage/' . $producto->imagen) }}"
+                                    <img src="{{ route('local-storage.show', $producto->imagen) }}"
                                          alt="{{ $producto->nombre }}" class="rounded"
                                          style="width:50px; height:50px; object-fit:cover;">
                                 @else
@@ -189,7 +189,7 @@
                      data-categoria="{{ $producto->categoria_id }}">
                     <div class="card h-100 shadow-sm">
                         @if($producto->imagen)
-                            <img src="{{ asset('storage/' . $producto->imagen) }}"
+                            <img src="{{ route('local-storage.show', $producto->imagen) }}"
                                  class="card-img-top" alt="{{ $producto->nombre }}"
                                  style="height:140px; object-fit:cover;">
                         @else
@@ -313,7 +313,7 @@ function abrirTransferencia(id, nombre, stock) {
     document.getElementById('modal_stock_disponible').textContent = stock;
     document.getElementById('modal_cantidad').max                 = stock;
     document.getElementById('modal_cantidad').value               = '';
-    document.getElementById('formTransferir').action              = '/productos/' + id + '/transferir-almacen';
+    document.getElementById('formTransferir').action              = @json(route('productos.transferirAlmacen', '__ID__')).replace('__ID__', id);
     new bootstrap.Modal(document.getElementById('modalTransferir')).show();
 }
 
