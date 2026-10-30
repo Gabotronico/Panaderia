@@ -117,12 +117,18 @@
 </div>
 
 <style>
+    /* El envoltorio es el que se pega a la derecha (al lado del perfil). */
+    #actualizador {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+    }
+
     .topbar-update-btn {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        margin-left: auto;
-        margin-right: 12px;
+        margin-right: 4px;
         padding: 7px 14px;
         border-radius: 999px;
         border: 1px solid rgba(217, 164, 65, .55);
