@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Almacen;
 use App\Models\User;
+use App\Support\Licencias\Licencia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -79,6 +80,11 @@ class UserController extends Controller
                 'Un cajero necesita un almacén asignado para poder registrar ventas.');
         }
 
+        // Cupos del plan: cuántos administradores y cajeros permite la licencia.
+        if ($bloqueo = Licencia::bloqueoPorRol($datos['rol'])) {
+            return back()->withInput()->with('error', $bloqueo);
+        }
+
         $usuario = User::create([
             'name'       => $datos['name'],
             'email'      => $datos['email'],
@@ -128,6 +134,13 @@ class UserController extends Controller
         if ($datos['rol'] === 'Cajero' && !$almacenId) {
             return back()->withInput()->with('error',
                 'Un cajero necesita un almacén asignado para poder registrar ventas.');
+        }
+
+        // Si el rol cambia a uno con cupo, hay que tener lugar para él.
+        $rolActual = $usuario->getRoleNames()->first();
+
+        if ($datos['rol'] !== $rolActual && ($bloqueo = Licencia::bloqueoPorRol($datos['rol']))) {
+            return back()->withInput()->with('error', $bloqueo);
         }
 
         $usuario->update([

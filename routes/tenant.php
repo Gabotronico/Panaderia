@@ -41,6 +41,7 @@ use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 Route::middleware([
     'web',
     InitializeTenancyByPath::class,
+    'licencia.vigente',
 ])->prefix('{tenant}')->where(['tenant' => '[a-z0-9]([a-z0-9-]*[a-z0-9])?'])->group(function () {
     Route::middleware('guest')->group(function () {
         Route::get('/setup', [SetupController::class, 'create'])->name('setup.create');

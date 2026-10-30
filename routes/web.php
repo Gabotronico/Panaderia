@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Central\PanaderiaController;
 use App\Http\Controllers\Central\SesionController;
+use App\Http\Controllers\Interno\LicenciaController;
+use App\Http\Middleware\FirmaInterna;
 use App\Http\Middleware\SoloDominioCentral;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +16,19 @@ use Illuminate\Support\Facades\Route;
 | route() arme las URLs con el dominio de la petición, y SoloDominioCentral
 | lo cierra en cualquier otro host.
 */
+
+/*
+| Endpoint interno para el panel central de INC Group.
+|
+| No lo usa ningún navegador: la firma HMAC (middleware FirmaInterna) es la
+| que autoriza. "interno" es un id reservado, así que nunca choca con una
+| panadería.
+*/
+
+Route::middleware(FirmaInterna::class)->prefix('interno')->name('interno.')->group(function () {
+    Route::get('licencias', [LicenciaController::class, 'mostrar'])->name('licencias');
+    Route::post('licencia', [LicenciaController::class, 'sincronizar'])->name('licencia');
+});
 
 foreach (config('tenancy.central_domains') as $dominio) {
     Route::domain($dominio)->group(function () {
