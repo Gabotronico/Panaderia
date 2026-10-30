@@ -93,7 +93,13 @@ document.addEventListener('click', (event) => {
 
     const target = new URL(link.href, window.location.href);
     const staysInApp = target.origin === window.location.origin;
-    const changesPage = target.href !== window.location.href && !link.hasAttribute('download');
+    // Solo se avisa cuando de verdad se va a cargar otro documento. Un enlace
+    // a "#'", a un ancla de esta misma página o cualquier cosa que no cambie
+    // la ruta no recarga nada: si mostrara el aviso, quedaria fijo para
+    // siempre y parecería que el sistema se colgó.
+    const changesPage = (target.pathname !== window.location.pathname
+        || target.search !== window.location.search)
+        && !link.hasAttribute('download');
 
     if (staysInApp && changesPage && (!link.target || link.target === '_self')) {
         setTimeout(showNavigationStatus, 100);
