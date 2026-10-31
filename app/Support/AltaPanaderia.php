@@ -27,7 +27,7 @@ final class AltaPanaderia
      */
     public const RESERVADOS = [
         'panel', 'up', 'build', 'images', 'storage', 'vendor', 'api', 'admin',
-        'login', 'logout', 'setup', 'www', 'obrador', 'soporte',
+        'login', 'logout', 'setup', 'www', 'obrador', 'soporte', 'interno',
         // Rutas del login central con cuenta única.
         'entrar', 'cuenta',
     ];
@@ -89,12 +89,17 @@ final class AltaPanaderia
             $tenant->domains()->create(['domain' => $id]);
 
             if ($respaldo !== null) {
-                $tenant->run(function () use ($respaldo, $negocio) {
+                $tenant->run(function () use ($tenant, $respaldo, $negocio) {
                     Respaldo::restaurar($respaldo);
 
                     if (AppSetting::read('business_name') === null) {
                         AppSetting::write('business_name', $negocio);
                     }
+
+                    // Los usuarios que vienen en el respaldo también necesitan
+                    // su cuenta global: si no, no podrían entrar por el login
+                    // único hasta correr obrador:personas-sincronizar a mano.
+                    Cuentas::sincronizar($tenant);
                 });
             }
 
