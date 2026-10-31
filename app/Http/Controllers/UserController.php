@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Almacen;
 use App\Models\User;
+use App\Support\Identidad\Cuentas;
 use App\Support\Licencias\Licencia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -94,6 +95,9 @@ class UserController extends Controller
 
         $usuario->assignRole($datos['rol']);
 
+        // La cuenta global (correo y contraseña) que sirve para entrar al sistema.
+        Cuentas::vincular(tenant(), $usuario, $datos['password']);
+
         return redirect()->route('usuarios.index')
             ->with('success', "Usuario «{$usuario->name}» creado como {$datos['rol']}.");
     }
@@ -155,6 +159,8 @@ class UserController extends Controller
 
         $usuario->syncRoles([$datos['rol']]);
 
+        Cuentas::vincular(tenant(), $usuario, $datos['password'] ?? null);
+
         return redirect()->route('usuarios.index')
             ->with('success', "Usuario «{$usuario->name}» actualizado.");
     }
@@ -178,6 +184,10 @@ class UserController extends Controller
         }
 
         $nombre = $usuario->name;
+
+        // Se va también de la cuenta global si era su único vínculo.
+        Cuentas::desvincular(tenant(), $usuario);
+
         $usuario->delete();
 
         return redirect()->route('usuarios.index')

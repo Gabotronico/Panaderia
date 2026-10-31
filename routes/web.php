@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Central\EntradaController;
 use App\Http\Controllers\Central\PanaderiaController;
 use App\Http\Controllers\Central\SesionController;
 use App\Http\Controllers\EscritorioController;
@@ -47,6 +48,24 @@ Route::post('/interno/escritorio/olvidar', [EscritorioController::class, 'olvida
 if (config('nativephp-internal.running')) {
     Route::get('/', [EscritorioController::class, 'raiz'])->name('escritorio.raiz');
 }
+
+/*
+| Entrada al sistema con una sola cuenta.
+|
+| Vive en el dominio central y usa /cuenta/... porque un path de un solo
+| segmento lo capturaría la ruta de panadería ({tenant}). Desde acá se elige la
+| panadería y se pasa la sesión con un token de un solo uso.
+*/
+
+Route::middleware(SoloDominioCentral::class)->group(function () {
+    Route::get('cuenta/entrar', [EntradaController::class, 'create'])->name('entrada.crear');
+    Route::post('cuenta/entrar', [EntradaController::class, 'store'])
+        ->middleware('throttle:login')
+        ->name('entrada.entrar');
+    Route::get('cuenta/panaderia', [EntradaController::class, 'elegir'])->name('entrada.elegir');
+    Route::post('cuenta/panaderia', [EntradaController::class, 'seleccionar'])->name('entrada.seleccionar');
+    Route::post('cuenta/salir', [EntradaController::class, 'salir'])->name('entrada.salir');
+});
 
 foreach (config('tenancy.central_domains') as $dominio) {
     Route::domain($dominio)->group(function () {

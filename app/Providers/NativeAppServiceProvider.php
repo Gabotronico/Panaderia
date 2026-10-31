@@ -14,6 +14,9 @@ class NativeAppServiceProvider implements ProvidesPhpIni
     public function boot(): void
     {
         Window::open()
+            // La ventana abre el login del servidor: una sola cuenta para todas
+            // las panaderías (la app ya no guarda datos locales).
+            ->url(config('escritorio.url_base').'/cuenta/entrar')
             ->title(config('app.name'))
             ->width(1280)
             ->height(800)
@@ -22,10 +25,7 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->rememberState()
             ->maximized()
             ->hideMenu();
-        // Sin preventLeaveDomain: la ventana navega al sistema en el VPS.
-
-        // La raíz local muestra la pantalla del código de panadería (o salta
-        // directo al servidor si ya está configurado).
+        // Sin preventLeaveDomain: la ventana vive en el dominio del servidor.
     }
 
     /**
