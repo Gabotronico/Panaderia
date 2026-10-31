@@ -167,6 +167,23 @@ class EntradaCentralTest extends TestCase
         $this->get(str_replace('/alfa/', '/beta/', (string) $otro))->assertNotFound();
     }
 
+    public function test_el_pase_cambia_la_sesion_si_habia_otra_abierta(): void
+    {
+        $alfa = $this->panaderia('alfa', 'Panadería Alfa');
+        $ana = $this->usuario($alfa, 'ana@alfa.test', 'Secreta123');
+        $beto = $this->usuario($alfa, 'beto@alfa.test', 'OtraClave123');
+
+        $this->actingAs($ana)->get('/alfa/home')->assertOk();
+
+        $destino = $this->post('/cuenta/entrar', [
+            'email' => 'beto@alfa.test',
+            'password' => 'OtraClave123',
+        ])->headers->get('Location');
+
+        $this->get($destino)->assertRedirect('/alfa/home');
+        $this->assertAuthenticatedAs($beto);
+    }
+
     public function test_crear_un_usuario_crea_su_cuenta_global(): void
     {
         $alfa = $this->panaderia('alfa', 'Panadería Alfa');

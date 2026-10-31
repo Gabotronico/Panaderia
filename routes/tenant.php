@@ -48,10 +48,12 @@ Route::middleware([
     Route::middleware('guest')->group(function () {
         Route::get('/setup', [SetupController::class, 'create'])->name('setup.create');
         Route::post('/setup', [SetupController::class, 'store'])->name('setup.store');
-
-        // Pase de un solo uso que emite el login central.
-        Route::get('entrada/{token}', EntradaTokenController::class)->name('entrada.token');
     });
+
+    // Pase de un solo uso que emite el login central. Va fuera de "guest" a
+    // propósito: si alguien ya estaba con otra cuenta en esta panadería, el
+    // pase tiene que poder cambiarla.
+    Route::get('entrada/{token}', EntradaTokenController::class)->name('entrada.token');
 
     // Ruta pública. No es Route::redirect: su destino sería /login, fuera
     // de la panadería.
