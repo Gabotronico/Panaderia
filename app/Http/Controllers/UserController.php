@@ -185,10 +185,11 @@ class UserController extends Controller
 
         $nombre = $usuario->name;
 
-        // Se va también de la cuenta global si era su único vínculo.
-        Cuentas::desvincular(tenant(), $usuario);
-
         $usuario->delete();
+
+        // Se va también de la cuenta global si era su único vínculo. Se hace
+        // después de borrar: si el borrado fallara, el vínculo quedaría roto.
+        Cuentas::desvincular(tenant(), $usuario);
 
         return redirect()->route('usuarios.index')
             ->with('success', "Usuario «{$nombre}» eliminado.");

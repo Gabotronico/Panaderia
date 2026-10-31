@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Identidad\Cuentas;
 use App\Support\Respaldos\Respaldo;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -70,6 +71,10 @@ class BackupController extends Controller
 
             return back()->with('error', 'No se pudo restaurar el respaldo: '.$exception->getMessage());
         }
+
+        // Los usuarios ahora son los del respaldo: hay que rehacer los vínculos
+        // con la cuenta global antes de que vuelvan a entrar.
+        Cuentas::sincronizar(tenant());
 
         // Los usuarios ahora son los del respaldo: la sesión actual no vale.
         Auth::guard('web')->logout();

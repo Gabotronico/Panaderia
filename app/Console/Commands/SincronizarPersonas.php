@@ -38,20 +38,30 @@ class SincronizarPersonas extends Command
         $porCorreo = [];
 
         foreach ($tenants as $tenant) {
-            $tenant->run(function () use ($tenant, $seco, &$usuarios, &$porCorreo): void {
+            $emails = [];
+
+            $tenant->run(function () use (&$emails, &$usuarios): void {
                 foreach (User::query()->orderBy('id')->get() as $user) {
                     $usuarios++;
-                    $porCorreo[mb_strtolower((string) $user->email)][] = $tenant->id;
-
-                    if ($seco) {
-                        $this->line("  · {$tenant->id}: {$user->email}");
-
-                        continue;
-                    }
-
-                    Cuentas::vincular($tenant, $user);
+                    $emails[mb_strtolower((string) $user->email)] = true;
                 }
             });
+
+            foreach (array_keys($emails) as $correo) {
+                $porCorreo[$correo][] = $tenant->id;
+            }
+
+            if ($seco) {
+                foreach (array_keys($emails) as $correo) {
+                    $this->line("  · {$tenant->id}: {$correo}");
+                }
+
+                continue;
+            }
+
+            // Vincula los usuarios actuales y limpia vínculos que quedaron de
+            // usuarios que ya no existen.
+            Cuentas::sincronizar($tenant);
         }
 
         if ($seco) {

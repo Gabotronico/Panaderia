@@ -94,6 +94,47 @@ final class Cuentas
         return $persona;
     }
 
+    /**
+     * Deja los vínculos de una panadería iguales a sus usuarios actuales.
+     *
+     * Se usa después de restaurar un respaldo (los usuarios pueden cambiar) y
+     * como reparación: quita vínculos de usuarios que ya no existen y personas
+     * que se quedaron sin ninguna panadería.
+     *
+     * @return int cantidad de usuarios vinculados
+     */
+    public static function sincronizar(Tenant $tenant): int
+    {
+        $ids = [];
+
+        $tenant->run(function () use ($tenant, &$ids): void {
+            foreach (User::query()->orderBy('id')->get() as $usuario) {
+                self::vincular($tenant, $usuario);
+                $ids[] = (int) $usuario->id;
+            }
+        });
+
+        $central = self::central();
+
+        $sobrantes = $central->table('persona_tenant')->where('tenant_id', $tenant->id);
+
+        if ($ids === []) {
+            $sobrantes->delete();
+        } else {
+            $sobrantes->whereNotIn('user_id', $ids)->delete();
+        }
+
+        $central->table('personas')
+            ->whereNotExists(function ($consulta): void {
+                $consulta->selectRaw('1')
+                    ->from('persona_tenant')
+                    ->whereColumn('persona_tenant.persona_id', 'personas.id');
+            })
+            ->delete();
+
+        return count($ids);
+    }
+
     /** Quita el vínculo; si la persona se quedó sin panaderías, se borra. */
     public static function desvincular(Tenant $tenant, User $user): void
     {
