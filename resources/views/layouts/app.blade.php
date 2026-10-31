@@ -978,6 +978,10 @@
         </div>
     </div>
 
+    {{-- El modal del actualizador va acá, fuera del encabezado: dentro del
+         header queda debajo de su propio fondo y no se puede usar. --}}
+    @include('partials.actualizador-modal')
+
     @stack('scripts')
 </body>
 </html>
