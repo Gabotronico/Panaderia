@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Central\PanaderiaController;
 use App\Http\Controllers\Central\SesionController;
+use App\Http\Controllers\EscritorioController;
 use App\Http\Controllers\Interno\LicenciaController;
 use App\Http\Middleware\FirmaInterna;
 use App\Http\Middleware\SoloDominioCentral;
@@ -29,6 +30,23 @@ Route::middleware(FirmaInterna::class)->prefix('interno')->name('interno.')->gro
     Route::get('licencias', [LicenciaController::class, 'mostrar'])->name('licencias');
     Route::post('licencia', [LicenciaController::class, 'sincronizar'])->name('licencia');
 });
+
+/*
+| App de escritorio.
+|
+| La ventana ya no trabaja contra una base local: la primera vez pide el
+| código de la panadería y de ahí en adelante abre el sistema del VPS. La raíz
+| se registra solo dentro de la app empaquetada; en el navegador sigue
+| respondiendo la portada del dominio central.
+*/
+
+Route::get('/interno/escritorio', [EscritorioController::class, 'mostrar'])->name('escritorio.mostrar');
+Route::post('/interno/escritorio', [EscritorioController::class, 'guardar'])->name('escritorio.guardar');
+Route::post('/interno/escritorio/olvidar', [EscritorioController::class, 'olvidar'])->name('escritorio.olvidar');
+
+if (config('nativephp-internal.running')) {
+    Route::get('/', [EscritorioController::class, 'raiz'])->name('escritorio.raiz');
+}
 
 foreach (config('tenancy.central_domains') as $dominio) {
     Route::domain($dominio)->group(function () {

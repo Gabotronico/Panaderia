@@ -21,8 +21,11 @@ class NativeAppServiceProvider implements ProvidesPhpIni
             ->minHeight(700)
             ->rememberState()
             ->maximized()
-            ->hideMenu()
-            ->preventLeaveDomain();
+            ->hideMenu();
+        // Sin preventLeaveDomain: la ventana navega al sistema en el VPS.
+
+        // La raíz local muestra la pantalla del código de panadería (o salta
+        // directo al servidor si ya está configurado).
     }
 
     /**

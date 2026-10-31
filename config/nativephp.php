@@ -6,7 +6,7 @@ return [
      * It is used to determine if the app needs to be updated.
      * Increment this value every time you release a new version of your app.
      */
-    'version' => env('NATIVEPHP_APP_VERSION', '1.0.15'),
+    'version' => env('NATIVEPHP_APP_VERSION', '1.0.16'),
 
     /**
      * The ID of your application. This should be a unique identifier
@@ -91,6 +91,17 @@ return [
         '.composer-cache',
         '.git',
         '*/tests',
+        // Artefactos que no tienen por qué viajar dentro de la app: los dists
+        // viejos de Electron son ~1 GB cada uno.
+        'nativephp',
+        'dist',
+        'documentacion',
+        'docker',
+        'compose*.yaml',
+        '.env.local*',
+        '.env.produccion*',
+        '.dockerignore',
+        'database/*.sqlite',
     ],
 
     /**
