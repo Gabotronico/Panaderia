@@ -80,7 +80,7 @@ git pull
 docker compose up -d --build
 ```
 
-Al arrancar, `app` aplica las migraciones nuevas a la base central y a todas las panaderías.
+Al arrancar, `app` aplica las migraciones nuevas a la base central y a todas las panaderías, una por una: si una panadería tiene la base caída, se registra el error y las demás siguen funcionando.
 
 ## 6. Respaldos del servidor
 
@@ -108,6 +108,8 @@ docker compose logs -f app                          # logs de la aplicación
 docker compose exec app php artisan tenants:list    # panaderías registradas
 docker compose exec app php artisan obrador:superadmin-crear tu@correo.com   # cambiar contraseña del panel
 docker compose exec app php artisan obrador:tenant-importar luna /ruta/respaldo.zip  # importar por consola
+docker compose exec app php artisan obrador:panaderias:estado   # base, licencia y datos de cada panadería
+docker compose exec app php artisan obrador:panaderias:migrar   # migrar una por una (--strict para salir con error)
 ```
 
 Para importar un `.zip` por consola, primero hay que copiarlo dentro del contenedor:

@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Identidad\Cuentas;
 use App\Support\Respaldos\Respaldo;
+use App\Support\Tenancy\Contexto;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
@@ -89,7 +90,7 @@ final class AltaPanaderia
             $tenant->domains()->create(['domain' => $id]);
 
             if ($respaldo !== null) {
-                $tenant->run(function () use ($tenant, $respaldo, $negocio) {
+                Contexto::ejecutar($tenant, function () use ($tenant, $respaldo, $negocio) {
                     Respaldo::restaurar($respaldo);
 
                     if (AppSetting::read('business_name') === null) {

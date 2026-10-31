@@ -21,7 +21,11 @@ if [ -z "$APP_KEY" ]; then
 fi
 
 php artisan migrate --force
-php artisan tenants:migrate
+
+# Una panadería con la base caída no puede dejar sin servicio a las demás: el
+# comando recorre una por una, registra la que falle y sigue (el detalle queda
+# en el log y en obrador:panaderias:estado).
+php artisan obrador:panaderias:migrar
 
 if [ "${OBRADOR_CACHEAR:-1}" = "0" ]; then
     php artisan config:clear
