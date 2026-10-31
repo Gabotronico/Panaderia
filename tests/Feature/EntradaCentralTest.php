@@ -184,6 +184,35 @@ class EntradaCentralTest extends TestCase
         $this->assertAuthenticatedAs($beto);
     }
 
+    public function test_la_raiz_recuerda_la_ultima_panaderia(): void
+    {
+        $alfa = $this->panaderia('alfa', 'Panadería Alfa');
+        $this->usuario($alfa, 'ana@alfa.test', 'Secreta123');
+
+        // Sin cookie: al login único.
+        $this->get('/')->assertRedirect(route('entrada.crear'));
+
+        // Al entrar se recuerda la panadería.
+        $respuesta = $this->post('/cuenta/entrar', [
+            'email' => 'ana@alfa.test',
+            'password' => 'Secreta123',
+        ]);
+
+        $cookie = $respuesta->getCookie('obrador_ultima_panaderia', false);
+        $this->assertNotNull($cookie);
+        $this->assertSame('alfa', $cookie->getValue());
+
+        // Con la cookie, la raíz va directo a esa panadería.
+        $this->withUnencryptedCookie('obrador_ultima_panaderia', 'alfa')
+            ->get('/')
+            ->assertRedirect('/alfa');
+
+        // Si la panadería ya no existe, se ignora.
+        $this->withUnencryptedCookie('obrador_ultima_panaderia', 'nadie')
+            ->get('/')
+            ->assertRedirect(route('entrada.crear'));
+    }
+
     public function test_crear_un_usuario_crea_su_cuenta_global(): void
     {
         $alfa = $this->panaderia('alfa', 'Panadería Alfa');
