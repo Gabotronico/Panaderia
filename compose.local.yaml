@@ -1,0 +1,99 @@
+# Entorno local de desarrollo.
+#
+# Levanta lo mismo que producción (app + MariaDB) más un Vite con recarga en
+# vivo, y monta el código para que los cambios se vean sin reconstruir:
+#
+#   docker compose -f compose.local.yaml up -d --build
+#
+# La primera vez, docker/local/preparar.sh deja además una panadería de prueba
+# con su administrador y su cajero. Ver documentacion/entorno-local-docker.md.
+#
+# Es un archivo aparte de compose.yaml a propósito: así el entorno local no
+# arrastra nada de la configuración de producción.
+
+name: obrador-local
+
+services:
+  app:
+    build: .
+    image: obrador-app-local
+    restart: unless-stopped
+    env_file: .env.local
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8094:8080"
+    volumes:
+      # El código va montado, no copiado: editar y recargar el navegador.
+      # vendor/ queda el de la imagen y por eso un cambio en composer.json
+      # pide reconstruir (docker compose -f compose.local.yaml build app).
+      - ./app:/var/www/html/app
+      # Solo app.php y providers.php: bootstrap/cache/ se queda dentro del
+      # contenedor. Si se montara la carpeta entera, el packages.php que
+      # genera Composer en la máquina (con las dependencias de desarrollo)
+      # entraría a la imagen, que se construye sin ellas.
+      - ./bootstrap/app.php:/var/www/html/bootstrap/app.php
+      - ./bootstrap/providers.php:/var/www/html/bootstrap/providers.php
+      - ./config:/var/www/html/config
+      - ./database:/var/www/html/database
+      - ./resources:/var/www/html/resources
+      - ./routes:/var/www/html/routes
+      # El generador de datos de prueba se edita seguido; montado se prueba sin
+      # reconstruir la imagen.
+      - ./docker/local:/var/www/html/docker/local
+      # public/ se monta entero para que el archivo "hot" de Vite llegue al
+      # navegador; así los CSS/JS salen del servidor de Vite y no del build.
+      - ./public:/var/www/html/public
+      # storage/ en volumen: lo llena Docker desde la imagen al crearlo y no
+      # mezcla permisos del Windows/Linux de cada uno con los del contenedor.
+      - storage:/var/www/html/storage
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/up"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+  # Servidor de Vite: compila Tailwind y recarga el navegador al guardar.
+  # Solo en desarrollo; la imagen de la app lleva su propio build para
+  # producción.
+  vite:
+    image: node:22-alpine
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./:/app
+      # node_modules en un volumen y no en la carpeta del proyecto: así los
+      # binarios de Linux no pisan los que instale npm en Windows, y el
+      # arranque no reescribe miles de archivos por el montaje.
+      - vite_modules:/app/node_modules
+    ports:
+      - "127.0.0.1:5173:5173"
+    # Se instala una vez; si cambia package.json, borrar el volumen:
+    # docker compose -f compose.local.yaml down && docker volume rm obrador-local_vite_modules
+    command: sh -c "if [ ! -d node_modules/vite ]; then npm ci --no-audit --no-fund; fi && npm run dev -- --config docker/local/vite.config.js"
+
+  db:
+    image: mariadb:11.4.13-noble
+    restart: unless-stopped
+    env_file: .env.local
+    ports:
+      # Para mirar las bases con TablePlus/HeidiSQL desde el escritorio.
+      - "127.0.0.1:3308:3306"
+    volumes:
+      - db:/var/lib/mysql
+      # Da al usuario de la app permiso sobre las bases obrador_* (la central
+      # y las de cada panadería). Solo corre al crear el volumen.
+      - ./docker/mariadb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  storage:
+  db:
+  vite_modules:

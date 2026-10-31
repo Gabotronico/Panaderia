@@ -20,6 +20,9 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        // La licencia se memoriza por proceso y cada test parte de cero.
+        \App\Support\Licencias\Licencia::olvidar();
+
         // Solo cuando RefreshDatabase ya dejó la base migrada: los tests
         // unitarios no tocan la base y BackupTest la migra por su cuenta.
         if ($this->conPanaderiaDePrueba && Schema::hasTable('domains')) {

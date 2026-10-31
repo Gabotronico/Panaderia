@@ -2,13 +2,18 @@
 
 namespace App\Providers;
 
+use App\Support\Actualizaciones\Descarga;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Native\Desktop\Events\AutoUpdater\DownloadProgress;
+use Native\Desktop\Events\AutoUpdater\Error as ErrorDeActualizacion;
+use Native\Desktop\Events\AutoUpdater\UpdateDownloaded;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->prepareDesktopRuntime();
 
+        $this->escucharDescargasDeActualizacion();
+
         // El nombre del negocio se aplica al identificar la panadería, no
         // acá: en el arranque todavía no se sabe de qué base leerlo.
 
@@ -38,6 +45,19 @@ class AppServiceProvider extends ServiceProvider
                 $request->string('email')->lower().'|'.$request->ip()
             );
         });
+    }
+
+    /**
+     * La app de escritorio avisa el avance de la descarga por eventos de
+     * Electron. Se guarda en caché para que el modal lo consulte por polling;
+     * cruzar el puente de eventos hasta el JavaScript de la vista es mucho más
+     * frágil que una lectura cada 800 ms.
+     */
+    private function escucharDescargasDeActualizacion(): void
+    {
+        Event::listen(DownloadProgress::class, fn (DownloadProgress $evento) => Descarga::progreso($evento));
+        Event::listen(UpdateDownloaded::class, fn (UpdateDownloaded $evento) => Descarga::lista($evento));
+        Event::listen(ErrorDeActualizacion::class, fn (ErrorDeActualizacion $evento) => Descarga::error($evento));
     }
 
     /**

@@ -30,7 +30,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'admin' => \App\Http\Middleware\EsAdministrador::class,
             'caja.abierta' => \App\Http\Middleware\RequiereCajaAbierta::class,
+            // Licencia de la panadería (cupos, vigencia, suspensión).
+            'licencia.vigente' => \App\Http\Middleware\VerificarLicenciaPanaderia::class,
         ]);
+
+        // El panel central de INC Group llama al endpoint interno con firma
+        // HMAC desde un servidor, sin sesión ni token CSRF.
+        $middleware->validateCsrfTokens(except: ['interno/*']);
 
         // En el servidor la app corre detrás de un proxy (nginx del
         // contenedor, Cloudflare): sin esto no ve que la petición vino por

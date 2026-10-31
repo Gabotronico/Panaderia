@@ -3,6 +3,7 @@
 namespace App\Tenancy;
 
 use App\Models\AppSetting;
+use App\Support\Licencias\Licencia;
 use Illuminate\Foundation\Application;
 use Spatie\Permission\PermissionRegistrar;
 use Stancl\Tenancy\Contracts\TenancyBootstrapper;
@@ -65,6 +66,10 @@ class AislarEstadoPorTenant implements TenancyBootstrapper
         }
 
         $this->reiniciar('spatie.permission.cache.tenant.'.$id);
+
+        // La licencia también se memoriza por proceso: al cambiar de panadería
+        // no puede quedar la de la anterior.
+        Licencia::olvidar();
 
         try {
             if (($nombre = AppSetting::nombreEnCache()) !== null) {

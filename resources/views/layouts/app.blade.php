@@ -99,6 +99,40 @@
             color: rgba(217,164,65,0.55);
         }
 
+        /* Secciones plegables del sidebar */
+        .sidebar-label-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: none;
+            border: 0;
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .sidebar-label-toggle:hover { color: rgba(217,164,65,0.9); }
+
+        .sidebar-label-toggle:focus-visible {
+            outline: 2px solid rgba(217,164,65,0.7);
+            outline-offset: -2px;
+            border-radius: 6px;
+        }
+
+        .sidebar-chevron {
+            font-size: 0.58rem;
+            opacity: 0.75;
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar-label-toggle[aria-expanded="false"] .sidebar-chevron {
+            transform: rotate(-90deg);
+        }
+
+        .sidebar-nav.is-collapsed { display: none; }
+
         /* Nav items */
         .sidebar-nav {
             list-style: none;
@@ -891,6 +925,8 @@
         <!-- Topbar -->
         <header class="topbar">
             <h5 class="topbar-title">@yield('page-title', 'Dashboard')</h5>
+
+            @include('partials.actualizador')
 
             <div class="dropdown">
                 <a class="topbar-user-btn dropdown-toggle" href="#" data-bs-toggle="dropdown">

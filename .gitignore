@@ -32,4 +32,5 @@ Thumbs.db
 /nativephp/electron/dist
 .tmp-asar-restore-*
 
+/.env.local
 /.env.produccion
