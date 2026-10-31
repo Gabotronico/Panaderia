@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\AppSetting;
 use App\Models\User;
+use App\Support\Identidad\Cuentas;
 use Database\Seeders\CategoriaSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,12 @@ final class InstalacionInicial
             ]);
 
             $user->assignRole('Administrador');
+
+            // La cuenta global: correo y contraseña una sola vez para todas las
+            // panaderías donde tenga usuario.
+            if (tenancy()->initialized) {
+                Cuentas::vincular(tenant(), $user, $password);
+            }
 
             return $user;
         });

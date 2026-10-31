@@ -11,6 +11,7 @@ use App\Http\Controllers\CargoController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\CorteCajaController;
 use App\Http\Controllers\EmpleadoController;
+use App\Http\Controllers\EntradaTokenController;
 use App\Http\Controllers\FinanzaController;
 use App\Http\Controllers\GastoFijoController;
 use App\Http\Controllers\GastoPagoController;
@@ -47,6 +48,9 @@ Route::middleware([
     Route::middleware('guest')->group(function () {
         Route::get('/setup', [SetupController::class, 'create'])->name('setup.create');
         Route::post('/setup', [SetupController::class, 'store'])->name('setup.store');
+
+        // Pase de un solo uso que emite el login central.
+        Route::get('entrada/{token}', EntradaTokenController::class)->name('entrada.token');
     });
 
     // Ruta pública. No es Route::redirect: su destino sería /login, fuera

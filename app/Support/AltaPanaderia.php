@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Models\AppSetting;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Identidad\Cuentas;
 use App\Support\Respaldos\Respaldo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -27,6 +28,8 @@ final class AltaPanaderia
     public const RESERVADOS = [
         'panel', 'up', 'build', 'images', 'storage', 'vendor', 'api', 'admin',
         'login', 'logout', 'setup', 'www', 'obrador', 'soporte',
+        // Rutas del login central con cuenta única.
+        'entrar', 'cuenta',
     ];
 
     /** Reglas del id: es la ruta de la panadería y nombra su base (obrador_<id>). */
@@ -120,10 +123,12 @@ final class AltaPanaderia
                 return InstalacionInicial::ejecutar($tenant->negocio ?? $tenant->getTenantKey(), $nombre, $email, $password);
             }
 
-            return DB::transaction(function () use ($nombre, $email, $password): User {
+            return DB::transaction(function () use ($tenant, $nombre, $email, $password): User {
                 $user = User::query()->firstOrNew(['email' => $email]);
                 $user->fill(['name' => $nombre, 'password' => $password])->save();
                 $user->assignRole('Administrador');
+
+                Cuentas::vincular($tenant, $user, $password);
 
                 return $user;
             });
