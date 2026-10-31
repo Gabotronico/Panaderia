@@ -14,9 +14,10 @@ class NativeAppServiceProvider implements ProvidesPhpIni
     public function boot(): void
     {
         Window::open()
-            // La ventana abre el login del servidor: una sola cuenta para todas
-            // las panaderías (la app ya no guarda datos locales).
-            ->url(config('escritorio.url_base').'/cuenta/entrar')
+            // La ventana abre la raíz del servidor: si ya había entrado a una
+            // panadería la recuerda, y si no, muestra el login de cuenta única.
+            // (La app ya no guarda datos locales.)
+            ->url(config('escritorio.url_base'))
             ->title(config('app.name'))
             ->width(1280)
             ->height(800)

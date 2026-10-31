@@ -38,6 +38,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // HMAC desde un servidor, sin sesión ni token CSRF.
         $middleware->validateCsrfTokens(except: ['interno/*']);
 
+        // La última panadería no es un dato sensible (es la ruta) y la lee la
+        // raíz para decidir a dónde mandar; se deja sin cifrar para poder
+        // probarla y para que sobreviva a un cambio de clave.
+        $middleware->encryptCookies(except: ['obrador_ultima_panaderia']);
+
         // En el servidor la app corre detrás de un proxy (nginx del
         // contenedor, Cloudflare): sin esto no ve que la petición vino por
         // HTTPS y arma los enlaces y redirecciones con http://.

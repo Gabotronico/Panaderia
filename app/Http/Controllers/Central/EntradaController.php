@@ -138,9 +138,17 @@ class EntradaController extends Controller
 
         $request->session()->forget('entrada.persona');
 
-        return redirect()->away(route('entrada.token', [
-            'tenant' => $panaderia['tenant_id'],
-            'token' => $crudo,
-        ]));
+        // Recuerda la última panadería para que la próxima visita a la raíz
+        // entre directo (si la sesión sigue viva) en lugar de pedir el login.
+        return redirect()
+            ->away(route('entrada.token', [
+                'tenant' => $panaderia['tenant_id'],
+                'token' => $crudo,
+            ]))
+            ->withCookie(cookie(
+                'obrador_ultima_panaderia',
+                (string) $panaderia['tenant_id'],
+                60 * 24 * 365,
+            ));
     }
 }

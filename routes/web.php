@@ -69,9 +69,20 @@ Route::middleware(SoloDominioCentral::class)->group(function () {
 
 foreach (config('tenancy.central_domains') as $dominio) {
     Route::domain($dominio)->group(function () {
-        // La portada ya no tiene sentido: la entrada es el login con cuenta
-        // única. El panel del servicio sigue en /panel.
-        Route::get('/', fn () => redirect()->route('entrada.crear'));
+        // Si el navegador ya entró antes a una panadería, la raíz la recuerda
+        // (su ruta decide si hay sesión viva o si manda al login de esa
+        // panadería). Si no, va al login con cuenta única.
+        Route::get('/', function (\Illuminate\Http\Request $request) {
+            $id = (string) $request->cookie('obrador_ultima_panaderia');
+
+            if ($id !== ''
+                && preg_match('/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/', $id) === 1
+                && \App\Models\Tenant::query()->whereKey($id)->exists()) {
+                return redirect('/'.$id);
+            }
+
+            return redirect()->route('entrada.crear');
+        })->name('central.raiz');
     });
 }
 
