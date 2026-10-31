@@ -69,7 +69,9 @@ Route::middleware(SoloDominioCentral::class)->group(function () {
 
 foreach (config('tenancy.central_domains') as $dominio) {
     Route::domain($dominio)->group(function () {
-        Route::view('/', 'central.inicio');
+        // La portada ya no tiene sentido: la entrada es el login con cuenta
+        // única. El panel del servicio sigue en /panel.
+        Route::get('/', fn () => redirect()->route('entrada.crear'));
     });
 }
 
