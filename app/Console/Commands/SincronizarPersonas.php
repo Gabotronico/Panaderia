@@ -6,6 +6,7 @@ use App\Models\Persona;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Identidad\Cuentas;
+use App\Support\Tenancy\Contexto;
 use Illuminate\Console\Command;
 
 /**
@@ -40,12 +41,20 @@ class SincronizarPersonas extends Command
         foreach ($tenants as $tenant) {
             $emails = [];
 
-            $tenant->run(function () use (&$emails, &$usuarios): void {
-                foreach (User::query()->orderBy('id')->get() as $user) {
-                    $usuarios++;
-                    $emails[mb_strtolower((string) $user->email)] = true;
-                }
-            });
+            try {
+                Contexto::ejecutar($tenant, function () use (&$emails, &$usuarios): void {
+                    foreach (User::query()->orderBy('id')->get() as $user) {
+                        $usuarios++;
+                        $emails[mb_strtolower((string) $user->email)] = true;
+                    }
+                });
+            } catch (\Throwable $exception) {
+                // Una panadería con la base caída no frena la sincronización de
+                // las demás.
+                $this->warn("  · {$tenant->id}: no se pudo leer ({$exception->getMessage()})");
+
+                continue;
+            }
 
             foreach (array_keys($emails) as $correo) {
                 $porCorreo[$correo][] = $tenant->id;

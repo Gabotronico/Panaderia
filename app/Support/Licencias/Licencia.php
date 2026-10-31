@@ -7,6 +7,7 @@ use App\Models\Tenant;
 use App\Models\TenantLicencia;
 use App\Models\User;
 use App\Models\Venta;
+use App\Support\Tenancy\Contexto;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
@@ -184,7 +185,7 @@ final class Licencia
     private static function usoDe(Tenant $tenant): array
     {
         try {
-            return $tenant->run(fn (): array => [
+            return Contexto::ejecutar($tenant, fn (): array => [
                 'admins' => User::query()->role('Administrador')->count(),
                 'cajeros' => User::query()->role('Cajero')->count(),
                 'productos' => Producto::query()->count(),

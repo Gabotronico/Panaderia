@@ -6,6 +6,7 @@ use App\Models\Persona;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Licencias\Licencia;
+use App\Support\Tenancy\Contexto;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -107,7 +108,7 @@ final class Cuentas
     {
         $ids = [];
 
-        $tenant->run(function () use ($tenant, &$ids): void {
+        Contexto::ejecutar($tenant, function () use ($tenant, &$ids): void {
             foreach (User::query()->orderBy('id')->get() as $usuario) {
                 self::vincular($tenant, $usuario);
                 $ids[] = (int) $usuario->id;
@@ -194,7 +195,7 @@ final class Cuentas
             $rol = null;
 
             try {
-                $rol = $tenant->run(
+                $rol = Contexto::ejecutar($tenant,
                     fn () => User::query()->find($vinculo->user_id)?->getRoleNames()->first(),
                 );
             } catch (\Throwable) {
