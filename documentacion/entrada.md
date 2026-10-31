@@ -4,8 +4,9 @@ Una sola cuenta (correo y contraseña) para todas las panaderías donde la
 persona tenga usuario. Si tiene una sola, entra directo; si tiene varias,
 elige.
 
-- **Web**: `https://obrador.incgroupbo.com/cuenta/entrar`
-- **Escritorio**: el `.exe` abre esa misma dirección.
+- **Web**: `https://obrador.incgroupbo.com/` — redirige al login, o directo a la
+  última panadería si ya se entró antes desde ese navegador.
+- **Escritorio**: el `.exe` abre esa misma raíz.
 
 ## Cómo está armado
 
@@ -22,18 +23,28 @@ puede entrar.
 ## Flujo
 
 ```
-/cuenta/entrar  (correo + contraseña)
+obrador.incgroupbo.com/   (raíz)
         │
-        ├─ no coincide con ninguna persona → error genérico
+        ├─ cookie con la última panadería  → /<panadería>
+        │     (si la sesión sigue viva entra directo; si expiró, al login
+        │      de esa panadería, que acepta las mismas credenciales)
         │
-        ├─ una panadería  → pase → /<panadería>/entrada/<token> → sesión
-        │
-        └─ dos o más      → /cuenta/panaderia → elegir → pase → sesión
+        └─ sin cookie  → /cuenta/entrar  (correo + contraseña)
+                              │
+                              ├─ no coincide con ninguna persona → error genérico
+                              │
+                              ├─ una panadería  → pase → /<panadería>/entrada/<token> → sesión
+                              │
+                              └─ dos o más      → /cuenta/panaderia → elegir → pase → sesión
 ```
 
 El pase se consume una sola vez y solo sirve en la panadería para la que se
 emitió. Una panadería suspendida o revocada aparece deshabilitada en el
 selector.
+
+Después de entrar, se guarda una cookie (`obrador_ultima_panaderia`, un año)
+para que la próxima visita a `obrador.incgroupbo.com/` vaya directo a esa
+panadería. No va cifrada: es la ruta, no un dato sensible.
 
 ## Alta y cambios de usuarios
 
