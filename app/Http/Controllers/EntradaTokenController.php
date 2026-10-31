@@ -43,6 +43,13 @@ class EntradaTokenController extends Controller
             abort(404);
         }
 
+        // Si ya había una sesión abierta en esta panadería (otra cuenta), se
+        // reemplaza por la del pase.
+        if (Auth::check()) {
+            Auth::logout();
+            $request->session()->invalidate();
+        }
+
         Auth::login($usuario);
         $request->session()->regenerate();
 
