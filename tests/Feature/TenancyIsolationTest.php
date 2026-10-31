@@ -93,7 +93,8 @@ class TenancyIsolationTest extends TestCase
     {
         $this->get('http://localhost/nadie/login')->assertNotFound();
         $this->get('http://localhost/login')->assertNotFound();
-        $this->get('http://localhost/')->assertOk();
+        // La portada del dominio central ahora manda al login único.
+        $this->get('http://localhost/')->assertRedirect(route('entrada.crear'));
         $this->get('http://localhost/panel/login')->assertOk();
     }
 
